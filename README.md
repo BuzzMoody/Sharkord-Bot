@@ -21,7 +21,7 @@ A lightweight, event-driven, heavily vibe-coded PHP chatbot built with **ReactPH
 
 ### 2. Clone and Install
 ```bash
-git clone [https://github.com/buzzmoody/sharkord-bot.git](https://github.com/buzzmoody/sharkord-bot.git)
+git clone https://github.com/buzzmoody/sharkord-bot.git
 cd sharkord-bot
 composer install
 ```
