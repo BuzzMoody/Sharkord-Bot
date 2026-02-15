@@ -1,6 +1,6 @@
 # Sharkord Bot v1.0
 
-A lightweight, event-driven PHP chatbot built with **ReactPHP** and **Ratchet/Pawl**. This bot connects to a Sharkord server via WebSockets (JSON-RPC), caches server data into structured models, and provides a clean API for handling messages.
+A lightweight, event-driven, heavily vibe-coded PHP chatbot built with **ReactPHP** and **Ratchet/Pawl**. This bot connects to a Sharkord server via WebSockets (JSON-RPC), caches server data into structured models, and provides a clean API for handling messages.
 
 ---
 
@@ -21,7 +21,7 @@ A lightweight, event-driven PHP chatbot built with **ReactPHP** and **Ratchet/Pa
 
 ### 2. Clone and Install
 ```bash
-git clone [https://github.com/yourusername/sharkord-bot.git](https://github.com/yourusername/sharkord-bot.git)
+git clone [https://github.com/buzzmoody/sharkord-bot.git](https://github.com/buzzmoody/sharkord-bot.git)
 cd sharkord-bot
 composer install
 ```
@@ -31,7 +31,7 @@ Create a `.env` file in the root directory and add your credentials:
 ```text
 CHAT_USERNAME=your_bot_name
 CHAT_PASSWORD=your_password
-CHAT_HOST=the.boyz.au
+CHAT_HOST=your.domain.here
 ```
 
 ---
@@ -47,8 +47,8 @@ The initial release connects to the server and responds to a simple `!ping` comm
 
 require __DIR__ . '/vendor/autoload.php';
 
-use Sharkord\\Sharkord;
-use Sharkord\\Models\\Message;
+use Sharkord\Sharkord;
+use Sharkord\Models\Message;
 
 $bot = new Sharkord([
     'identity' => $_ENV['CHAT_USERNAME'],
@@ -57,17 +57,18 @@ $bot = new Sharkord([
 ]);
 
 $bot->on('ready', function() {
-    echo "Bot is online and ready to chat!\\n";
+    echo "Bot is online and ready to chat!\n";
 });
 
 $bot->on('message', function(Message $message) {
     // Log incoming messages
     echo sprintf(
-        "[%s] %s: %s\\n",
-        $message->channel->name,
-        $message->user->name,
-        $message->content
-    );
+		"(%s) [#%s] %s: %s\n",
+		date("d/m h:i:sA"),
+		$message->channel->name,
+		$message->user->name,
+		$message->content
+	);
 
     // Simple Ping-Pong command
     if ($message->content === '!ping') {
