@@ -3,6 +3,7 @@
 	namespace Sharkord\Models;
 
 	class Message {
+		
 		public function __construct(
 			public int $id,
 			public string $content,
@@ -11,8 +12,11 @@
 		) {}
 		
 		public function reply(string $text): void {
+			
 			$this->channel->sendMessage($text);
+			
 		}
+		
 	}
 
 ?>

@@ -3,7 +3,7 @@ name: PHP Syntax Check Only
 on:
   push:
     branches:
-      - beta
+      - dev
       - main
 
 jobs:

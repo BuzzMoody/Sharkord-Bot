@@ -5,6 +5,7 @@
 	use Sharkord\Sharkord;
 
 	class Channel {
+		
 		public function __construct(
 			public int $id,
 			public string $name,
@@ -13,8 +14,18 @@
 		) {}
 
 		public function sendMessage(string $text): void {
+			
 			$this->bot->sendMessage($text, $this->id);
+			
 		}
+		
+		public function update(string $name, string $type): void {
+			
+			$this->name = $name;
+			$this->type = $type;
+			
+		}
+		
 	}
 
 ?>
