@@ -221,9 +221,9 @@
 			
 		}
 		
-		private function onChannelDelete(array $raw): void {
+		private function onChannelDelete(int $id): void {
 			
-			unset($this->channels[$raw['id']]);
+			unset($this->channels[$id]);
 			
 		}
 		
