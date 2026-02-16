@@ -1,4 +1,4 @@
-# Sharkord Bot v1.0
+# Sharkord Bot v1.2
 
 A lightweight, event-driven, heavily vibe-coded PHP chatbot built with **ReactPHP** and **Ratchet/Pawl**. This bot connects to a Sharkord server via WebSockets (JSON-RPC), caches server data into structured models, and provides a clean API for handling messages.
 

@@ -12,6 +12,8 @@
 		'password'	=> $_ENV['CHAT_PASSWORD'],
 		'host'		=> $_ENV['CHAT_HOST'],
 	]);
+	
+	$bot->loadCommands(__DIR__ . '/src/Commands');
 
 	$bot->on('ready', function() use ($bot) {
 		echo "Logged in and ready to chat!\n";
@@ -27,8 +29,8 @@
 			$message->content
 		);
 		
-		if ($message->content === '!ping') {
-			$message->reply("Pong!");
+		if (preg_match('/^!([a-zA-Z]{2,})(?:\s+(.*))?$/', $message->content, $matches)) {
+			$bot->handleCommand($message, $matches);
 		}
 		
 	});
