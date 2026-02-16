@@ -38,45 +38,49 @@ CHAT_HOST=your.domain.here
 
 ## 💻 Usage
 
-The initial release connects to the server and responds to a simple `!ping` command.
-
-
+The initial release connects to the server and responds to a simple `!ping` command. See `Main.php` for latest version.
 
 ```php
 <?php
 
-require __DIR__ . '/vendor/autoload.php';
+	error_reporting(E_ALL);
 
-use Sharkord\Sharkord;
-use Sharkord\Models\Message;
+	require __DIR__ . '/vendor/autoload.php';
 
-$bot = new Sharkord([
-    'identity' => $_ENV['CHAT_USERNAME'],
-    'password' => $_ENV['CHAT_PASSWORD'],
-    'host'     => $_ENV['CHAT_HOST'],
-]);
+	use Sharkord\Sharkord;
+	use Sharkord\Models\Message;
 
-$bot->on('ready', function() {
-    echo "Bot is online and ready to chat!\n";
-});
+	$bot = new Sharkord([
+		'identity' 	=> $_ENV['CHAT_USERNAME'],
+		'password'	=> $_ENV['CHAT_PASSWORD'],
+		'host'		=> $_ENV['CHAT_HOST'],
+	]);
+	
+	$bot->loadCommands(__DIR__ . '/src/Commands');
 
-$bot->on('message', function(Message $message) {
-    // Log incoming messages
-    echo sprintf(
-		"(%s) [#%s] %s: %s\n",
-		date("d/m h:i:sA"),
-		$message->channel->name,
-		$message->user->name,
-		$message->content
-	);
+	$bot->on('ready', function() use ($bot) {
+		echo "Logged in and ready to chat!\n";
+	});
 
-    // Simple Ping-Pong command
-    if ($message->content === '!ping') {
-        $message->reply("Pong!");
-    }
-});
+	$bot->on('message', function(Message $message) use ($bot) {
+		
+		echo sprintf(
+			"(%s) [#%s] %s: %s\n",
+			date("d/m h:i:sA"),
+			$message->channel->name,
+			$message->user->name,
+			$message->content
+		);
+		
+		if (preg_match('/^!([a-zA-Z]{2,})(?:\s+(.*))?$/', $message->content, $matches)) {
+			$bot->handleCommand($message, $matches);
+		}
+		
+	});
 
-$bot->run();
+	$bot->run();
+
+?>
 ```
 
 ---
