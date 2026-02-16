@@ -79,7 +79,7 @@
 					$this->conn = $conn;
 					
 					// Attach listeners
-					$conn->on('message', fn($msg) => $this->handleMessage($msg));
+					$conn->on('message', fn($msg) => $this->handleMessage((string)$msg));
 					$conn->on('close', fn($code, $reason) => $this->emit('close', [$code, $reason]));
 					
 					// Start protocol
