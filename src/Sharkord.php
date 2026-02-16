@@ -63,7 +63,9 @@
 					echo "[DEBUG] Auth Success.\n";
 					$this->connectToWebSocket();
 				},
-				fn (\Exception $e) => { echo "[ERROR] Auth Failed: " . $e->getMessage() . "\n"; }
+				function (\Exception $e) { 
+					echo "[ERROR] Auth Failed: " . $e->getMessage() . "\n"; 
+				}
 			);
 		}
 
@@ -83,7 +85,9 @@
 					// Start protocol
 					$this->performHandshake();
 				},
-				fn (\Exception $e) => { echo "[ERROR] WS Connection Failed: " . $e->getMessage() . "\n"; }
+				function (\Exception $e) {
+					echo "[ERROR] WS Connection Failed: " . $e->getMessage() . "\n"; 
+				}
 			);
 		}
 
