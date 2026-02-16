@@ -16,8 +16,12 @@
 	use Sharkord\Models\Message;
 
 	class Sharkord {
-
 		use EventEmitterTrait;
+
+		// Define protocol steps as constants for clarity
+		private const STEP_HANDSHAKE = 1;
+		private const STEP_JOIN = 2;
+		private const STEP_SUBSCRIBE = 3;
 
 		public function __construct(
 			private array $config,
@@ -35,170 +39,149 @@
 		}
 
 		public function run(): void {
-			echo "[DEBUG] Starting Bot...\n";
+			echo "[INFO] Starting Bot...\n";
 			$this->authenticate();
 			$this->loop->run();
 		}
 
 		private function authenticate(): void {
 			$authUrl = "https://{$this->config['host']}/login";
-			echo "[DEBUG] Authenticating with: $authUrl\n";
+			echo "[DEBUG] Authenticating...\n";
 
 			$this->browser->post(
-				$authUrl, 
-				['Content-Type' => 'application/json'], 
+				$authUrl,
+				['Content-Type' => 'application/json'],
 				json_encode([
 					'identity' => $this->config['identity'],
 					'password' => $this->config['password']
-				])
-			)->then(function (ResponseInterface $response) {
-				$data = json_decode((string)$response->getBody(), true);
-				if (isset($data['token'])) {
-					echo "[DEBUG] Auth Success. Token acquired.\n";
-					$this->token = $data['token'];
-					$this->connectToWebSocket($this->token);
-				} else {
-					echo "[ERROR] Authentication failed: No token in response body.\n";
-				}
-			}, function (\Exception $e) {
-				echo "[ERROR] Auth Request Failed: " . $e->getMessage() . "\n";
-			});
-		}
-
-		private function connectToWebSocket(): void {
-
-			$wsUrl = "wss://{$this->config['host']}/?connectionParams=1";
-
-			echo "[DEBUG] Connecting to WebSocket: $wsUrl\n";
-
-			$headers = [
-				'Host' => $this->config['host'],
-				'User-Agent' => 'Sharkord-Bot-v1'
-			];
-
-			($this->connector)($wsUrl, [], $headers)->then(
-				function (WebSocket $conn) {
-					echo "[DEBUG] WebSocket Pipe Open.\n";
-					$this->conn = $conn;
-					$this->setupInternalListeners($conn);
-					$this->performHandshake($conn);
+				], JSON_THROW_ON_ERROR)
+			)->then(
+				function (ResponseInterface $response) {
+					$data = json_decode((string)$response->getBody(), true, 512, JSON_THROW_ON_ERROR);
+					$this->token = $data['token'] ?? throw new \RuntimeException("No token in response");
+					
+					echo "[DEBUG] Auth Success.\n";
+					$this->connectToWebSocket();
 				},
-				function (\Exception $e) {
-					echo "[ERROR] WebSocket Connection Failed: " . $e->getMessage() . "\n";
-				}
+				fn (\Exception $e) => echo "[ERROR] Auth Failed: " . $e->getMessage() . "\n"
 			);
 		}
 
-		private function performHandshake(WebSocket $conn): void {
-			echo "[DEBUG] Step 1: Sending connectionParams...\n";
-			$conn->send(json_encode([
-				"jsonrpc" => "2.0",
-				"method" => "connectionParams",
-				"data" => [
-					"token" => $this->token
-				]
-			]));
-			
-			\React\EventLoop\Loop::get()->addTimer(0.3, function() use ($conn) {
-				echo "[DEBUG] Step 2: Sending Handshake Query (id: 1)\n";
-				$conn->send(json_encode([
-					"jsonrpc" => "2.0",
-					"id" => 1,
-					"method" => "query",
-					"params" => ["path" => "others.handshake"]
-				]));
-			});
+		private function connectToWebSocket(): void {
+			$wsUrl = "wss://{$this->config['host']}/?connectionParams=1";
+			$headers = ['Host' => $this->config['host'], 'User-Agent' => 'Sharkord-Bot-v1'];
+
+			($this->connector)($wsUrl, [], $headers)->then(
+				function (WebSocket $conn) {
+					echo "[DEBUG] WebSocket Connected.\n";
+					$this->conn = $conn;
+					
+					// Attach listeners
+					$conn->on('message', fn($msg) => $this->handleMessage($msg));
+					$conn->on('close', fn($code, $reason) => $this->emit('close', [$code, $reason]));
+					
+					// Start protocol
+					$this->performHandshake();
+				},
+				fn (\Exception $e) => echo "[ERROR] WS Connection Failed: " . $e->getMessage() . "\n"
+			);
 		}
 
-		private function setupInternalListeners(WebSocket $conn): void {
-			$conn->on('message', function ($payload) use ($conn) {
-				$data = json_decode((string)$payload, true);
+		private function performHandshake(): void {
+			if (!$this->conn) return;
 
-				// echo "[RAW] " . (string)$payload . "\n";
+			// Send connection params
+			$this->conn->send(json_encode([
+				"jsonrpc" => "2.0",
+				"method" => "connectionParams",
+				"data" => ["token" => $this->token]
+			]));
 
-				if (isset($data['id']) && $data['id'] === 1) {
-					$hash = $data['result']['data']['handshakeHash'] ?? null;
-					if ($hash) {
-						echo "[DEBUG] Handshake Success. Joining Server (id: 2)\n";
-						$conn->send(json_encode([
-							"jsonrpc" => "2.0",
-							"id" => 2,
-							"method" => "query",
-							"params" => [
-								"input" => ["handshakeHash" => $hash],
-								"path" => "others.joinServer"
-							]
-						]));
-					} else {
-						echo "[ERROR] Handshake response missing hash.\n";
-					}
-					return;
-				}
+			// Immediately send handshake query (No timer needed)
+			$this->sendRpc(self::STEP_HANDSHAKE, "query", ["path" => "others.handshake"]);
+		}
 
-				if (isset($data['id']) && $data['id'] === 2) {
-					
-					$raw = $data['result']['data'];
+		private function handleMessage(string $payload): void {
+			try {
+				$data = json_decode($payload, true, 512, JSON_THROW_ON_ERROR);
+			} catch (\JsonException) {
+				return; // Ignore malformed JSON
+			}
 
-					// Map Channels
-					foreach ($raw['channels'] as $chan) {
-						$this->channels[$chan['id']] = new Channel($chan['id'], $chan['name'], $chan['type'], $this);
-					}
+			// Route logic based on ID (Protocol Steps)
+			match ($data['id'] ?? null) {
+				self::STEP_HANDSHAKE => $this->onHandshakeResponse($data),
+				self::STEP_JOIN      => $this->onJoinResponse($data),
+				self::STEP_SUBSCRIBE => $this->onSubscriptionResponse($data),
+				default              => null
+			};
+		}
 
-					// Map Users
-					foreach ($raw['users'] as $u) {
-						$this->users[$u['id']] = new User($u['id'], $u['name'], $u['status'], $u['roleIds']);
-					}
+		private function onHandshakeResponse(array $data): void {
+			$hash = $data['result']['data']['handshakeHash'] ?? null;
+			if (!$hash) {
+				echo "[ERROR] Missing handshake hash.\n";
+				return;
+			}
 
-					echo "[DEBUG] Server data cached: " . count($this->channels) . " channels ready.\n";				
-					echo "[DEBUG] Join Server Success. Subscribing to messages.onNew (id: 3)\n";
-					$conn->send(json_encode([
-						"jsonrpc" => "2.0",
-						"id" => 3,
-						"method" => "subscription", 
-						"params" => [
-							"path" => "messages.onNew",
-						]
-					]));
-					return;
-					
-				}
+			echo "[DEBUG] Handshake OK. Joining Server...\n";
+			$this->sendRpc(self::STEP_JOIN, "query", [
+				"input" => ["handshakeHash" => $hash],
+				"path" => "others.joinServer"
+			]);
+		}
 
-				if (isset($data['id']) && $data['id'] === 3 && $data['result']['type'] === 'started') {
-					$this->emit('ready');
-					return;
-				}
-				
-				if (isset($data['id']) && $data['id'] === 3 && $data['result']['type'] === 'data') {
-					$msgRaw = $data['result']['data'];
+		private function onJoinResponse(array $data): void {
+			$raw = $data['result']['data'];
 
-					$user = $this->users[$msgRaw['userId']] ?? new Models\User($msgRaw['userId'], 'Unknown', 'Unknown', []);
-					$channel = $this->channels[$msgRaw['channelId']] ?? new Models\Channel($msgRaw['channelId'], 'Unknown', 'Unknown');
-					
-					$message = new Message(
-						(int)$msgRaw['id'],
-						strip_tags($msgRaw['content']),
-						$user,
-						$channel
-					);
+			// Hydrate Models efficiently
+			foreach ($raw['channels'] as $c) {
+				$this->channels[$c['id']] = new Channel($c['id'], $c['name'], $c['type'], $this);
+			}
+			foreach ($raw['users'] as $u) {
+				$this->users[$u['id']] = new User($u['id'], $u['name'], $u['status'], $u['roleIds']);
+			}
 
-					$this->emit('message', [$message]);
-					return;
-				}
+			echo "[DEBUG] Joined. Cached " . count($this->channels) . " channels.\n";
+			
+			// Subscribe to messages
+			$this->sendRpc(self::STEP_SUBSCRIBE, "subscription", ["path" => "messages.onNew"]);
+		}
 
-			});
+		private function onSubscriptionResponse(array $data): void {
+			$type = $data['result']['type'] ?? '';
 
-			$conn->on('close', function (int $code, string $reason) {
-				echo "[DEBUG] Connection closed ($code): $reason\n";
-				$this->emit('close', [$code, $reason]);
-			});
+			if ($type === 'started') {
+				$this->emit('ready');
+			} elseif ($type === 'data') {
+				$this->processIncomingMessage($data['result']['data']);
+			}
+		}
+
+		private function processIncomingMessage(array $raw): void {
+			// Fallback to "Unknown" objects if ID not found in cache
+			$user = $this->users[$raw['userId']] ?? new User($raw['userId'], 'Unknown', 'Unknown', []);
+			$channel = $this->channels[$raw['channelId']] ?? new Channel($raw['channelId'], 'Unknown', 'Unknown');
+
+			$message = new Message(
+				(int)$raw['id'],
+				strip_tags($raw['content']),
+				$user,
+				$channel
+			);
+
+			$this->emit('message', [$message]);
 		}
 
 		public function sendMessage(string $text, int|string $channelId): void {
 			if (!$this->conn) return;
 
+			// Use current time + random hex for ID to avoid collisions
+			$reqId = (int)(microtime(true) * 1000); 
+
 			$this->conn->send(json_encode([
 				"jsonrpc" => "2.0",
-				"id" => time(),
+				"id" => $reqId, 
 				"method" => "mutation",
 				"params" => [
 					"input" => [
@@ -210,6 +193,16 @@
 				]
 			]));
 		}
-	}
 
+		// Helper to reduce repetitive JSON construction
+		private function sendRpc(int $id, string $method, array $params): void {
+			$this->conn->send(json_encode([
+				"jsonrpc" => "2.0",
+				"id" => $id,
+				"method" => $method,
+				"params" => $params
+			], JSON_THROW_ON_ERROR));
+		}
+	}
+	
 ?>
