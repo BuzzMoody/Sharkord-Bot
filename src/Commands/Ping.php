@@ -38,7 +38,7 @@
 		/**
 		 * @inheritDoc
 		 */
-		public function handle(Message $message, array $args): void {
+		public function handle(Message $message, string $args, array $matches): void {
 			$message->reply("Pong!");
 		}
 
