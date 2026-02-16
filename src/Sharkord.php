@@ -25,7 +25,7 @@
 	 * @package Sharkord
 	 */
 	class Sharkord {
-
+		
 		use EventEmitterTrait;
 
 		/**
@@ -116,7 +116,7 @@
 		 * @return void
 		 */
 		private function connectToWebSocket(): void {
-
+			
 			$wsUrl = "wss://{$this->config['host']}/?connectionParams=1";
 			$headers = ['Host' => $this->config['host'], 'User-Agent' => 'Sharkord-Bot-v1'];
 
