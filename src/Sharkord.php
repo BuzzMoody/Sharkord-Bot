@@ -18,11 +18,6 @@
 	class Sharkord {
 		use EventEmitterTrait;
 
-		// Define protocol steps as constants for clarity
-		private const STEP_HANDSHAKE = 1;
-		private const STEP_JOIN = 2;
-		private const STEP_SUBSCRIBE = 3;
-
 		public function __construct(
 			private array $config,
 			private ?LoopInterface $loop = null,
@@ -31,7 +26,9 @@
 			private ?WebSocket $conn = null,
 			private string $token = '',
 			private array $users = [],
-			private array $channels = []
+			private array $channels = [],
+			private array $rpcHandlers = [],
+			private int $rpcCounter = 0
 		) {
 			$this->loop = $this->loop ?? Loop::get();
 			$this->browser = $this->browser ?? new Browser($this->loop);
@@ -101,26 +98,15 @@
 				"data" => ["token" => $this->token]
 			]));
 
-			// Immediately send handshake query (No timer needed)
-			$this->sendRpc(self::STEP_HANDSHAKE, "query", ["path" => "others.handshake"]);
+			echo "[DEBUG] Sending Handshake Request...\n";
+			
+			$this->sendRpc(
+				"query", 
+				["path" => "others.handshake"], 
+				fn($response) => $this->onHandshakeResponse($response) 
+			);
 		}
-
-		private function handleMessage(string $payload): void {
-			try {
-				$data = json_decode($payload, true, 512, JSON_THROW_ON_ERROR);
-			} catch (\JsonException) {
-				return; // Ignore malformed JSON
-			}
-
-			// Route logic based on ID (Protocol Steps)
-			match ($data['id'] ?? null) {
-				self::STEP_HANDSHAKE => $this->onHandshakeResponse($data),
-				self::STEP_JOIN      => $this->onJoinResponse($data),
-				self::STEP_SUBSCRIBE => $this->onSubscriptionResponse($data),
-				default              => null
-			};
-		}
-
+		
 		private function onHandshakeResponse(array $data): void {
 			$hash = $data['result']['data']['handshakeHash'] ?? null;
 			if (!$hash) {
@@ -129,10 +115,28 @@
 			}
 
 			echo "[DEBUG] Handshake OK. Joining Server...\n";
-			$this->sendRpc(self::STEP_JOIN, "query", [
-				"input" => ["handshakeHash" => $hash],
-				"path" => "others.joinServer"
-			]);
+			
+			$this->sendRpc("query", 
+				[
+					"input" => ["handshakeHash" => $hash],
+					"path" => "others.joinServer"
+				],
+				fn($response) => $this->onJoinResponse($response)
+			);
+		}
+
+		private function handleMessage(string $payload): void {
+			try {
+				$data = json_decode($payload, true, 512, JSON_THROW_ON_ERROR);
+			} catch (\JsonException) {
+				return; // Ignore malformed JSON
+			}
+			
+			$id = $data['id'] ?? null;
+			
+			if ($id && isset($this->rpcHandlers[$id])) {
+				($this->rpcHandlers[$id])($data);
+			}
 		}
 
 		private function onJoinResponse(array $data): void {
@@ -148,24 +152,40 @@
 
 			echo "[DEBUG] Joined. Cached " . count($this->channels) . " channels.\n";
 			
-			// Subscribe to messages
-			$this->sendRpc(self::STEP_SUBSCRIBE, "subscription", ["path" => "messages.onNew"]);
-		}
+			// Create server event subscriptions 
+			$subscriptions = [
+				'messages.onNew'	=> fn($d) => $this->onNewMessage($d),
+				'channels.onCreate'	=> fn($d) => $this->onChannelCreate($d),
+				'channels.onDelete'	=> fn($d) => $this->onChannelDelete($d),
+				'channels.onUpdate'	=> fn($d) => $this->onChannelUpdate($d),
+				'users.onCreate'	=> fn($d) => $this->onUserCreate($d),
+				'users.onJoin'		=> fn($d) => $this->onUserJoin($d),
+				'users.onLeave'		=> fn($d) => $this->onUserLeave($d),
+				'users.onUpdate'	=> fn($d) => $this->onUserUpdate($d)
+			];
+			
+			foreach ($subscriptions as $path => $handler) {
+        
+				$this->sendRpc('subscription', ['path' => $path], function(array $response) use ($path, $handler) {
+					
+					$type = $response['result']['type'] ?? '';
 
-		private function onSubscriptionResponse(array $data): void {
-			$type = $data['result']['type'] ?? '';
-
-			if ($type === 'started') {
-				$this->emit('ready');
-			} elseif ($type === 'data') {
-				$this->processIncomingMessage($data['result']['data']);
+					if ($type === 'started') {
+						echo "[DEBUG] Subscribed to $path successfully.\n";
+					} 
+					elseif ($type === 'data') {
+						$handler($response['result']['data']);
+					}
+					
+				});
 			}
+
+			$this->emit('ready');
 		}
 
-		private function processIncomingMessage(array $raw): void {
-			// Fallback to "Unknown" objects if ID not found in cache
-			$user = $this->users[$raw['userId']] ?? new User($raw['userId'], 'Unknown', 'Unknown', []);
-			$channel = $this->channels[$raw['channelId']] ?? new Channel($raw['channelId'], 'Unknown', 'Unknown');
+		private function onNewMessage(array $raw): void {
+			$user = $this->users[$raw['userId']] ?? new User($raw['userId'], 'Unknown', 'offline', []);
+			$channel = $this->channels[$raw['channelId']] ?? new Channel($raw['channelId'], 'Unknown', 'TEXT');
 
 			$message = new Message(
 				(int)$raw['id'],
@@ -176,30 +196,70 @@
 
 			$this->emit('message', [$message]);
 		}
-
-		public function sendMessage(string $text, int|string $channelId): void {
-			if (!$this->conn) return;
-
-			// Use current time + random hex for ID to avoid collisions
-			$reqId = (int)(microtime(true) * 1000); 
-
-			$this->conn->send(json_encode([
-				"jsonrpc" => "2.0",
-				"id" => $reqId, 
-				"method" => "mutation",
-				"params" => [
-					"input" => [
-						"content" => "<p>" . htmlspecialchars($text) . "</p>",
-						"channelId" => $channelId,
-						"files" => []
-					],
-					"path" => "messages.send"
-				]
-			]));
+		
+		private function onChannelCreate(array $raw): void {
+			
+			$this->channels[$raw['id']] = new Channel($raw['id'], $raw['name'], $raw['type'], $this);
+			
+		}
+		
+		private function onChannelDelete(array $raw): void {
+			
+			unset($this->channels[$raw['id']]);
+			
+		}
+		
+		private function onChannelUpdate(array $raw): void {
+			
+			if (!isset($this->channels[$raw['id']])) return;
+			
+			$this->channels[$raw['id']]->update($raw['name'], $raw['type']);
+			
+		}
+		
+		private function onUserCreate(array $raw): void {
+			
+			$this->users[$raw['id']] = new User($raw['id'], $raw['name'], 'offline', $raw['roleIds']);
+			
+		}
+		
+		private function onUserJoin(array $raw): void {
+			
+			if (!isset($this->users[$raw['id']])) return;
+			
+			$this->users[$raw['id']]->updateStatus('online');
+			
+		}
+		
+		private function onUserLeave(array $raw): void {
+			
+			if (!isset($this->users[$raw['id']])) return;
+			
+			$this->users[$raw['id']]->updateStatus('offline');
+			
+		}
+		
+		private function onUserUpdate(array $raw): void {
+			
+			if (!isset($this->users[$raw['id']])) return;
+			
+			$this->users[$raw['id']]->updateName($raw['name']);
+			
 		}
 
-		// Helper to reduce repetitive JSON construction
-		private function sendRpc(int $id, string $method, array $params): void {
+		public function sendMessage(string $text, int|string $channelId): void {
+			
+			if (!$this->conn) return;		
+			
+			$this->sendRpc("mutation", ["input" => ["content" => "<p>".htmlspecialchars($text)."</p>", "channelId" => $channelId, "files" => []], "path" => "messages.send"]);
+			
+		}
+
+		private function sendRpc(string $method, array $params, ?callable $callback = null): void {
+			$id = ++$this->rpcCounter;
+			
+			if ($callback) $this->rpcHandlers[$id] = $callback;
+			
 			$this->conn->send(json_encode([
 				"jsonrpc" => "2.0",
 				"id" => $id,
