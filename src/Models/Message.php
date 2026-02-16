@@ -12,7 +12,9 @@
 		) {}
 		
 		public function reply(string $text): void {
+			
 			$this->channel->sendMessage($text);
+			
 		}
 		
 	}

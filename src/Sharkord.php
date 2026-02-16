@@ -16,6 +16,7 @@
 	use Sharkord\Models\Message;
 
 	class Sharkord {
+		
 		use EventEmitterTrait;
 
 		public function __construct(
@@ -30,9 +31,11 @@
 			private array $rpcHandlers = [],
 			private int $rpcCounter = 0
 		) {
+			
 			$this->loop = $this->loop ?? Loop::get();
 			$this->browser = $this->browser ?? new Browser($this->loop);
 			$this->connector = $this->connector ?? new Connector($this->loop);
+			
 		}
 
 		public function run(): void {
@@ -42,6 +45,7 @@
 		}
 
 		private function authenticate(): void {
+			
 			$authUrl = "https://{$this->config['host']}/login";
 			echo "[DEBUG] Authenticating...\n";
 
@@ -64,9 +68,11 @@
 					echo "[ERROR] Auth Failed: " . $e->getMessage() . "\n"; 
 				}
 			);
+			
 		}
 
 		private function connectToWebSocket(): void {
+			
 			$wsUrl = "wss://{$this->config['host']}/?connectionParams=1";
 			$headers = ['Host' => $this->config['host'], 'User-Agent' => 'Sharkord-Bot-v1'];
 
@@ -86,9 +92,11 @@
 					echo "[ERROR] WS Connection Failed: " . $e->getMessage() . "\n"; 
 				}
 			);
+			
 		}
 
 		private function performHandshake(): void {
+			
 			if (!$this->conn) return;
 
 			// Send connection params
@@ -105,9 +113,11 @@
 				["path" => "others.handshake"], 
 				fn($response) => $this->onHandshakeResponse($response) 
 			);
+			
 		}
 		
 		private function onHandshakeResponse(array $data): void {
+			
 			$hash = $data['result']['data']['handshakeHash'] ?? null;
 			if (!$hash) {
 				echo "[ERROR] Missing handshake hash.\n";
@@ -123,9 +133,11 @@
 				],
 				fn($response) => $this->onJoinResponse($response)
 			);
+			
 		}
 
 		private function handleMessage(string $payload): void {
+			
 			try {
 				$data = json_decode($payload, true, 512, JSON_THROW_ON_ERROR);
 			} catch (\JsonException) {
@@ -137,9 +149,11 @@
 			if ($id && isset($this->rpcHandlers[$id])) {
 				($this->rpcHandlers[$id])($data);
 			}
+			
 		}
 
 		private function onJoinResponse(array $data): void {
+			
 			$raw = $data['result']['data'];
 
 			// Hydrate Models efficiently
@@ -178,12 +192,15 @@
 					}
 					
 				});
+				
 			}
 
 			$this->emit('ready');
+			
 		}
 
 		private function onNewMessage(array $raw): void {
+			
 			$user = $this->users[$raw['userId']] ?? new User($raw['userId'], 'Unknown', 'offline', []);
 			$channel = $this->channels[$raw['channelId']] ?? new Channel($raw['channelId'], 'Unknown', 'TEXT');
 
@@ -195,6 +212,7 @@
 			);
 
 			$this->emit('message', [$message]);
+			
 		}
 		
 		private function onChannelCreate(array $raw): void {
@@ -256,6 +274,7 @@
 		}
 
 		private function sendRpc(string $method, array $params, ?callable $callback = null): void {
+			
 			$id = ++$this->rpcCounter;
 			
 			if ($callback) $this->rpcHandlers[$id] = $callback;
@@ -266,7 +285,9 @@
 				"method" => $method,
 				"params" => $params
 			], JSON_THROW_ON_ERROR));
+			
 		}
+		
 	}
 	
 ?>

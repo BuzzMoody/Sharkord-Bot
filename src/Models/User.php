@@ -12,11 +12,15 @@
 		) {}
 		
 		public function updateStatus(string $status): void {
+			
 			$this->status = $status;
+			
 		}
 		
 		public function updateName(string $name): void {
+			
 			$this->name = $name;
+			
 		}
 		
 	}
