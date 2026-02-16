@@ -13,6 +13,17 @@
 	 * @package Sharkord\Commands
 	 */
 	class Ping implements CommandInterface {
+		
+		private const RESPONSES = [
+			"Pong! Right back at ya.",
+			"Ping received. Pong!",
+			"Got it!",
+			"Ping received, initiating pong sequence... Pong!",
+			"Did someone say ping? Pong!",
+			"You rang? Pong!",
+			"Copy that. Pong!",
+			"The answer is always... pong."
+		];
 
 		/**
 		 * @inheritDoc
@@ -39,7 +50,7 @@
 		 * @inheritDoc
 		 */
 		public function handle(Message $message, string $args, array $matches): void {
-			$message->reply("Pong!");
+			$message->reply(self::RESPONSES[array_rand(self::RESPONSES)]);
 		}
 
 	}
