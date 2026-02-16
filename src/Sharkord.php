@@ -39,9 +39,11 @@
 		}
 
 		public function run(): void {
+			
 			echo "[INFO] Starting Bot...\n";
 			$this->authenticate();
 			$this->loop->run();
+			
 		}
 
 		private function authenticate(): void {
@@ -164,7 +166,7 @@
 				$this->users[$u['id']] = new User($u['id'], $u['name'], $u['status'], $u['roleIds']);
 			}
 
-			echo "[DEBUG] Joined. Cached " . count($this->channels) . " channels.\n";
+			echo "[DEBUG] Joined. Cached ".count($this->channels)." channels.\n";
 			
 			// Create server event subscriptions 
 			$subscriptions = [
