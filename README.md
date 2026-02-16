@@ -89,6 +89,9 @@ The initial release connects to the server and responds to a simple `!ping` comm
 
 * `Main.php`: The entry point of your bot.
 * `src/Sharkord.php`: The core engine handling auth, WebSockets, and event emission.
+* `src/Commands/`: Contains the CommandInterface as well as all command function files.
+    * `CommandInterface.php`: The format of how future commands should be built.
+    * `Ping.php`: Simple ping/pong command example.
 * `src/Models/`: Contains the data structures:
     * `User.php`: Stores user data (ID, name, status, roles).
     * `Channel.php`: Stores channel data and handles `sendMessage()`.
