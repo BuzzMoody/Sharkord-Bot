@@ -30,16 +30,17 @@
 		/**
 		 * Sharkord constructor.
 		 *
-		 * @param array                  $config       Configuration array containing 'host', 'identity', and 'password'.
-		 * @param LoopInterface|null     $loop         The ReactPHP event loop instance.
-		 * @param Browser|null           $browser      The ReactPHP Browser instance for HTTP requests.
-		 * @param Connector|null         $connector    The Ratchet Connector for WebSocket connections.
-		 * @param WebSocket|null         $conn         The active WebSocket connection instance.
-		 * @param string                 $token        The authentication token received after login.
-		 * @param array<int, User>       $users        Cache of User models indexed by ID.
-		 * @param array<int, Channel>    $channels     Cache of Channel models indexed by ID.
-		 * @param array                  $rpcHandlers  Callbacks for pending RPC requests.
-		 * @param int                    $rpcCounter   Counter for generating unique RPC IDs.
+		 * @param array								$config       Configuration array containing 'host', 'identity', and 'password'.
+		 * @param LoopInterface|null				$loop         The ReactPHP event loop instance.
+		 * @param Browser|null						$browser      The ReactPHP Browser instance for HTTP requests.
+		 * @param Connector|null					$connector    The Ratchet Connector for WebSocket connections.
+		 * @param WebSocket|null					$conn         The active WebSocket connection instance.
+		 * @param string							$token        The authentication token received after login.
+		 * @param array<int, User>					$users        Cache of User models indexed by ID.
+		 * @param array<int, Channel>				$channels     Cache of Channel models indexed by ID.
+		 * @param array								$rpcHandlers  Callbacks for pending RPC requests.
+		 * @param int								$rpcCounter   Counter for generating unique RPC IDs.
+		 * @param array<string, CommandInterface>	$commands     Registry of available commands, indexed by command name.
 		 */
 		public function __construct(
 			private array $config,
@@ -51,7 +52,8 @@
 			private array $users = [],
 			private array $channels = [],
 			private array $rpcHandlers = [],
-			private int $rpcCounter = 0
+			private int $rpcCounter = 0,
+			private array $commands = []
 		) {
 
 			$this->loop = $this->loop ?? Loop::get();
@@ -124,13 +126,18 @@
 
 					// Attach listeners
 					$conn->on('message', fn($msg) => $this->handleMessage((string)$msg));
-					$conn->on('close', fn($code, $reason) => $this->emit('close', [$code, $reason]));
+					$conn->on('close', function($code, $reason) {
+						echo "[WARN] Connection closed ({$code}). Reconnecting in 5s...\n";
+						$this->loop->addTimer(5, fn() => $this->authenticate()); // Restart auth flow
+					});
 
 					// Start protocol
 					$this->performHandshake();
 				},
 				function (\Exception $e) {
 					echo "[ERROR] WS Connection Failed: " . $e->getMessage() . "\n";
+					echo "[INFO] Retrying in 5s...\n";
+					$this->loop->addTimer(5, fn() => $this->authenticate());
 				}
 			);
 
@@ -377,6 +384,75 @@
 
 			$this->users[$raw['id']]->updateName($raw['name']);
 
+		}
+		
+		/**
+		 * Registers a command instance to the bot.
+		 *
+		 * @param CommandInterface $command The command object to register.
+		 * @return void
+		 */
+		public function registerCommand(CommandInterface $command): void {
+			
+			$this->commands[$command->getName()] = $command;
+			echo "[INFO] Registered command: !{$command->getName()} (Pattern: {$command->getPattern()})\n";
+			
+		}
+		
+		/**
+		 * Automatically loads and registers all command classes from a specific directory.
+		 *
+		 * This method scans the directory for PHP files, instantiates the classes
+		 * if they implement CommandInterface, and registers them.
+		 *
+		 * @param string $directory The absolute path to the directory containing command classes.
+		 * @return void
+		 */
+		public function loadCommands(string $directory): void {
+			
+			foreach (glob($directory . '/*.php') as $file) {
+				
+				$className = 'Sharkord\\Commands\\' . basename($file, '.php');
+
+				if (class_exists($className)) {
+					$reflection = new \ReflectionClass($className);
+					
+					// Only instantiate if it implements the interface and is not abstract
+					if ($reflection->implementsInterface(CommandInterface::class) && !$reflection->isAbstract()) {
+						$this->registerCommand(new $className());
+					}
+				}
+				
+			}
+			
+		}
+		
+		/**
+		 * Checks if a received message matches a command pattern and executes it.
+		 *
+		 * Iterates through all registered commands and tests their regex pattern
+		 * against the message content. Stops at the first match.
+		 *
+		 * @param Message $message The received message object.
+		 * @return void
+		 */
+		public function handleCommand(Message $message, array $matches): void {
+			
+			$commandName = strtolower($matches[1]);
+			$args = $matches[2] ?? '';
+			
+			foreach ($this->commands as $command) {
+				// Check if the message matches the command's regex pattern
+				if (preg_match($command->getPattern(), $commandName, $matches)) {
+					echo "[DEBUG] Matched command: {$command->getName()}\n";
+					
+					// Pass the matches array (capture groups) to the handler
+					$command->handle($message, $args, $matches);
+					
+					// Stop checking other commands after the first match
+					return;
+				}
+			}
 		}
 
 		/**
