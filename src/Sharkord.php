@@ -231,11 +231,11 @@
 			
 		}
 		
-		private function onUserLeave(array $raw): void {
+		private function onUserLeave(int $id): void {
 			
-			if (!isset($this->users[$raw['id']])) return;
+			if (!isset($this->users[$id])) return;
 			
-			$this->users[$raw['id']]->updateStatus('offline');
+			$this->users[$id]->updateStatus('offline');
 			
 		}
 		
