@@ -14,6 +14,7 @@
 	use Sharkord\Models\User;
 	use Sharkord\Models\Channel;
 	use Sharkord\Models\Message;
+	use Sharkord\Commands\CommandInterface;
 
 	/**
 	 * Class Sharkord
