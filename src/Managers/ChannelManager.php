@@ -65,9 +65,8 @@
 		public function handleUpdate(array $raw): void {
 			
 			if (isset($this->channels[$raw['id']])) {
-				$oldName = $this->channels[$raw['id']]->name;
 				$this->channels[$raw['id']]->update($raw['name'], $raw['type']);
-				$this->bot->logger->info("User changed their name from {$oldName} to {$this->channels[$raw['id']]->name}");
+				$this->bot->logger->info("Channel updated: {$this->channels[$raw['id']]->name}");
 				
 			}
 			

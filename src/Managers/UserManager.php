@@ -54,7 +54,7 @@
 			
 			if (isset($this->users[$raw['id']])) {
 				$this->users[$raw['id']]->updateStatus('online');
-				$this->bot->logger->info("User came online: {$raw['id']}");
+				$this->bot->logger->info("User came online: {$this->users[$raw['id']]->name}");
 			}
 			
 		}
