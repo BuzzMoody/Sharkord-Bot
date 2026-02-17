@@ -29,6 +29,9 @@
 	class Sharkord {
 		
 		use EventEmitterTrait;
+		
+		public ChannelManager $channels;
+		public UserManager $users;
 
 		/**
 		 * Sharkord constructor.
@@ -42,8 +45,6 @@
 		 * @param array								$rpcHandlers  Callbacks for pending RPC requests.
 		 * @param int								$rpcCounter   Counter for generating unique RPC IDs.
 		 * @param array<string, CommandInterface>	$commands     Registry of available commands, indexed by command name.
-		 * @param ChannelManager					$channels     Cache of Channel models indexed by ID.
-		 * @param UserManager						$users        Cache of User models indexed by ID.
 		 */
 		public function __construct(
 			private array $config,
@@ -54,9 +55,7 @@
 			private string $token = '',
 			private array $rpcHandlers = [],
 			private int $rpcCounter = 0,
-			private array $commands = [],
-			public ChannelManager $channels,
-			public UserManager $users
+			private array $commands = []
 		) {
 
 			$this->loop = $this->loop ?? Loop::get();
