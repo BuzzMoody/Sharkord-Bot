@@ -12,7 +12,11 @@
 	use Ratchet\Client\WebSocket;
 	use Psr\Http\Message\ResponseInterface;
 	use Psr\Log\LoggerInterface;
-	use Psr\Log\NullLogger;
+	use Monolog\Logger;
+	use Monolog\Handler\StreamHandler;
+	use Monolog\Formatter\LineFormatter;
+	use Monolog\Level;
+	use Monolog\ErrorHandler;
 	use Sharkord\Models\User;
 	use Sharkord\Models\Channel;
 	use Sharkord\Models\Message;
@@ -34,6 +38,7 @@
 		
 		public ChannelManager $channels;
 		public UserManager $users;
+		public LoggerInterface $logger;
 
 		/**
 		 * Sharkord constructor.
@@ -58,13 +63,28 @@
 			private array $rpcHandlers = [],
 			private int $rpcCounter = 0,
 			private array $commands = [],
-			private ?LoggerInterface $logger = null
+			public ?LoggerInterface $logger = null
 		) {
 
 			$this->loop = $this->loop ?? Loop::get();
 			$this->browser = $this->browser ?? new Browser($this->loop);
 			$this->connector = $this->connector ?? new Connector($this->loop);
-			$this->logger = $this->logger ?? new NullLogger();
+			
+			if ($logger === null) {
+				$outputFormat = null;
+				$dateFormat = "d/m h:i:sA";
+				
+				$formatter = new LineFormatter($outputFormat, $dateFormat, false, true);
+				$streamHandler = new StreamHandler('php://stdout', Level::Debug);
+				$streamHandler->setFormatter($formatter);
+				
+				$logger = new Logger('sharkord');
+				$logger->pushHandler($streamHandler);
+				
+				// Optional: Register as global error handler
+				ErrorHandler::register($logger);
+			}
+			$this->logger = $logger;
 			
 			$this->channels = new ChannelManager($this);
 			$this->users = new UserManager();
