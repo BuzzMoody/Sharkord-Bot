@@ -39,11 +39,11 @@
 		 * @param Connector|null					$connector    The Ratchet Connector for WebSocket connections.
 		 * @param WebSocket|null					$conn         The active WebSocket connection instance.
 		 * @param string							$token        The authentication token received after login.
-		 * @param array<int, User>					$users        Cache of User models indexed by ID.
-		 * @param array<int, Channel>				$channels     Cache of Channel models indexed by ID.
 		 * @param array								$rpcHandlers  Callbacks for pending RPC requests.
 		 * @param int								$rpcCounter   Counter for generating unique RPC IDs.
 		 * @param array<string, CommandInterface>	$commands     Registry of available commands, indexed by command name.
+		 * @param ChannelManager					$channels     Cache of Channel models indexed by ID.
+		 * @param UserManager						$users        Cache of User models indexed by ID.
 		 */
 		public function __construct(
 			private array $config,
@@ -52,8 +52,6 @@
 			private ?Connector $connector = null,
 			private ?WebSocket $conn = null,
 			private string $token = '',
-			private array $users = [],
-			private array $channels = [],
 			private array $rpcHandlers = [],
 			private int $rpcCounter = 0,
 			private array $commands = [],
