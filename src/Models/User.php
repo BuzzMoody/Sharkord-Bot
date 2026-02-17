@@ -25,7 +25,7 @@
 			public int $id,
 			public string $name,
 			public string $status,
-			public array $roleIds = [],
+			public array $roleIds = []
 		) {}
 
 		/**
