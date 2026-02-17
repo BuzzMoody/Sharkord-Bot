@@ -75,12 +75,12 @@ Create a file named `bot.php` (or `index.php`) and add the following code. This 
 	# $bot->loadCommands(__DIR__ . '/Commands');
 
 	$bot->on('ready', function() use ($bot) {
-		echo "Logged in and ready to chat!\n";
+		$bot->logger->notice("Logged in and ready to chat!");
 	});
 
 	$bot->on('message', function(Message $message) use ($bot) {
 		
-		$bot->logger->info(sprintf(
+		$bot->logger->notice(sprintf(
 			"[#%s] %s: %s",
 			$message->channel->name,
 			$message->user->name,

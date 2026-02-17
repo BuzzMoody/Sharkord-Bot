@@ -29,12 +29,12 @@
 	# $bot->loadCommands(__DIR__ . '/Commands');
 
 	$bot->on('ready', function() use ($bot) {
-		$bot->logger->info("Logged in and ready to chat!");
+		$bot->logger->notice("Logged in and ready to chat!");
 	});
 
 	$bot->on('message', function(Message $message) use ($bot) {
 		
-		$bot->logger->info(sprintf(
+		$bot->logger->notice(sprintf(
 			"[#%s] %s: %s",
 			$message->channel->name,
 			$message->user->name,
