@@ -87,6 +87,12 @@ jobs:
           # Delete dev branch if it exists (remotely)
           git push origin --delete dev || true
           
+          # Delete local dev branch if it exists
+          git branch -D dev || true
+          
+          # Ensure we're on main branch
+          git checkout main
+          
           # Create new dev branch from current main
           git checkout -b dev
           
