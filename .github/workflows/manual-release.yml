@@ -81,3 +81,14 @@ jobs:
           tag_name: ${{ steps.bump_version.outputs.NEW_TAG }}
           name: Release ${{ steps.bump_version.outputs.NEW_TAG }}
           generate_release_notes: true
+
+      - name: Reset dev branch
+        run: |
+          # Delete dev branch if it exists (remotely)
+          git push origin --delete dev || true
+          
+          # Create new dev branch from current main
+          git checkout -b dev
+          
+          # Push new dev branch to remote
+          git push origin dev
