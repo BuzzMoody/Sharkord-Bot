@@ -247,11 +247,11 @@
 			$subscriptions = [
 				'messages.onNew'    => fn($d) => $this->onNewMessage($d),
 				'channels.onCreate' => fn($d) => $this->channels->handleCreate($d),
-				'channels.onDelete' => fn($d) => $this->channels->handleDelete($d['id']),
+				'channels.onDelete' => fn($d) => $this->channels->handleDelete($d['data']),
 				'channels.onUpdate' => fn($d) => $this->channels->handleUpdate($d),
 				'users.onCreate'    => fn($d) => $this->users->handleCreate($d),
 				'users.onJoin'      => fn($d) => $this->users->handleJoin($d),
-				'users.onLeave'     => fn($d) => $this->users->handleLeave($d['id']),
+				'users.onLeave'     => fn($d) => $this->users->handleLeave($d['data']),
 				'users.onUpdate'    => fn($d) => $this->users->handleUpdate($d)
 			];
 
