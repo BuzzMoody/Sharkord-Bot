@@ -37,6 +37,7 @@
 			
 			$channel = new Channel($raw['id'], $raw['name'], $raw['type'], $this->bot);
 			$this->channels[$raw['id']] = $channel;
+			$this->bot->logger->info("New channel created: {$channel->name}");
 			
 		}
 
@@ -48,7 +49,10 @@
 		 */
 		public function handleDelete(int $id): void {
 			
-			unset($this->channels[$id]);
+			if (isset($this->channels[$id])) {
+				$this->bot->logger->info("Channel deleted: {$this->channels[$id]->name}");
+				unset($this->channels[$id]);
+			}
 			
 		}
 
@@ -62,6 +66,8 @@
 			
 			if (isset($this->channels[$raw['id']])) {
 				$this->channels[$raw['id']]->update($raw['name'], $raw['type']);
+				$this->bot->logger->info("Channel updated: {$this->channels[$raw['id']]->name}");
+				
 			}
 			
 		}

@@ -4,6 +4,7 @@
 
 	namespace Sharkord\Managers;
 
+	use Sharkord\Sharkord;
 	use Sharkord\Models\User;
 
 	/**
@@ -21,6 +22,7 @@
 		 * @param array<int, User> Cache of User models indexed by ID.
 		 */
 		public function __construct(
+			private Sharkord $bot,
 			private array $users = []
 		) {}
 
@@ -38,6 +40,8 @@
 			$user = new User($raw['id'], $raw['name'], $status, $raw['roleIds'] ?? []);
 			$this->users[$raw['id']] = $user;
 			
+			$this->bot->logger->info("User cached: {$user->name} ({$user->id} / {$user->status})");
+			
 		}
 
 		/**
@@ -50,6 +54,7 @@
 			
 			if (isset($this->users[$raw['id']])) {
 				$this->users[$raw['id']]->updateStatus('online');
+				$this->bot->logger->info("User came online: {$this->users[$raw['id']]->name}");
 			}
 			
 		}
@@ -64,6 +69,7 @@
 			
 			if (isset($this->users[$id])) {
 				$this->users[$id]->updateStatus('offline');
+				$this->bot->logger->info("User went offline: {$this->users[$id]->name}");
 			}
 			
 		}
@@ -77,7 +83,9 @@
 		public function handleUpdate(array $raw): void {
 			
 			if (isset($this->users[$raw['id']])) {
+				$oldName = $this->users[$raw['id']]->name;
 				$this->users[$raw['id']]->updateName($raw['name']);
+				$this->bot->logger->info("User changed their name from {$oldName} to {$this->users[$raw['id']]->name}");
 			}
 			
 		}
@@ -91,6 +99,16 @@
 		public function get(int $id): ?User {
 			
 			return $this->users[$id] ?? null;
+			
+		}
+		
+		/**
+		 * Returns the count of cached users.
+		 * * @return int
+		 */
+		public function count(): int {
+			
+			return count($this->users);
 			
 		}
 
