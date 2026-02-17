@@ -38,7 +38,7 @@
 		
 		public ChannelManager $channels;
 		public UserManager $users;
-		public LoggerInterface $logger = null;
+		public LoggerInterface $logger;
 
 		/**
 		 * Sharkord constructor.
@@ -62,7 +62,8 @@
 			private string $token = '',
 			private array $rpcHandlers = [],
 			private int $rpcCounter = 0,
-			private array $commands = []
+			private array $commands = [],
+			?LoggerInterface $logger = null
 		) {
 
 			$this->loop = $this->loop ?? Loop::get();
