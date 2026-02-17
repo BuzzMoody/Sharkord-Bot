@@ -1,8 +1,6 @@
 <?php
 
 	namespace Sharkord\Models;
-	
-	use Sharkord\Sharkord;
 
 	/**
 	 * Class User
