@@ -64,7 +64,7 @@
 			private int $rpcCounter = 0,
 			private array $commands = [],
 			?LoggerInterface $logger = null,
-			Level $logLevel = Level::Notice
+			string $logLevel = 'Notice'
 		) {
 
 			$this->loop = $this->loop ?? Loop::get();
@@ -72,6 +72,9 @@
 			$this->connector = $this->connector ?? new Connector($this->loop);
 			
 			if ($logger === null) {
+				
+				$level = Level::fromName(ucfirst(strtolower($logLevel)));
+				
 				$outputFormat = null;
 				$dateFormat = "d/m h:i:sA";
 				
