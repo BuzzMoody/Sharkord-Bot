@@ -63,7 +63,8 @@
 			private array $rpcHandlers = [],
 			private int $rpcCounter = 0,
 			private array $commands = [],
-			?LoggerInterface $logger = null
+			?LoggerInterface $logger = null,
+			Level $logLevel = Level::Notice
 		) {
 
 			$this->loop = $this->loop ?? Loop::get();
@@ -75,7 +76,7 @@
 				$dateFormat = "d/m h:i:sA";
 				
 				$formatter = new LineFormatter($outputFormat, $dateFormat, false, true);
-				$streamHandler = new StreamHandler('php://stdout', Level::Debug);
+				$streamHandler = new StreamHandler('php://stdout', $logLevel);
 				$streamHandler->setFormatter($formatter);
 				
 				$logger = new Logger('sharkord');
@@ -114,7 +115,7 @@
 		private function authenticate(): void {
 
 			$authUrl = "https://{$this->config['host']}/login";
-			$this->logger->debug("Authenticating...");
+			$this->logger->info("Authenticating...");
 
 			$this->browser->post(
 				$authUrl,
@@ -128,7 +129,7 @@
 					$data = json_decode((string)$response->getBody(), true, 512, JSON_THROW_ON_ERROR);
 					$this->token = $data['token'] ?? throw new \RuntimeException("No token in response");
 
-					$this->logger->debug("Auth Success.");
+					$this->logger->info("Auth Success.");
 					$this->connectToWebSocket();
 				},
 				function (\Exception $e) {
@@ -150,7 +151,7 @@
 
 			($this->connector)($wsUrl, [], $headers)->then(
 				function (WebSocket $conn) {
-					$this->logger->debug("WebSocket Connected.");
+					$this->logger->info("WebSocket Connected.");
 					$this->conn = $conn;
 
 					// Attach listeners
@@ -188,7 +189,7 @@
 				"data" => ["token" => $this->token]
 			]));
 
-			$this->logger->debug("Sending Handshake Request...");
+			$this->logger->info("Sending Handshake Request...");
 
 			$this->sendRpc(
 				"query",
@@ -212,7 +213,7 @@
 				return;
 			}
 
-			$this->logger->debug("Handshake OK. Joining Server...");
+			$this->logger->info("Handshake OK. Joining Server...");
 
 			$this->sendRpc("query",
 				[
@@ -268,7 +269,7 @@
 				$this->users->handleCreate($u);
 			}
 
-			$this->logger->debug(sprintf("Joined. Cached %d channels, %d users.", $this->channels->count(), $this->users->count()));
+			$this->logger->info(sprintf("Joined. Cached %d channels, %d users.", $this->channels->count(), $this->users->count()));
 
 			// Create server event subscriptions
 			$subscriptions = [
@@ -289,7 +290,7 @@
 					$type = $response['result']['type'] ?? '';
 
 					if ($type === 'started') {
-						$this->logger->debug("Subscribed to $path");
+						$this->logger->info("Subscribed to $path");
 					}
 					elseif ($type === 'data') {
 						$handler($response['result']['data']);
@@ -334,7 +335,7 @@
 		public function registerCommand(CommandInterface $command): void {
 			
 			$this->commands[$command->getName()] = $command;
-			$this->logger->debug("Registered command: " . $command->getName());
+			$this->logger->info("Registered command: " . $command->getName());
 			
 		}
 		
@@ -384,7 +385,7 @@
 			foreach ($this->commands as $command) {
 				// Check if the message matches the command's regex pattern
 				if (preg_match($command->getPattern(), $commandName, $matches)) {
-					$this->logger->debug("Matched command: $commandName");
+					$this->logger->info("Matched command: $commandName");
 					
 					// Pass the matches array (capture groups) to the handler
 					$command->handle($message, $args, $matches);

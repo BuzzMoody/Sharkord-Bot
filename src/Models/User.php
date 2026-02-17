@@ -1,6 +1,8 @@
 <?php
 
 	namespace Sharkord\Models;
+	
+	use Sharkord\Sharkord;
 
 	/**
 	 * Class User
@@ -23,7 +25,8 @@
 			public int $id,
 			public string $name,
 			public string $status,
-			public array $roleIds = []
+			public array $roleIds = [],
+			private Sharkord $bot
 		) {}
 
 		/**
