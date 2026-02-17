@@ -93,6 +93,16 @@
 			return $this->users[$id] ?? null;
 			
 		}
+		
+		/**
+		 * Returns the count of cached users.
+		 * * @return int
+		 */
+		public function count(): int {
+			
+			return count($this->users);
+			
+		}
 
 	}
 	

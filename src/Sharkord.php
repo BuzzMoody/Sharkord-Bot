@@ -11,6 +11,8 @@
 	use Ratchet\Client\Connector;
 	use Ratchet\Client\WebSocket;
 	use Psr\Http\Message\ResponseInterface;
+	use Psr\Log\LoggerInterface;
+	use Psr\Log\NullLogger;
 	use Sharkord\Models\User;
 	use Sharkord\Models\Channel;
 	use Sharkord\Models\Message;
@@ -55,15 +57,18 @@
 			private string $token = '',
 			private array $rpcHandlers = [],
 			private int $rpcCounter = 0,
-			private array $commands = []
+			private array $commands = [],
+			private ?LoggerInterface $logger = null
 		) {
 
 			$this->loop = $this->loop ?? Loop::get();
 			$this->browser = $this->browser ?? new Browser($this->loop);
 			$this->connector = $this->connector ?? new Connector($this->loop);
+			$this->logger = $this->logger ?? new NullLogger();
+			
 			$this->channels = new ChannelManager($this);
 			$this->users = new UserManager();
-
+			
 		}
 
 		/**
@@ -75,7 +80,7 @@
 		 */
 		public function run(): void {
 
-			echo "[INFO] Starting Bot...\n";
+			$this->logger->info("Starting Bot...");
 			$this->authenticate();
 			$this->loop->run();
 
@@ -89,7 +94,7 @@
 		private function authenticate(): void {
 
 			$authUrl = "https://{$this->config['host']}/login";
-			echo "[DEBUG] Authenticating...\n";
+			$this->logger->debug("Authenticating...");
 
 			$this->browser->post(
 				$authUrl,
@@ -103,11 +108,11 @@
 					$data = json_decode((string)$response->getBody(), true, 512, JSON_THROW_ON_ERROR);
 					$this->token = $data['token'] ?? throw new \RuntimeException("No token in response");
 
-					echo "[DEBUG] Auth Success.\n";
+					$this->logger->debug("Auth Success.");
 					$this->connectToWebSocket();
 				},
 				function (\Exception $e) {
-					echo "[ERROR] Auth Failed: " . $e->getMessage() . "\n";
+					$this->logger->error("Auth Failed: " . $e->getMessage());
 				}
 			);
 
@@ -121,17 +126,17 @@
 		private function connectToWebSocket(): void {
 			
 			$wsUrl = "wss://{$this->config['host']}/?connectionParams=1";
-			$headers = ['Host' => $this->config['host'], 'User-Agent' => 'Sharkord-Bot-v1'];
+			$headers = ['Host' => $this->config['host'], 'User-Agent' => 'Sharkord ReactPHP Bot (https://github.com/BuzzMoody/Sharkord-Bot)'];
 
 			($this->connector)($wsUrl, [], $headers)->then(
 				function (WebSocket $conn) {
-					echo "[DEBUG] WebSocket Connected.\n";
+					$this->logger->debug("WebSocket Connected.");
 					$this->conn = $conn;
 
 					// Attach listeners
 					$conn->on('message', fn($msg) => $this->handleMessage((string)$msg));
 					$conn->on('close', function($code, $reason) {
-						echo "[WARN] Connection closed ({$code}). Reconnecting in 5s...\n";
+						$this->logger->warning("Connection closed ({$code}). Reconnecting in 5s...");
 						$this->loop->addTimer(5, fn() => $this->authenticate()); // Restart auth flow
 					});
 
@@ -139,8 +144,8 @@
 					$this->performHandshake();
 				},
 				function (\Exception $e) {
-					echo "[ERROR] WS Connection Failed: " . $e->getMessage() . "\n";
-					echo "[INFO] Retrying in 5s...\n";
+					$this->logger->error("WS Connection Failed: " . $e->getMessage());
+					$this->logger->info("Retrying in 5s...");
 					$this->loop->addTimer(5, fn() => $this->authenticate());
 				}
 			);
@@ -163,7 +168,7 @@
 				"data" => ["token" => $this->token]
 			]));
 
-			echo "[DEBUG] Sending Handshake Request...\n";
+			$this->logger->debug("Sending Handshake Request...");
 
 			$this->sendRpc(
 				"query",
@@ -183,11 +188,11 @@
 
 			$hash = $data['result']['data']['handshakeHash'] ?? null;
 			if (!$hash) {
-				echo "[ERROR] Missing handshake hash.\n";
+				$this->logger->error("Missing handshake hash.");
 				return;
 			}
 
-			echo "[DEBUG] Handshake OK. Joining Server...\n";
+			$this->logger->debug("Handshake OK. Joining Server...");
 
 			$this->sendRpc("query",
 				[
@@ -213,6 +218,8 @@
 				return; // Ignore malformed JSON
 			}
 
+			$this->logger->debug("Payload: $payload");
+			
 			$id = $data['id'] ?? null;
 
 			if ($id && isset($this->rpcHandlers[$id])) {
@@ -241,7 +248,7 @@
 				$this->users->handleCreate($u);
 			}
 
-			echo "[DEBUG] Joined. Cached ".$this->channels->count()." channels.\n";;
+			$this->logger->debug(sprintf("Joined. Cached %d channels, %d users.", $this->channels->count(), $this->users->count()));
 
 			// Create server event subscriptions
 			$subscriptions = [
@@ -262,7 +269,7 @@
 					$type = $response['result']['type'] ?? '';
 
 					if ($type === 'started') {
-						echo "[DEBUG] Subscribed to $path successfully.\n";
+						$this->logger->debug("Subscribed to $path");
 					}
 					elseif ($type === 'data') {
 						$handler($response['result']['data']);
@@ -307,7 +314,7 @@
 		public function registerCommand(CommandInterface $command): void {
 			
 			$this->commands[$command->getName()] = $command;
-			echo "[INFO] Registered command: !{$command->getName()} (Pattern: {$command->getPattern()})\n";
+			$this->logger->debug("Registered command: " . $command->getName());
 			
 		}
 		
@@ -320,23 +327,17 @@
 		 */
 		public function loadCommands(string $directory, string $namespace = ''): void {
 			
-			// Remove trailing slashes from namespace if present
 			$namespace = rtrim($namespace, '\\');
 
 			foreach (glob($directory . '/*.php') as $file) {
 				
-				// Manually include the file so Composer doesn't need to know about it
 				require_once $file;
-
 				$className = basename($file, '.php');
-				
-				// Construct full class name (e.g. "Ping" or "MyBot\Commands\Ping")
 				$fullClassName = $namespace ? $namespace . '\\' . $className : $className;
 
 				if (class_exists($fullClassName)) {
 					$reflection = new \ReflectionClass($fullClassName);
 					
-					// Validate and register
 					if ($reflection->implementsInterface(CommandInterface::class) && !$reflection->isAbstract()) {
 						$this->registerCommand(new $fullClassName());
 					}
@@ -363,7 +364,7 @@
 			foreach ($this->commands as $command) {
 				// Check if the message matches the command's regex pattern
 				if (preg_match($command->getPattern(), $commandName, $matches)) {
-					echo "[DEBUG] Matched command: {$command->getName()}\n";
+					$this->logger->debug("Matched command: $commandName");
 					
 					// Pass the matches array (capture groups) to the handler
 					$command->handle($message, $args, $matches);
