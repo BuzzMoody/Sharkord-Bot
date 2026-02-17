@@ -14,7 +14,8 @@
 			'identity' 	=> $_ENV['CHAT_USERNAME'],
 			'password'	=> $_ENV['CHAT_PASSWORD'],
 			'host'		=> $_ENV['CHAT_HOST'],
-		]
+		],
+		logLevel: 'Notice'
 	);
 	
 	/*
