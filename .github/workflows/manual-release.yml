@@ -90,11 +90,13 @@ jobs:
           # Delete local dev branch if it exists
           git branch -D dev || true
           
-          # Ensure we're on main branch
+          # Ensure we're on the latest main branch
+          git fetch origin main
           git checkout main
+          git reset --hard origin/main
           
           # Create new dev branch from current main
           git checkout -b dev
           
-          # Push new dev branch to remote
-          git push origin dev
+          # Push new dev branch to remote with tracking
+          git push -u origin dev
