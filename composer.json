@@ -1,22 +1,22 @@
 {
-    "name": "buzzmoody/sharkordbot",
-    "description": "A ReactPHP Chatbot Framework for Sharkord",
-    "type": "library",
-	"version": "1.2",
-    "require": {
-        "php": "^8.5",
-        "react/event-loop": "^1.6",
-        "react/http": "^1.11",
-        "ratchet/pawl": "^0.4.3",
-		"vlucas/phpdotenv": "^5.6.3"
-    },
-    "autoload": {
-        "psr-4": {
-            "Sharkord\\": "src/"
-        }
-    },
-    "config": {
-        "process-timeout": 0,
-        "sort-packages": true
+  "name": "buzzmoody/sharkordbot",
+  "description": "A ReactPHP Chatbot Framework for Sharkord",
+  "type": "library",
+  "version": "2.0.0",
+  "require": {
+    "php": "^8.5",
+    "react/event-loop": "^1.6",
+    "react/http": "^1.11",
+    "ratchet/pawl": "^0.4.3",
+    "vlucas/phpdotenv": "^5.6.3"
+  },
+  "autoload": {
+    "psr-4": {
+      "Sharkord\\": "src/"
     }
+  },
+  "config": {
+    "process-timeout": 0,
+    "sort-packages": true
+  }
 }
