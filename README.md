@@ -21,7 +21,7 @@ Sharkord Bot is a lightweight, asynchronous, heavily vibe-coded [Sharkord](https
 Install Sharkord into your project using Composer:
 
 ```bash
-composer require buzzmoody/sharkord
+composer require buzzmoody/sharkordbot
 ```
 
 ## Getting Started
