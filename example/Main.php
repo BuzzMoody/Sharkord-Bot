@@ -9,6 +9,10 @@
 	use Sharkord\Sharkord;
 	use Sharkord\Models\Message;
 
+	/*
+	* Supports pulling environment variables from .env file as well as Docker container.
+	* Hardcode your values at your own peril
+	*/
 	$bot = new Sharkord(
 		config: [
 			'identity' 	=> $_ENV['CHAT_USERNAME'],
@@ -25,12 +29,12 @@
 	# $bot->loadCommands(__DIR__ . '/Commands');
 
 	$bot->on('ready', function() use ($bot) {
-		$bot->logger->info("Logged in and ready to chat!");
+		$bot->logger->notice("Logged in and ready to chat!");
 	});
 
 	$bot->on('message', function(Message $message) use ($bot) {
 		
-		$bot->logger->info(sprintf(
+		$bot->logger->notice(sprintf(
 			"[#%s] %s: %s",
 			$message->channel->name,
 			$message->user->name,
