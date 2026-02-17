@@ -1,0 +1,52 @@
+name: Manual Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_type:
+        description: 'Version to bump (e.g. 1.1.0, minor, patch, major)'
+        required: true
+        default: 'patch'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Configure Git User
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Bump Version & Push Tag
+        id: bump_version
+        run: |
+          # This command updates package.json, commits, and tags locally
+          npm version ${{ inputs.version_type }} -m "release: bump version to %s"
+          
+          # Push the new commit and the new tag to GitHub
+          git push --follow-tags
+          
+          # Extract the new version number (e.g., v1.1.0) to use in the next step
+          echo "NEW_TAG=$(git describe --abbrev=0 --tags)" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.bump_version.outputs.NEW_TAG }}
+          name: Release ${{ steps.bump_version.outputs.NEW_TAG }}
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
