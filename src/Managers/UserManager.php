@@ -40,7 +40,7 @@
 			$user = new User($raw['id'], $raw['name'], $status, $raw['roleIds'] ?? []);
 			$this->users[$raw['id']] = $user;
 			
-			$this->bot->logger->info("User cached: {$user->name} ({$user->id})");
+			$this->bot->logger->info("User cached: {$user->name} ({$user->id} / {$user->status})");
 			
 		}
 
