@@ -26,7 +26,6 @@
 			public string $name,
 			public string $status,
 			public array $roleIds = [],
-			private Sharkord $bot
 		) {}
 
 		/**
