@@ -13,6 +13,25 @@ A lightweight, event-driven, heavily vibe-coded PHP chatbot built with **ReactPH
 
 ---
 
+## 🚢 Docker Container Installation
+
+The most ideal way to run Sharkord Bot is in a Docker container. I have created (Sharkord-Bot-Docker)[https://github.com/BuzzMoody/Sharkord-Bot-Docker] with instructions, but a quick exmaple of Docker Compose:
+
+```yaml
+services:
+  bot:
+    image: ghcr.io/buzzmoody/sharkord-bot:latest
+    container_name: sharkord-bot
+    restart: always
+    environment:
+      - CHAT_USERNAME=your_bot_name
+      - CHAT_PASSWORD=your_password
+      - CHAT_HOST=your.domain.tld
+	  # - REPO_URL=your_own_sharkord_bot_repo
+```
+
+---
+
 ## 🛠️ Installation
 
 ### 1. Requirements

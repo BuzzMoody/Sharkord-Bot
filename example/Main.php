@@ -1,5 +1,7 @@
 <?php
 
+	declare(strict_types=1);
+	
 	error_reporting(E_ALL);
 
 	require __DIR__ . '/vendor/autoload.php';
@@ -13,7 +15,11 @@
 		'host'		=> $_ENV['CHAT_HOST'],
 	]);
 	
-	$bot->loadCommands(__DIR__ . '/src/Commands');
+	/*
+	* If you want to use dynamically loaded commands as per the examples directory
+	* uncomment the below along with the preg_match if statement further down
+	*/
+	# $bot->loadCommands(__DIR__ . '/Commands');
 
 	$bot->on('ready', function() use ($bot) {
 		echo "Logged in and ready to chat!\n";
@@ -29,9 +35,15 @@
 			$message->content
 		);
 		
-		if (preg_match('/^!([a-zA-Z]{2,})(?:\s+(.*))?$/', $message->content, $matches)) {
-			$bot->handleCommand($message, $matches);
-		}
+		/*
+		* Uncomment if you're using dynamically loaded Commands.
+		* Make sure to delete the ping/pong if statement.
+		*/
+		# if (preg_match('/^!([a-zA-Z]{2,})(?:\s+(.*))?$/', $message->content, $matches)) {
+		#	 $bot->handleCommand($message, $matches);
+		# }
+		
+		if ($message->content == '!ping') $message->channel->sendMessage('Pong!');
 		
 	});
 

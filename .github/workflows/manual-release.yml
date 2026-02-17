@@ -1,12 +1,17 @@
-name: Manual Release
+name: Manual Release (PHP)
 
 on:
   workflow_dispatch:
     inputs:
       version_type:
-        description: 'Version to bump (e.g. 1.1.0, minor, patch, major)'
+        description: 'Version bump type (major, minor, patch)'
         required: true
         default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
 
 permissions:
   contents: write
@@ -20,27 +25,55 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
         with:
-          node-version: '20'
+          php-version: '8.2' # Adjust to your PHP version
 
       - name: Configure Git User
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Bump Version & Push Tag
+      - name: Bump Version in composer.json
         id: bump_version
         run: |
-          # This command updates package.json, commits, and tags locally
-          npm version ${{ inputs.version_type }} -m "release: bump version to %s"
+          # 1. Get current version from composer.json
+          CURRENT_VERSION=$(jq -r .version composer.json)
+          echo "Current version: $CURRENT_VERSION"
           
-          # Push the new commit and the new tag to GitHub
-          git push --follow-tags
+          # 2. Calculate new version using a simple script
+          # Break version into array (e.g., 1.0.0 -> [1, 0, 0])
+          IFS='.' read -r -a parts <<< "$CURRENT_VERSION"
+          major="${parts[0]}"
+          minor="${parts[1]}"
+          patch="${parts[2]}"
           
-          # Extract the new version number (e.g., v1.1.0) to use in the next step
-          echo "NEW_TAG=$(git describe --abbrev=0 --tags)" >> $GITHUB_OUTPUT
+          if [ "${{ inputs.version_type }}" == "major" ]; then
+            major=$((major + 1))
+            minor=0
+            patch=0
+          elif [ "${{ inputs.version_type }}" == "minor" ]; then
+            minor=$((minor + 1))
+            patch=0
+          else
+            patch=$((patch + 1))
+          fi
+          
+          NEW_VERSION="$major.$minor.$patch"
+          echo "New version: $NEW_VERSION"
+          
+          # 3. Update composer.json using a temp file
+          jq --arg v "$NEW_VERSION" '.version = $v' composer.json > composer.tmp && mv composer.tmp composer.json
+          
+          # 4. Commit and Tag
+          git add composer.json
+          git commit -m "release: bump version to $NEW_VERSION"
+          git tag "v$NEW_VERSION"
+          git push origin main --tags
+          
+          # 5. Output for next step
+          echo "NEW_TAG=v$NEW_VERSION" >> $GITHUB_OUTPUT
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
@@ -48,5 +81,3 @@ jobs:
           tag_name: ${{ steps.bump_version.outputs.NEW_TAG }}
           name: Release ${{ steps.bump_version.outputs.NEW_TAG }}
           generate_release_notes: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -15,6 +15,8 @@
 	use Sharkord\Models\Channel;
 	use Sharkord\Models\Message;
 	use Sharkord\Commands\CommandInterface;
+	use Sharkord\Managers\ChannelManager;
+	use Sharkord\Managers\UserManager;
 
 	/**
 	 * Class Sharkord
@@ -54,12 +56,16 @@
 			private array $channels = [],
 			private array $rpcHandlers = [],
 			private int $rpcCounter = 0,
-			private array $commands = []
+			private array $commands = [],
+			public ChannelManager $channels,
+			public UserManager $users
 		) {
 
 			$this->loop = $this->loop ?? Loop::get();
 			$this->browser = $this->browser ?? new Browser($this->loop);
 			$this->connector = $this->connector ?? new Connector($this->loop);
+			$this->channels = new ChannelManager($this);
+			$this->users = new UserManager();
 
 		}
 
@@ -232,10 +238,10 @@
 
 			// Hydrate Models efficiently
 			foreach ($raw['channels'] as $c) {
-				$this->channels[$c['id']] = new Channel($c['id'], $c['name'], $c['type'], $this);
+				$this->channels->handleCreate($c);
 			}
 			foreach ($raw['users'] as $u) {
-				$this->users[$u['id']] = new User($u['id'], $u['name'], $u['status'], $u['roleIds']);
+				$this->users->handleCreate($u);
 			}
 
 			echo "[DEBUG] Joined. Cached ".count($this->channels)." channels.\n";
@@ -243,13 +249,13 @@
 			// Create server event subscriptions
 			$subscriptions = [
 				'messages.onNew'    => fn($d) => $this->onNewMessage($d),
-				'channels.onCreate' => fn($d) => $this->onChannelCreate($d),
-				'channels.onDelete' => fn($d) => $this->onChannelDelete($d),
-				'channels.onUpdate' => fn($d) => $this->onChannelUpdate($d),
-				'users.onCreate'    => fn($d) => $this->onUserCreate($d),
-				'users.onJoin'      => fn($d) => $this->onUserJoin($d),
-				'users.onLeave'     => fn($d) => $this->onUserLeave($d),
-				'users.onUpdate'    => fn($d) => $this->onUserUpdate($d)
+				'channels.onCreate' => fn($d) => $this->channels->handleCreate($d),
+				'channels.onDelete' => fn($d) => $this->channels->handleDelete($d['id']),
+				'channels.onUpdate' => fn($d) => $this->channels->handleUpdate($d),
+				'users.onCreate'    => fn($d) => $this->users->handleCreate($d),
+				'users.onJoin'      => fn($d) => $this->users->handleJoin($d),
+				'users.onLeave'     => fn($d) => $this->users->handleLeave($d['id']),
+				'users.onUpdate'    => fn($d) => $this->users->handleUpdate($d)
 			];
 
 			foreach ($subscriptions as $path => $handler) {
@@ -281,8 +287,8 @@
 		 */
 		private function onNewMessage(array $raw): void {
 
-			$user = $this->users[$raw['userId']] ?? new User($raw['userId'], 'Unknown', 'offline', []);
-			$channel = $this->channels[$raw['channelId']] ?? new Channel($raw['channelId'], 'Unknown', 'TEXT');
+			$user = $this->users->get($raw['userId']) ?? new User($raw['userId'], 'Unknown', 'offline', []);
+			$channel = $this->channels->get($raw['channelId']) ?? new Channel($raw['channelId'], 'Unknown', 'TEXT');
 
 			$message = new Message(
 				(int)$raw['id'],
@@ -292,98 +298,6 @@
 			);
 
 			$this->emit('message', [$message]);
-
-		}
-
-		/**
-		 * Handles a channel creation event.
-		 *
-		 * @param array $raw The raw channel data.
-		 * @return void
-		 */
-		private function onChannelCreate(array $raw): void {
-
-			$this->channels[$raw['id']] = new Channel($raw['id'], $raw['name'], $raw['type'], $this);
-
-		}
-
-		/**
-		 * Handles a channel deletion event.
-		 *
-		 * @param int $id The ID of the deleted channel.
-		 * @return void
-		 */
-		private function onChannelDelete(int $id): void {
-
-			unset($this->channels[$id]);
-
-		}
-
-		/**
-		 * Handles a channel update event.
-		 *
-		 * @param array $raw The raw channel data.
-		 * @return void
-		 */
-		private function onChannelUpdate(array $raw): void {
-
-			if (!isset($this->channels[$raw['id']])) return;
-
-			$this->channels[$raw['id']]->update($raw['name'], $raw['type']);
-
-		}
-
-		/**
-		 * Handles a user creation event.
-		 *
-		 * @param array $raw The raw user data.
-		 * @return void
-		 */
-		private function onUserCreate(array $raw): void {
-
-			$this->users[$raw['id']] = new User($raw['id'], $raw['name'], 'offline', $raw['roleIds']);
-
-		}
-
-		/**
-		 * Handles a user join event.
-		 *
-		 * @param array $raw The raw user data.
-		 * @return void
-		 */
-		private function onUserJoin(array $raw): void {
-
-			if (!isset($this->users[$raw['id']])) return;
-
-			$this->users[$raw['id']]->updateStatus('online');
-
-		}
-
-		/**
-		 * Handles a user leave event.
-		 *
-		 * @param int $id The ID of the user leaving.
-		 * @return void
-		 */
-		private function onUserLeave(int $id): void {
-
-			if (!isset($this->users[$id])) return;
-
-			$this->users[$id]->updateStatus('offline');
-
-		}
-
-		/**
-		 * Handles a user update event.
-		 *
-		 * @param array $raw The raw user data.
-		 * @return void
-		 */
-		private function onUserUpdate(array $raw): void {
-
-			if (!isset($this->users[$raw['id']])) return;
-
-			$this->users[$raw['id']]->updateName($raw['name']);
 
 		}
 		
@@ -403,24 +317,31 @@
 		/**
 		 * Automatically loads and registers all command classes from a specific directory.
 		 *
-		 * This method scans the directory for PHP files, instantiates the classes
-		 * if they implement CommandInterface, and registers them.
-		 *
 		 * @param string $directory The absolute path to the directory containing command classes.
+		 * @param string $namespace (Optional) The namespace used in the command files. Default is empty (global).
 		 * @return void
 		 */
-		public function loadCommands(string $directory): void {
+		public function loadCommands(string $directory, string $namespace = ''): void {
 			
+			// Remove trailing slashes from namespace if present
+			$namespace = rtrim($namespace, '\\');
+
 			foreach (glob($directory . '/*.php') as $file) {
 				
-				$className = 'Sharkord\\Commands\\' . basename($file, '.php');
+				// Manually include the file so Composer doesn't need to know about it
+				require_once $file;
 
-				if (class_exists($className)) {
-					$reflection = new \ReflectionClass($className);
+				$className = basename($file, '.php');
+				
+				// Construct full class name (e.g. "Ping" or "MyBot\Commands\Ping")
+				$fullClassName = $namespace ? $namespace . '\\' . $className : $className;
+
+				if (class_exists($fullClassName)) {
+					$reflection = new \ReflectionClass($fullClassName);
 					
-					// Only instantiate if it implements the interface and is not abstract
+					// Validate and register
 					if ($reflection->implementsInterface(CommandInterface::class) && !$reflection->isAbstract()) {
-						$this->registerCommand(new $className());
+						$this->registerCommand(new $fullClassName());
 					}
 				}
 				

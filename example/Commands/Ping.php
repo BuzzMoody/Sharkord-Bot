@@ -1,7 +1,6 @@
 <?php
 
-	namespace Sharkord\Commands;
-
+	use Sharkord\Commands\CommandInterface;
 	use Sharkord\Models\Message;
 
 	/**
