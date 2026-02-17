@@ -9,6 +9,10 @@
 	use Sharkord\Sharkord;
 	use Sharkord\Models\Message;
 
+	/*
+	* Supports pulling environment variables from .env file as well as Docker container.
+	* Hardcode your values at your own peril
+	*/
 	$bot = new Sharkord(
 		config: [
 			'identity' 	=> $_ENV['CHAT_USERNAME'],

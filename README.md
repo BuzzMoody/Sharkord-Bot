@@ -54,12 +54,19 @@ Create a file named `bot.php` (or `index.php`) and add the following code. This 
 
 	use Sharkord\Sharkord;
 	use Sharkord\Models\Message;
-
-	$bot = new Sharkord([
-		'identity' 	=> $_ENV['CHAT_USERNAME'],
-		'password'	=> $_ENV['CHAT_PASSWORD'],
-		'host'		=> $_ENV['CHAT_HOST'],
-	]);
+	
+	/*
+	* Supports pulling environment variables from .env file as well as Docker container.
+	* Hardcode your values at your own peril.
+	*/
+	$bot = new Sharkord(
+		config: [
+			'identity' 	=> $_ENV['CHAT_USERNAME'],
+			'password'	=> $_ENV['CHAT_PASSWORD'],
+			'host'		=> $_ENV['CHAT_HOST'],
+		],
+		logLevel: 'Notice'
+	);
 	
 	/*
 	* If you want to use dynamically loaded commands as per the examples directory
@@ -73,13 +80,12 @@ Create a file named `bot.php` (or `index.php`) and add the following code. This 
 
 	$bot->on('message', function(Message $message) use ($bot) {
 		
-		echo sprintf(
-			"(%s) [#%s] %s: %s\n",
-			date("d/m h:i:sA"),
+		$bot->logger->info(sprintf(
+			"[#%s] %s: %s",
 			$message->channel->name,
 			$message->user->name,
 			$message->content
-		);
+		));
 		
 		/*
 		* Uncomment if you're using dynamically loaded Commands.
