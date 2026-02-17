@@ -241,7 +241,7 @@
 				$this->users->handleCreate($u);
 			}
 
-			echo "[DEBUG] Joined. Cached ".count($this->channels)." channels.\n";
+			echo "[DEBUG] Joined. Cached ".$this->channels->count()." channels.\n";;
 
 			// Create server event subscriptions
 			$subscriptions = [
