@@ -37,7 +37,7 @@
 			
 			$channel = new Channel($raw['id'], $raw['name'], $raw['type'], $this->bot);
 			$this->channels[$raw['id']] = $channel;
-			$this->bot->logger->info("New channel created: {$raw['name']}");
+			$this->bot->logger->info("New channel created: {$channel->name}");
 			
 		}
 

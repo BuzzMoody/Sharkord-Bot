@@ -91,7 +91,7 @@
 			$this->logger = $logger;
 			
 			$this->channels = new ChannelManager($this);
-			$this->users = new UserManager();
+			$this->users = new UserManager($this);
 			
 		}
 
