@@ -27,7 +27,7 @@
 			public int $id,
 			public string $name,
 			public string $type,
-			public ?int $categoryId = null,
+			public ?int $categoryId,
 			private Sharkord $bot,
 		) {}
 		
