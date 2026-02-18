@@ -23,6 +23,8 @@
 	use Sharkord\Commands\CommandInterface;
 	use Sharkord\Managers\ChannelManager;
 	use Sharkord\Managers\UserManager;
+	use Sharkord\Managers\CategoryManager;
+	use Sharkord\Managers\RoleManager;
 
 	/**
 	 * Class Sharkord
@@ -38,6 +40,8 @@
 		
 		public ChannelManager $channels;
 		public UserManager $users;
+		public CategoryManager $categories;
+		public RoleManager $roles;
 		public LoggerInterface $logger;
 
 		/**
@@ -92,6 +96,8 @@
 			
 			$this->channels = new ChannelManager($this);
 			$this->users = new UserManager($this);
+			$this->categories = new CategoryManager($this);
+			$this->roles = new RoleManager($this);
 			
 		}
 
@@ -158,7 +164,7 @@
 					$this->conn = $conn;
 
 					// Attach listeners
-					$conn->on('message', fn($msg) => $this->handleMessage((string)$msg));
+					$conn->on('message', fn($msg) => $this->handleServerJSON((string)$msg));
 					$conn->on('close', function($code, $reason) {
 						$this->logger->warning("Connection closed ({$code}). Reconnecting in 5s...");
 						$this->loop->addTimer(5, fn() => $this->authenticate()); // Restart auth flow
@@ -229,30 +235,6 @@
 		}
 
 		/**
-		 * Processes incoming WebSocket messages.
-		 *
-		 * @param string $payload The raw message payload.
-		 * @return void
-		 */
-		private function handleMessage(string $payload): void {
-
-			try {
-				$data = json_decode($payload, true, 512, JSON_THROW_ON_ERROR);
-			} catch (\JsonException) {
-				return; // Ignore malformed JSON
-			}
-
-			$this->logger->debug("Payload: $payload");
-			
-			$id = $data['id'] ?? null;
-
-			if ($id && isset($this->rpcHandlers[$id])) {
-				($this->rpcHandlers[$id])($data);
-			}
-
-		}
-
-		/**
 		 * Handles the response after joining the server.
 		 *
 		 * Hydrates the initial cache of users and channels and sets up subscriptions.
@@ -265,6 +247,12 @@
 			$raw = $data['result']['data'];
 
 			// Hydrate Models efficiently
+			foreach ($raw['roles'] ?? [] as $r) {
+				$this->roles->handleCreate($r);
+			}
+			foreach ($raw['categories'] ?? [] as $c) {
+				$this->categories->handleCreate($c);
+			}
 			foreach ($raw['channels'] as $c) {
 				$this->channels->handleCreate($c);
 			}
@@ -277,13 +265,23 @@
 			// Create server event subscriptions
 			$subscriptions = [
 				'messages.onNew'    => fn($d) => $this->onNewMessage($d),
+				
 				'channels.onCreate' => fn($d) => $this->channels->handleCreate($d),
 				'channels.onDelete' => fn($d) => $this->channels->handleDelete($d),
 				'channels.onUpdate' => fn($d) => $this->channels->handleUpdate($d),
+				
 				'users.onCreate'    => fn($d) => $this->users->handleCreate($d),
 				'users.onJoin'      => fn($d) => $this->users->handleJoin($d),
 				'users.onLeave'     => fn($d) => $this->users->handleLeave($d),
-				'users.onUpdate'    => fn($d) => $this->users->handleUpdate($d)
+				'users.onUpdate'    => fn($d) => $this->users->handleUpdate($d),
+				
+				'roles.onCreate'      => fn($d) => $this->roles->handleCreate($d),
+				'roles.onUpdate'      => fn($d) => $this->roles->handleUpdate($d),
+				'roles.onDelete'      => fn($d) => $this->roles->handleDelete($d['id']),
+				
+				'categories.onCreate' => fn($d) => $this->categories->handleCreate($d),
+				'categories.onUpdate' => fn($d) => $this->categories->handleUpdate($d),
+				'categories.onDelete' => fn($d) => $this->categories->handleDelete($d['id']),
 			];
 
 			foreach ($subscriptions as $path => $handler) {
@@ -306,6 +304,30 @@
 			$this->emit('ready');
 
 		}
+		
+		/**
+		 * Processes incoming WebSocket messages.
+		 *
+		 * @param string $payload The raw message payload.
+		 * @return void
+		 */
+		private function handleServerJSON(string $payload): void {
+
+			try {
+				$data = json_decode($payload, true, 512, JSON_THROW_ON_ERROR);
+			} catch (\JsonException) {
+				return; // Ignore malformed JSON
+			}
+
+			$this->logger->debug("Payload: $payload");
+			
+			$id = $data['id'] ?? null;
+
+			if ($id && isset($this->rpcHandlers[$id])) {
+				($this->rpcHandlers[$id])($data);
+			}
+
+		}
 
 		/**
 		 * Handles a new message event.
@@ -315,8 +337,8 @@
 		 */
 		private function onNewMessage(array $raw): void {
 
-			$user = $this->users->get($raw['userId']) ?? new User($raw['userId'], 'Unknown', 'offline', []);
-			$channel = $this->channels->get($raw['channelId']) ?? new Channel($raw['channelId'], 'Unknown', 'TEXT', []);
+			$user = $this->users->get($raw['userId']);
+			$channel = $this->channels->get($raw['channelId']);
 
 			$message = new Message(
 				(int)$raw['id'],

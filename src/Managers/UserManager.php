@@ -34,12 +34,9 @@
 		 */
 		public function handleCreate(array $raw): void {
 			
-			// Default status to offline if not provided
-			$status = $raw['status'] ?? 'offline';
+			$user = User::fromArray($raw, $this->bot);
 			
-			$user = new User($raw['id'], $raw['name'], $status, $raw['roleIds'] ?? []);
 			$this->users[$raw['id']] = $user;
-			
 			$this->bot->logger->info("User cached: {$user->name} ({$user->id} / {$user->status})");
 			
 		}
@@ -75,7 +72,7 @@
 		}
 
 		/**
-		 * Handles updates to user details (e.g., name change).
+		 * Handles updates to user details (e.g., name change, ban, roles).
 		 *
 		 * @param array $raw The raw user data.
 		 * @return void
@@ -83,9 +80,38 @@
 		public function handleUpdate(array $raw): void {
 			
 			if (isset($this->users[$raw['id']])) {
-				$oldName = $this->users[$raw['id']]->name;
-				$this->users[$raw['id']]->updateName($raw['name']);
-				$this->bot->logger->info("User changed their name from {$oldName} to {$this->users[$raw['id']]->name}");
+				
+				$user = $this->users[$raw['id']];
+				
+				if ($user->name !== $raw['name']) {
+					
+					$this->bot->logger->info("User changed their name from {$user->name} to {$raw['name']}");
+					$this->bot->emit('namechange', [$user]);
+					
+				}
+				
+				elseif (!$user->banned && $user->banned !== $raw['banned']) {
+					
+					$this->bot->logger->info("User has been banned: {$user->name}");
+					$this->bot->emit('ban', [$user]);
+					
+				}
+				
+				elseif ($user->banned && $user->banned !== $raw['banned']) {
+				
+					$this->bot->logger->info("User has been unbanned: {$user->name}");
+					$this->bot->emit('unban', [$user]);
+					
+				}
+				
+				else {
+					
+					$this->bot->logger->info("User {$user->name} now has the following roleIds: ".implode(',', $raw['roleIds']));
+					
+				}
+				
+				$user->updateFromArray($raw);
+				
 			}
 			
 		}
