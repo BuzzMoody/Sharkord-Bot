@@ -37,7 +37,7 @@
 			// Default status to offline if not provided
 			$status = $raw['status'] ?? 'offline';
 			
-			$user = new User($raw['id'], $raw['name'], $status, $raw['roleIds'] ?? [], $this->bot);
+			$user = new User($raw['id'], $raw['name'], $status, $raw['banned'], $raw['roleIds'] ?? [], $this->bot);
 			$this->users[$raw['id']] = $user;
 			
 			$this->bot->logger->info("User cached: {$user->name} ({$user->id} / {$user->status})");
