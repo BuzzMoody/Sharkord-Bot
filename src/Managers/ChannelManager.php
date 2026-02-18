@@ -35,7 +35,8 @@
 		 */
 		public function handleCreate(array $raw): void {
 			
-			$channel = new Channel($raw['id'], $raw['name'], $raw['type'], $this->bot, $raw['categoryId'] ?? null);
+			$channel = Channel::fromArray($raw, $this->bot);
+			
 			$this->channels[$raw['id']] = $channel;
 			$this->bot->logger->info("New channel created: {$channel->name}");
 			
@@ -65,7 +66,8 @@
 		public function handleUpdate(array $raw): void {
 			
 			if (isset($this->channels[$raw['id']])) {
-				$this->channels[$raw['id']]->update($raw['name'], $raw['type'], $raw['categoryId'] ?? null);
+				
+				$this->channels[$raw['id']]->updateFromArray($raw);
 				$this->bot->logger->info("Channel updated: {$this->channels[$raw['id']]->name}");
 				
 			}

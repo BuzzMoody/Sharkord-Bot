@@ -31,7 +31,36 @@
 			public array $roleIds = [],
 			private ?Sharkord $bot = null
 		) {}
+		
+		/**
+		 * Factory method to create a User from raw API data.
+		 */
+		public static function fromArray(array $raw, ?Sharkord $bot = null): self {
+			return new self(
+				$raw['id'],
+				$raw['name'],
+				$raw['status'] ?? 'offline',
+				$raw['banned'],
+				$raw['roleIds'] ?? [],
+				$bot
+			);
+		}
 
+		/**
+		 * Updates the user's information.
+		 *
+		 * @param array $raw The raw user data from the server.
+		 * @return void
+		 */
+		public function updateFromArray(array $raw): void {
+			
+			if (isset($raw['name'])) $this->name = $raw['name'];
+			if (isset($raw['status'])) $this->status = $raw['status'];
+			if (isset($raw['banned'])) $this->banned = $raw['banned'];
+			if (isset($raw['roleIds'])) $this->roleIds = $raw['roleIds'];
+			
+		}
+		
 		/**
 		 * Updates the user's status.
 		 *
@@ -41,20 +70,6 @@
 		public function updateStatus(string $status): void {
 
 			$this->status = $status;
-
-		}
-
-		/**
-		 * Updates the user's name.
-		 *
-		 * @param string $name The new name.
-		 * @return void
-		 */
-		public function update(string $name, bool $banned, array $roleIds): void {
-
-			$this->name = $name;
-			$this->banned = $banned;
-			$this->roleIds = $roleIds;
 
 		}
 

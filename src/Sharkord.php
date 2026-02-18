@@ -337,8 +337,8 @@
 		 */
 		private function onNewMessage(array $raw): void {
 
-			$user = $this->users->get($raw['userId']) ?? new User($raw['userId'], 'Unknown', 'offline', [], $this);
-			$channel = $this->channels->get($raw['channelId']) ?? new Channel($raw['channelId'], 'Unknown', 'TEXT', []);
+			$user = $this->users->get($raw['userId']);
+			$channel = $this->channels->get($raw['channelId']);
 
 			$message = new Message(
 				(int)$raw['id'],

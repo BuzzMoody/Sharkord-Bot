@@ -20,16 +20,34 @@
 		 * @param int      $id         The unique channel ID.
 		 * @param string   $name       The channel name.
 		 * @param string   $type       The channel type (e.g., 'TEXT').
-		 * @param Sharkord $bot        Reference to the main bot instance.
 		 * @param int|null $categoryId The ID of the category this channel belongs to.
+		 * @param Sharkord $bot        Reference to the main bot instance.
 		 */
 		public function __construct(
 			public int $id,
 			public string $name,
 			public string $type,
+			public ?int $categoryId = null,
 			private Sharkord $bot,
-			public ?int $categoryId = null
 		) {}
+		
+		public static function fromArray(array $raw, ?Sharkord $bot = null): self {
+			return new self(
+				$raw['id'],
+				$raw['name'],
+				$raw['type'] ?? 'TEXT',
+				$raw['categoryId'] ?? null,
+				$bot
+			);
+		}
+		
+		public function updateFromArray(array $raw): void {
+			
+			if (isset($raw['name'])) $this->name = $raw['name'];
+			if (isset($raw['type'])) $this->type = $raw['type'];
+			if (isset($raw['categoryId'])) $this->categoryId = $raw['categoryId'];
+			
+		}
 
 		/**
 		 * Sends a message to this channel.
@@ -40,22 +58,6 @@
 		public function sendMessage(string $text): void {
 
 			$this->bot->sendMessage($text, $this->id);
-
-		}
-
-		/**
-		 * Updates the channel's details.
-		 *
-		 * @param string   $name       The new channel name.
-		 * @param string   $type       The new channel type.
-		 * @param int|null $categoryId The new category ID.
-		 * @return void
-		 */
-		public function update(string $name, string $type, ?int $categoryId = null): void {
-
-			$this->name = $name;
-			$this->type = $type;
-			$this->categoryId = $categoryId;
 
 		}
 

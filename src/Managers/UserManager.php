@@ -34,12 +34,9 @@
 		 */
 		public function handleCreate(array $raw): void {
 			
-			// Default status to offline if not provided
-			$status = $raw['status'] ?? 'offline';
+			$user = User::fromArray($raw, $this->bot);
 			
-			$user = new User($raw['id'], $raw['name'], $status, $raw['banned'], $raw['roleIds'] ?? [], $this->bot);
 			$this->users[$raw['id']] = $user;
-			
 			$this->bot->logger->info("User cached: {$user->name} ({$user->id} / {$user->status})");
 			
 		}
@@ -113,7 +110,7 @@
 					
 				}
 				
-				$user->update($raw['name'], $raw['banned'], $raw['roleIds'] ?? []);
+				$user->updateFromArray($raw);
 				
 			}
 			
