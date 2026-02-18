@@ -89,21 +89,21 @@
 				if ($user->name !== $raw['name']) {
 					
 					$this->bot->logger->info("User changed their name from {$user->name} to {$raw['name']}");
-					$this->bot->emit('namechange', $user);
+					$this->bot->emit('namechange', [$user]);
 					
 				}
 				
 				elseif (!$user->banned && $user->banned !== $raw['banned']) {
 					
 					$this->bot->logger->info("User has been banned: {$user->name}");
-					$this->bot->emit('ban', $user);
+					$this->bot->emit('ban', [$user]);
 					
 				}
 				
 				elseif ($user->banned && $user->banned !== $raw['banned']) {
 				
 					$this->bot->logger->info("User has been unbanned: {$user->name}");
-					$this->bot->emit('unban', $user);
+					$this->bot->emit('unban', [$user]);
 					
 				}
 				
@@ -118,8 +118,6 @@
 			}
 			
 		}
-		
-		// FIX THIS SHIT ^
 		
 		/**
 		 * Retrieves a user by ID.

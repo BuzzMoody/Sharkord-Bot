@@ -284,7 +284,6 @@
 				$this->users->handleCreate($u);
 			}
 
-
 			$this->logger->info(sprintf("Joined. Cached %d channels, %d users.", $this->channels->count(), $this->users->count()));
 
 			// Create server event subscriptions
