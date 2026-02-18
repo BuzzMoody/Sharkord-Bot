@@ -17,17 +17,19 @@
 		/**
 		 * Channel constructor.
 		 *
-		 * @param int      $id         The unique channel ID.
-		 * @param string   $name       The channel name.
-		 * @param string   $type       The channel type (e.g., 'TEXT').
-		 * @param int|null $categoryId The ID of the category this channel belongs to.
-		 * @param Sharkord $bot        Reference to the main bot instance.
+		 * @param int         $id         The unique channel ID.
+		 * @param string      $name       The channel name.
+		 * @param string      type        The channel type (e.g., 'TEXT').
+		 * @param int|null    $categoryId The ID of the category this channel belongs to.
+		 * @param string|null $topic      The channel's topic.
+		 * @param Sharkord    $bot        Reference to the main bot instance.
 		 */
 		public function __construct(
 			public int $id,
 			public string $name,
 			public string $type,
 			public ?int $categoryId,
+			public ?string $topic,
 			private Sharkord $bot,
 		) {}
 		
@@ -37,6 +39,7 @@
 				$raw['name'],
 				$raw['type'] ?? 'TEXT',
 				$raw['categoryId'] ?? null,
+				$raw['topic'] ?? null,
 				$bot
 			);
 		}
@@ -46,6 +49,7 @@
 			if (isset($raw['name'])) $this->name = $raw['name'];
 			if (isset($raw['type'])) $this->type = $raw['type'];
 			if (isset($raw['categoryId'])) $this->categoryId = $raw['categoryId'];
+			if (isset($raw['topic'])) $this->topic = $raw['topic'];
 			
 		}
 
