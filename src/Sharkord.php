@@ -164,7 +164,7 @@
 					$this->conn = $conn;
 
 					// Attach listeners
-					$conn->on('message', fn($msg) => $this->handleMessage((string)$msg));
+					$conn->on('message', fn($msg) => $this->handleServerJSON((string)$msg));
 					$conn->on('close', function($code, $reason) {
 						$this->logger->warning("Connection closed ({$code}). Reconnecting in 5s...");
 						$this->loop->addTimer(5, fn() => $this->authenticate()); // Restart auth flow
@@ -231,30 +231,6 @@
 				],
 				fn($response) => $this->onJoinResponse($response)
 			);
-
-		}
-
-		/**
-		 * Processes incoming WebSocket messages.
-		 *
-		 * @param string $payload The raw message payload.
-		 * @return void
-		 */
-		private function handleMessage(string $payload): void {
-
-			try {
-				$data = json_decode($payload, true, 512, JSON_THROW_ON_ERROR);
-			} catch (\JsonException) {
-				return; // Ignore malformed JSON
-			}
-
-			$this->logger->debug("Payload: $payload");
-			
-			$id = $data['id'] ?? null;
-
-			if ($id && isset($this->rpcHandlers[$id])) {
-				($this->rpcHandlers[$id])($data);
-			}
 
 		}
 
@@ -326,6 +302,30 @@
 			}
 
 			$this->emit('ready');
+
+		}
+		
+		/**
+		 * Processes incoming WebSocket messages.
+		 *
+		 * @param string $payload The raw message payload.
+		 * @return void
+		 */
+		private function handleServerJSON(string $payload): void {
+
+			try {
+				$data = json_decode($payload, true, 512, JSON_THROW_ON_ERROR);
+			} catch (\JsonException) {
+				return; // Ignore malformed JSON
+			}
+
+			$this->logger->debug("Payload: $payload");
+			
+			$id = $data['id'] ?? null;
+
+			if ($id && isset($this->rpcHandlers[$id])) {
+				($this->rpcHandlers[$id])($data);
+			}
 
 		}
 
