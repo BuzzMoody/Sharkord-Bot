@@ -37,7 +37,7 @@
 			// Default status to offline if not provided
 			$status = $raw['status'] ?? 'offline';
 			
-			$user = new User($raw['id'], $raw['name'], $status, $raw['roleIds'] ?? []);
+			$user = new User($raw['id'], $raw['name'], $status, $raw['roleIds'] ?? [], $this->bot);
 			$this->users[$raw['id']] = $user;
 			
 			$this->bot->logger->info("User cached: {$user->name} ({$user->id} / {$user->status})");
@@ -84,11 +84,13 @@
 			
 			if (isset($this->users[$raw['id']])) {
 				$oldName = $this->users[$raw['id']]->name;
-				$this->users[$raw['id']]->updateName($raw['name']);
+				$this->users[$raw['id']]->update($raw['name'], $raw['banned'], $raw['roleIds'] ?? []);
 				$this->bot->logger->info("User changed their name from {$oldName} to {$this->users[$raw['id']]->name}");
 			}
 			
 		}
+		
+		// FIX THIS SHIT ^
 		
 		/**
 		 * Retrieves a user by ID.

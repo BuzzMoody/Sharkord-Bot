@@ -23,6 +23,8 @@
 	use Sharkord\Commands\CommandInterface;
 	use Sharkord\Managers\ChannelManager;
 	use Sharkord\Managers\UserManager;
+	use Sharkord\Managers\CategoryManager;
+	use Sharkord\Managers\RoleManager;
 
 	/**
 	 * Class Sharkord
@@ -38,6 +40,8 @@
 		
 		public ChannelManager $channels;
 		public UserManager $users;
+		public CategoryManager $categories;
+		public RoleManager $roles;
 		public LoggerInterface $logger;
 
 		/**
@@ -92,6 +96,8 @@
 			
 			$this->channels = new ChannelManager($this);
 			$this->users = new UserManager($this);
+			$this->categories = new CategoryManager($this);
+			$this->roles = new RoleManager($this);
 			
 		}
 
@@ -265,6 +271,12 @@
 			$raw = $data['result']['data'];
 
 			// Hydrate Models efficiently
+			foreach ($raw['roles'] ?? [] as $r) {
+				$this->roles->handleCreate($r);
+			}
+			foreach ($raw['categories'] ?? [] as $c) {
+				$this->categories->handleCreate($c);
+			}
 			foreach ($raw['channels'] as $c) {
 				$this->channels->handleCreate($c);
 			}
@@ -272,18 +284,29 @@
 				$this->users->handleCreate($u);
 			}
 
+
 			$this->logger->info(sprintf("Joined. Cached %d channels, %d users.", $this->channels->count(), $this->users->count()));
 
 			// Create server event subscriptions
 			$subscriptions = [
 				'messages.onNew'    => fn($d) => $this->onNewMessage($d),
+				
 				'channels.onCreate' => fn($d) => $this->channels->handleCreate($d),
 				'channels.onDelete' => fn($d) => $this->channels->handleDelete($d),
 				'channels.onUpdate' => fn($d) => $this->channels->handleUpdate($d),
+				
 				'users.onCreate'    => fn($d) => $this->users->handleCreate($d),
 				'users.onJoin'      => fn($d) => $this->users->handleJoin($d),
 				'users.onLeave'     => fn($d) => $this->users->handleLeave($d),
-				'users.onUpdate'    => fn($d) => $this->users->handleUpdate($d)
+				'users.onUpdate'    => fn($d) => $this->users->handleUpdate($d),
+				
+				'roles.onCreate'      => fn($d) => $this->roles->handleCreate($d),
+				'roles.onUpdate'      => fn($d) => $this->roles->handleUpdate($d),
+				'roles.onDelete'      => fn($d) => $this->roles->handleDelete($d['id']),
+				
+				'categories.onCreate' => fn($d) => $this->categories->handleCreate($d),
+				'categories.onUpdate' => fn($d) => $this->categories->handleUpdate($d),
+				'categories.onDelete' => fn($d) => $this->categories->handleDelete($d['id']),
 			];
 
 			foreach ($subscriptions as $path => $handler) {
@@ -315,7 +338,7 @@
 		 */
 		private function onNewMessage(array $raw): void {
 
-			$user = $this->users->get($raw['userId']) ?? new User($raw['userId'], 'Unknown', 'offline', []);
+			$user = $this->users->get($raw['userId']) ?? new User($raw['userId'], 'Unknown', 'offline', [], $this);
 			$channel = $this->channels->get($raw['channelId']) ?? new Channel($raw['channelId'], 'Unknown', 'TEXT', []);
 
 			$message = new Message(
