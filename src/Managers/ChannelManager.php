@@ -80,7 +80,7 @@
 		 * @param int|string $identifier The channel ID or name.
 		 * @return Channel|null Returns the Channel object or null if not found.
 		 */
-		public function get(int|string $identifier): ?User {
+		public function get(int|string $identifier): ?Channel {
 			
 			if (is_int($identifier)) {
 				
