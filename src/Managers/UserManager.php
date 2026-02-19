@@ -118,14 +118,30 @@
 		}
 		
 		/**
-		 * Retrieves a user by ID.
+		 * Retrieves a user by ID or name.
 		 *
-		 * @param int $id The user ID.
+		 * @param int|string $identifier The user ID or name.
 		 * @return User|null Returns the User object or null if not found.
 		 */
-		public function get(int $id): ?User {
+		public function get(int|string $identifier): ?User {
 			
-			return $this->users[$id] ?? null;
+			if (is_int($identifier)) {
+				
+				return $this->users[$identifier] ?? null;
+				
+			}
+			
+			foreach ($this->users as $user) {
+				
+				if ($user->name === $identifier) {
+					
+					return $user;
+					
+				}
+				
+			}
+			
+			return null;
 			
 		}
 		

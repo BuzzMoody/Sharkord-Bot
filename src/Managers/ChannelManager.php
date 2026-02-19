@@ -75,14 +75,30 @@
 		}
 		
 		/**
-		 * Retrieves a channel by ID.
+		 * Retrieves a channel by ID or name.
 		 *
-		 * @param int $id The channel ID.
+		 * @param int|string $identifier The channel ID or name.
 		 * @return Channel|null Returns the Channel object or null if not found.
 		 */
-		public function get(int $id): ?Channel {
+		public function get(int|string $identifier): ?User {
 			
-			return $this->channels[$id] ?? null;
+			if (is_int($identifier)) {
+				
+				return $this->channels[$identifier] ?? null;
+				
+			}
+			
+			foreach ($this->channels as $channel) {
+				
+				if ($channel->name === $identifier) {
+					
+					return $channel;
+					
+				}
+				
+			}
+			
+			return null;
 			
 		}
 
