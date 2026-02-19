@@ -72,6 +72,29 @@
 			$this->status = $status;
 
 		}
+		
+		/**
+		 * Checks if the user has a specific permission via their assigned roles.
+		 *
+		 * @param string $permission The permission string to check.
+		 * @return bool True if the user has the permission, false otherwise.
+		 */
+		public function hasPermission(string $permission): bool {
+			// Get all the Role objects for this user using the magic getter
+			$roles = $this->roles;
+
+			if ($roles) {
+				foreach ($roles as $role) {
+					// If any of their roles has the permission, return true immediately
+					if ($role->hasPermission($permission)) {
+						return true;
+					}
+				}
+			}
+
+			// If we checked all roles and didn't find the permission, return false
+			return false;
+		}
 
 		/**
 		 * Magic getter to access Roles.

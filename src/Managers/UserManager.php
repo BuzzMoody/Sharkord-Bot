@@ -19,7 +19,8 @@
 		/**
 		 * ChannelManager constructor.
 		 *
-		 * @param array<int, User> Cache of User models indexed by ID.
+		 * @param Sharkord         $bot   The main bot instance.
+		 * @param array<int, User> $users Cache of User models indexed by ID.
 		 */
 		public function __construct(
 			private Sharkord $bot,

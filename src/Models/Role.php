@@ -31,6 +31,49 @@
 			public bool $isDefault = false,
 			public int $position = 0
 		) {}
+		
+		/**
+		 * Factory method to create a Role from raw API data.
+		 */
+		public static function fromArray(array $raw, ?Sharkord $bot = null): self {
+			return new self(
+				$raw['id'], 
+				$raw['name'], 
+				$raw['color'], 
+				$raw['permissions'] ?? [], 
+				$raw['isDefault'] ?? false,
+				$raw['position'] ?? 0,
+				$bot
+			);
+		}
+		
+		/**
+		 * Updates the Role's information.
+		 *
+		 * @param array $raw The raw Role data from the server.
+		 * @return void
+		 */
+		public function updateFromArray(array $raw): void {
+			
+			if (isset($raw['name'])) $this->name = $raw['name'];
+			if (isset($raw['color'])) $this->color = $raw['color'];
+			if (isset($raw['permissions'])) $this->permissions = $raw['permissions'];
+			if (isset($raw['isDefault'])) $this->isDefault = $raw['isDefault']; 
+			if (isset($raw['position'])) $this->position = $raw['position'];
+			
+		}
+		
+		/**
+		 * Checks if this Role has a specific permission.
+		 *
+		 * @param string $permission The permission string to check.
+		 * @return bool True if the Role has the permission, false otherwise.
+		 */
+		public function hasPermission(string $permission): bool {
+			
+			return in_array($permission, $this->permissions, true);
+			
+		}
 
 	}
 ?>

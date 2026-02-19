@@ -277,11 +277,11 @@
 				
 				'roles.onCreate'      => fn($d) => $this->roles->handleCreate($d),
 				'roles.onUpdate'      => fn($d) => $this->roles->handleUpdate($d),
-				'roles.onDelete'      => fn($d) => $this->roles->handleDelete($d['id']),
+				'roles.onDelete'      => fn($d) => $this->roles->handleDelete($d),
 				
 				'categories.onCreate' => fn($d) => $this->categories->handleCreate($d),
 				'categories.onUpdate' => fn($d) => $this->categories->handleUpdate($d),
-				'categories.onDelete' => fn($d) => $this->categories->handleDelete($d['id']),
+				'categories.onDelete' => fn($d) => $this->categories->handleDelete($d),
 			];
 
 			foreach ($subscriptions as $path => $handler) {
