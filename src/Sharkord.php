@@ -463,7 +463,7 @@
 			if ($user->isAdmin()) { 
 			
 				$this->logger->warning("Failed to ban {$user->name} as they are the server owner");
-				return
+				return;
 			
 			}
 			
