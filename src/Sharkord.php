@@ -43,6 +43,12 @@
 		public CategoryManager $categories;
 		public RoleManager $roles;
 		public LoggerInterface $logger;
+		
+		/**
+		 * The bot's own user object.
+		 * * @var User|null
+		 */
+		public ?User $sharkordbot = null
 
 		/**
 		 * Sharkord constructor.
@@ -259,6 +265,8 @@
 			foreach ($raw['users'] as $u) {
 				$this->users->handleCreate($u);
 			}
+			
+			$this->sharkordbot = $this->users->get($raw['ownUserId']);
 
 			$this->logger->info(sprintf("Joined. Cached %d channels, %d users.", $this->channels->count(), $this->users->count()));
 
@@ -301,7 +309,7 @@
 
 			}
 
-			$this->emit('ready');
+			$this->emit('ready', [$this->sharkordbot]);
 
 		}
 		
@@ -434,6 +442,70 @@
 
 			$this->sendRpc("mutation", ["input" => ["content" => "<p>".htmlspecialchars($text)."</p>", "channelId" => $channelId, "files" => []], "path" => "messages.send"]);
 
+		}
+
+		/**
+		 * Bans a user from the server.
+		 *
+		 * @param int    $userId The ID of the user to ban.
+		 * @param string $reason The reason for the ban.
+		 * @return void
+		 */
+		public function ban(int $userId, string $reason): void {
+			
+			if (!$this->sharkordbot->hasPermission('MANAGE_USERS')) {
+				
+				$this->logger->warning('Failed to ban user: Bot lacks MANAGE_USERS permission.');
+				return;
+				
+			}
+			
+			// Build the payload specifically for the RPC method
+			$payload = [
+				'method' => 'mutation',
+				'params' => [
+					'input' => [
+						'userId' => $userId,
+						'reason' => $reason
+					],
+					'path' => 'users.ban'
+				]
+			];
+			
+			// Send using existing RPC method
+			$this->sendRpc($payload);
+			
+		}
+
+		/**
+		 * Unbans a user from the server.
+		 *
+		 * @param int $userId The ID of the user to unban.
+		 * @return void
+		 */
+		public function unban(int $userId): void {
+			
+			if (!$this->sharkordbot->hasPermission('MANAGE_USERS')) {
+				
+				$this->logger->warning('Failed to unban user: Bot lacks MANAGE_USERS permission.');
+				return;
+				
+			}
+			
+			// Build the payload specifically for the RPC method
+			$payload = [
+				'method' => 'mutation',
+				'params' => [
+					'input' => [
+						'userId' => $userId
+					],
+					'path' => 'users.unban'
+				]
+			];
+			
+			// Send using existing RPC method
+			$this->sendRpc($payload);
+			
 		}
 
 		/**
