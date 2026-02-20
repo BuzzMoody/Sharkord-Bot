@@ -1,5 +1,7 @@
 <?php
 
+	declare(strict_types=1);
+
 	namespace Sharkord\Models;
 
 	use Sharkord\Sharkord;
@@ -22,7 +24,7 @@
 		 * @param string      type        The channel type (e.g., 'TEXT').
 		 * @param int|null    $categoryId The ID of the category this channel belongs to.
 		 * @param string|null $topic      The channel's topic.
-		 * @param Sharkord    $bot        Reference to the main bot instance.
+		 * @param Sharkord    $sharkord        Reference to the main bot instance.
 		 */
 		public function __construct(
 			public int $id,
@@ -30,17 +32,17 @@
 			public string $type,
 			public ?int $categoryId,
 			public ?string $topic,
-			private Sharkord $bot,
+			private Sharkord $sharkord
 		) {}
 		
-		public static function fromArray(array $raw, ?Sharkord $bot = null): self {
+		public static function fromArray(array $raw, Sharkord $sharkord): self {
 			return new self(
 				$raw['id'],
 				$raw['name'],
 				$raw['type'] ?? 'TEXT',
 				$raw['categoryId'] ?? null,
 				$raw['topic'] ?? null,
-				$bot
+				$sharkord
 			);
 		}
 		
@@ -61,7 +63,7 @@
 		 */
 		public function sendMessage(string $text): void {
 
-			$this->bot->sendMessage($text, $this->id);
+			$this->sharkord->sendMessage($text, $this->id);
 
 		}
 
@@ -75,7 +77,7 @@
 			
 			if ($name === 'category' && $this->categoryId) {
 				// Access the category manager via the bot instance
-				return $this->bot->categories->get($this->categoryId);
+				return $this->sharkord->categories->get($this->categoryId);
 			}
 			return null;
 			

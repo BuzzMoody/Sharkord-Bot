@@ -19,31 +19,26 @@
 		/**
 		 * RoleManager constructor.
 		 *
-		 * @param Sharkord        $bot   The main bot instance.
+		 * @param Sharkord         $sharkord   The main bot instance.
 		 * @param array<int, Role> $roles Cache of Role models.
 		 */
 		public function __construct(
-			private Sharkord $bot,
+			private Sharkord $sharkord,
 			private array $roles = []
 		) {}
 
 		/**
-		 * Handles creating or updating a role in the cache.
+		 * Handles the creation of a roles (or hydration from initial cache).
 		 *
 		 * @param array $raw The raw role data.
 		 * @return void
 		 */
 		public function handleCreate(array $raw): void {
 			
-			$role = new Role(
-				$raw['id'], 
-				$raw['name'], 
-				$raw['color'], 
-				$raw['permissions'] ?? [], 
-				$raw['isDefault'] ?? false,
-				$raw['position'] ?? 0
-			);
+			$role = Role::fromArray($raw, $this->sharkord);
+			
 			$this->roles[$raw['id']] = $role;
+			$this->sharkord->logger->info("Role cached: {$role->name}");
 			
 		}
 
@@ -56,10 +51,10 @@
 		public function handleUpdate(array $raw): void {
 			
 			if (isset($this->roles[$raw['id']])) {
-				$role = $this->roles[$raw['id']];
-				$role->name = $raw['name'];
-				$role->color = $raw['color'];
-				$role->permissions = $raw['permissions'] ?? $role->permissions;
+				
+				$this->roles[$raw['id']]->updateFromArray($raw);
+				$this->sharkord->logger->info("Role updated: {$this->roles[$raw['id']]->name}");
+				
 			}
 			
 		}

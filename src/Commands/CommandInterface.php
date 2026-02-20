@@ -2,6 +2,7 @@
 
 	namespace Sharkord\Commands;
 
+	use Sharkord\Sharkord;
 	use Sharkord\Models\Message;
 
 	/**
@@ -39,11 +40,13 @@
 		/**
 		 * Handles the execution of the command.
 		 *
-		 * @param Message $message The message object that triggered the command.
-		 * @param array   $args    Array of arguments passed with the command.
+		 * @param Sharkord $bot     The main bot instance.
+		 * @param Message  $message The message that triggered the command.
+		 * @param string   $args    The arguments passed with the command.
+		 * @param array    $matches Regex capture groups from the command pattern.
 		 * @return void
 		 */
-		public function handle(Message $message, string $args, array $matches): void;
+		public function handle(Sharkord $sharkord, Message $message, string $args, array $matches): void;
 
 	}
 	

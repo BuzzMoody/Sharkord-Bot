@@ -1,5 +1,7 @@
 <?php
 
+	declare(strict_types=1);
+
 	namespace Sharkord\Models;
 	
 	use Sharkord\Sharkord;
@@ -21,7 +23,7 @@
 		 * @param string        $name    The user's display name.
 		 * @param string        $status  The user's online status.
 		 * @param array         $roleIds Array of role IDs assigned to the user.
-		 * @param Sharkord|null $bot     Reference to the bot instance.
+		 * @param Sharkord|null $sharkord     Reference to the bot instance.
 		 */
 		public function __construct(
 			public int $id,
@@ -29,20 +31,20 @@
 			public string $status,
 			public bool $banned,
 			public array $roleIds = [],
-			private ?Sharkord $bot = null
+			private Sharkord $sharkord
 		) {}
 		
 		/**
 		 * Factory method to create a User from raw API data.
 		 */
-		public static function fromArray(array $raw, ?Sharkord $bot = null): self {
+		public static function fromArray(array $raw, Sharkord $sharkord): self {
 			return new self(
 				$raw['id'],
 				$raw['name'],
 				$raw['status'] ?? 'offline',
 				$raw['banned'],
 				$raw['roleIds'] ?? [],
-				$bot
+				$sharkord
 			);
 		}
 
@@ -72,6 +74,60 @@
 			$this->status = $status;
 
 		}
+		
+		/**
+		 * Checks if the user has a specific permission via their assigned roles.
+		 *
+		 * @param string $permission The permission string to check.
+		 * @return bool True if the user has the permission, false otherwise.
+		 */
+		public function hasPermission(string $permission): bool {
+			// Get all the Role objects for this user using the magic getter
+			$roles = $this->roles;
+
+			if ($roles) {
+				foreach ($roles as $role) {
+					// If any of their roles has the permission, return true immediately
+					if ($role->hasPermission($permission)) {
+						return true;
+					}
+				}
+			}
+
+			// If we checked all roles and didn't find the permission, return false
+			return false;
+		}
+		
+		/**
+		 * Checks if the user is a server owner.
+		 *
+		 * @return bool True if the user is an owner, false otherwise.
+		 */
+		public function isOwner(): bool {
+			
+			return $this->hasRole(1);
+			
+		}
+		
+		/**
+		 * Checks if the user has a specific role via their assigned role ids.
+		 *
+		 * @param int $roleId The role id to check.
+		 * @return bool True if the user has the role, false otherwise.
+		 */
+		public function hasRole(int $roleId): bool {
+			// Get all the Role objects for this user using the magic getter
+			$roles = $this->roleIds;
+
+			if ($roles && in_array($roleId, $roles, true)) {
+				
+				return true;
+				
+			}
+
+			// If we checked all roles and didn't find the permission, return false
+			return false;
+		}
 
 		/**
 		 * Magic getter to access Roles.
@@ -81,10 +137,10 @@
 		 */
 		public function __get(string $name): mixed {
 			
-			if ($name === 'roles' && $this->bot) {
+			if ($name === 'roles' && $this->sharkord) {
 				$roles = [];
 				foreach ($this->roleIds as $roleId) {
-					if ($role = $this->bot->roles->get($roleId)) {
+					if ($role = $this->sharkord->roles->get($roleId)) {
 						$roles[] = $role;
 					}
 				}

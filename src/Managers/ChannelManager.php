@@ -19,11 +19,11 @@
 		/**
 		 * ChannelManager constructor.
 		 *
-		 * @param Sharkord $bot The main bot instance (required for Channel actions).
+		 * @param Sharkord $sharkord The main bot instance (required for Channel actions).
 		 * @param array<int, Channel> $channels Cache of Channel models indexed by ID.
 		 */
 		public function __construct(
-			private Sharkord $bot,
+			private Sharkord $sharkord,
 			private array $channels = []
 		) {}
 
@@ -35,10 +35,10 @@
 		 */
 		public function handleCreate(array $raw): void {
 			
-			$channel = Channel::fromArray($raw, $this->bot);
+			$channel = Channel::fromArray($raw, $this->sharkord);
 			
 			$this->channels[$raw['id']] = $channel;
-			$this->bot->logger->info("New channel created: {$channel->name}");
+			$this->sharkord->logger->info("New channel created: {$channel->name}");
 			
 		}
 
@@ -51,7 +51,7 @@
 		public function handleDelete(int $id): void {
 			
 			if (isset($this->channels[$id])) {
-				$this->bot->logger->info("Channel deleted: {$this->channels[$id]->name}");
+				$this->sharkord->logger->info("Channel deleted: {$this->channels[$id]->name}");
 				unset($this->channels[$id]);
 			}
 			
@@ -68,21 +68,37 @@
 			if (isset($this->channels[$raw['id']])) {
 				
 				$this->channels[$raw['id']]->updateFromArray($raw);
-				$this->bot->logger->info("Channel updated: {$this->channels[$raw['id']]->name}");
+				$this->sharkord->logger->info("Channel updated: {$this->channels[$raw['id']]->name}");
 				
 			}
 			
 		}
 		
 		/**
-		 * Retrieves a channel by ID.
+		 * Retrieves a channel by ID or name.
 		 *
-		 * @param int $id The channel ID.
+		 * @param int|string $identifier The channel ID or name.
 		 * @return Channel|null Returns the Channel object or null if not found.
 		 */
-		public function get(int $id): ?Channel {
+		public function get(int|string $identifier): ?Channel {
 			
-			return $this->channels[$id] ?? null;
+			if (is_int($identifier)) {
+				
+				return $this->channels[$identifier] ?? null;
+				
+			}
+			
+			foreach ($this->channels as $channel) {
+				
+				if ($channel->name === $identifier) {
+					
+					return $channel;
+					
+				}
+				
+			}
+			
+			return null;
 			
 		}
 

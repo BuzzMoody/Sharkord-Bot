@@ -43,6 +43,12 @@
 		public CategoryManager $categories;
 		public RoleManager $roles;
 		public LoggerInterface $logger;
+		
+		/**
+		 * The bot's own user object.
+		 * * @var User|null
+		 */
+		public ?User $bot = null;
 
 		/**
 		 * Sharkord constructor.
@@ -259,6 +265,8 @@
 			foreach ($raw['users'] as $u) {
 				$this->users->handleCreate($u);
 			}
+			
+			$this->bot = $this->users->get($raw['ownUserId']);
 
 			$this->logger->info(sprintf("Joined. Cached %d channels, %d users.", $this->channels->count(), $this->users->count()));
 
@@ -277,11 +285,11 @@
 				
 				'roles.onCreate'      => fn($d) => $this->roles->handleCreate($d),
 				'roles.onUpdate'      => fn($d) => $this->roles->handleUpdate($d),
-				'roles.onDelete'      => fn($d) => $this->roles->handleDelete($d['id']),
+				'roles.onDelete'      => fn($d) => $this->roles->handleDelete($d),
 				
 				'categories.onCreate' => fn($d) => $this->categories->handleCreate($d),
 				'categories.onUpdate' => fn($d) => $this->categories->handleUpdate($d),
-				'categories.onDelete' => fn($d) => $this->categories->handleDelete($d['id']),
+				'categories.onDelete' => fn($d) => $this->categories->handleDelete($d),
 			];
 
 			foreach ($subscriptions as $path => $handler) {
@@ -413,7 +421,7 @@
 					$this->logger->info("Matched command: $commandName");
 					
 					// Pass the matches array (capture groups) to the handler
-					$command->handle($message, $args, $matches);
+					$command->handle($this, $message, $args, $matches);
 					
 					// Stop checking other commands after the first match
 					return;
@@ -434,6 +442,54 @@
 
 			$this->sendRpc("mutation", ["input" => ["content" => "<p>".htmlspecialchars($text)."</p>", "channelId" => $channelId, "files" => []], "path" => "messages.send"]);
 
+		}
+
+		/**
+		 * Bans a user from the server.
+		 *
+		 * @param User   $user   The user to ban.
+		 * @param string $reason The reason for the ban.
+		 * @return void
+		 */
+		public function ban(User $user, string $reason = 'No reason given.'): void {
+			
+			if (!$this->bot->hasPermission('MANAGE_USERS')) {
+				
+				$this->logger->warning("Failed to ban {$user->name}: Bot lacks MANAGE_USERS permission.");
+				return;
+				
+			}
+			
+			if ($user->isOwner()) { 
+			
+				$this->logger->warning("Failed to ban {$user->name} as they are the server owner");
+				return;
+			
+			}
+			
+			// Send using existing RPC method
+			$this->sendRpc("mutation", ["input" => ["userId" => $user->id, "reason" => $reason], "path" => "users.ban"]);
+			
+		}
+
+		/**
+		 * Unbans a user from the server.
+		 *
+		 * @param int $userId The ID of the user to unban.
+		 * @return void
+		 */
+		public function unban(User $user): void {
+			
+			if (!$this->bot->hasPermission('MANAGE_USERS')) {
+				
+				$this->logger->warning('Failed to unban user: Bot lacks MANAGE_USERS permission.');
+				return;
+				
+			}
+
+			// Send using existing RPC method
+			$this->sendRpc("mutation", ["input" => ["userId" => $user->id], "path" => "users.unban"]);
+			
 		}
 
 		/**
