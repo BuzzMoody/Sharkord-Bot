@@ -19,19 +19,19 @@
 		/**
 		 * User constructor.
 		 *
+		 * @param Sharkord		$sharkord     Reference to the bot instance.
 		 * @param int           $id      The unique user ID.
 		 * @param string        $name    The user's display name.
 		 * @param string        $status  The user's online status.
 		 * @param array         $roleIds Array of role IDs assigned to the user.
-		 * @param Sharkord		$sharkord     Reference to the bot instance.
 		 */
 		public function __construct(
+			private Sharkord $sharkord,
 			public int $id,
 			public string $name,
 			public string $status,
 			public bool $banned,
-			public array $roleIds = [],
-			private Sharkord $sharkord
+			public array $roleIds = []
 		) {}
 		
 		/**
@@ -39,12 +39,12 @@
 		 */
 		public static function fromArray(array $raw, Sharkord $sharkord): self {
 			return new self(
+				$sharkord,
 				$raw['id'],
 				$raw['name'],
 				$raw['status'] ?? 'offline',
 				$raw['banned'],
-				$raw['roleIds'] ?? [],
-				$sharkord
+				$raw['roleIds'] ?? []
 			);
 		}
 
