@@ -18,6 +18,7 @@
 		/**
 		 * Role constructor.
 		 *
+		 * @param Sharkord $sharkord        Reference to the main bot instance.
 		 * @param int    $id          The unique role ID.
 		 * @param string $name        The role name.
 		 * @param string $color       The hex color code.
@@ -26,13 +27,13 @@
 		 * @param int    $position    The sort position.
 		 */
 		public function __construct(
+			private Sharkord $sharkord,
 			public int $id,
 			public string $name,
 			public string $color,
 			public array $permissions = [],
 			public bool $isDefault = false,
 			public int $position = 0,
-			private Sharkord $sharkord
 		) {}
 		
 		/**
@@ -40,13 +41,13 @@
 		 */
 		public static function fromArray(array $raw, Sharkord $sharkord): self {
 			return new self(
+				$sharkord,
 				$raw['id'], 
 				$raw['name'], 
 				$raw['color'], 
 				$raw['permissions'] ?? [], 
 				$raw['isDefault'] ?? false,
-				$raw['position'] ?? 0,
-				$sharkord
+				$raw['position'] ?? 0
 			);
 		}
 		
