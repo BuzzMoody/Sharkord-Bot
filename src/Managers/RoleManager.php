@@ -19,11 +19,11 @@
 		/**
 		 * RoleManager constructor.
 		 *
-		 * @param Sharkord         $bot   The main bot instance.
+		 * @param Sharkord         $sharkord   The main bot instance.
 		 * @param array<int, Role> $roles Cache of Role models.
 		 */
 		public function __construct(
-			private Sharkord $bot,
+			private Sharkord $sharkord,
 			private array $roles = []
 		) {}
 
@@ -35,10 +35,10 @@
 		 */
 		public function handleCreate(array $raw): void {
 			
-			$role = Role::fromArray($raw, $this->bot);
+			$role = Role::fromArray($raw, $this->sharkord);
 			
 			$this->roles[$raw['id']] = $role;
-			$this->bot->logger->info("Role cached: {$role->name}");
+			$this->sharkord->logger->info("Role cached: {$role->name}");
 			
 		}
 
@@ -53,7 +53,7 @@
 			if (isset($this->roles[$raw['id']])) {
 				
 				$this->roles[$raw['id']]->updateFromArray($raw);
-				$this->bot->logger->info("Role updated: {$this->roles[$raw['id']]->name}");
+				$this->sharkord->logger->info("Role updated: {$this->roles[$raw['id']]->name}");
 				
 			}
 			

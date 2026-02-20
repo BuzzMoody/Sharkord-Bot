@@ -37,7 +37,7 @@
 		/**
 		 * Factory method to create a Role from raw API data.
 		 */
-		public static function fromArray(array $raw, ?Sharkord $bot = null): self {
+		public static function fromArray(array $raw, ?Sharkord $sharkord = null): self {
 			return new self(
 				$raw['id'], 
 				$raw['name'], 
@@ -45,7 +45,7 @@
 				$raw['permissions'] ?? [], 
 				$raw['isDefault'] ?? false,
 				$raw['position'] ?? 0,
-				$bot
+				$sharkord
 			);
 		}
 		

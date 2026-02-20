@@ -19,11 +19,11 @@
 		/**
 		 * CategoryManager constructor.
 		 *
-		 * @param Sharkord            $bot        The main bot instance.
+		 * @param Sharkord            $sharkord        The main bot instance.
 		 * @param array<int, Category> $categories Cache of Category models.
 		 */
 		public function __construct(
-			private Sharkord $bot,
+			private Sharkord $sharkord,
 			private array $categories = []
 		) {}
 

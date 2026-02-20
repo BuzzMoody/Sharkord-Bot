@@ -19,11 +19,11 @@
 		/**
 		 * ChannelManager constructor.
 		 *
-		 * @param Sharkord         $bot   The main bot instance.
+		 * @param Sharkord         $sharkord   The main bot instance.
 		 * @param array<int, User> $users Cache of User models indexed by ID.
 		 */
 		public function __construct(
-			private Sharkord $bot,
+			private Sharkord $sharkord,
 			private array $users = []
 		) {}
 
@@ -35,10 +35,10 @@
 		 */
 		public function handleCreate(array $raw): void {
 			
-			$user = User::fromArray($raw, $this->bot);
+			$user = User::fromArray($raw, $this->sharkord);
 			
 			$this->users[$raw['id']] = $user;
-			$this->bot->logger->info("User cached: {$user->name} ({$user->id} / {$user->status})");
+			$this->sharkord->logger->info("User cached: {$user->name} ({$user->id} / {$user->status})");
 			
 		}
 
@@ -52,7 +52,7 @@
 			
 			if (isset($this->users[$raw['id']])) {
 				$this->users[$raw['id']]->updateStatus('online');
-				$this->bot->logger->info("User came online: {$this->users[$raw['id']]->name}");
+				$this->sharkord->logger->info("User came online: {$this->users[$raw['id']]->name}");
 			}
 			
 		}
@@ -67,7 +67,7 @@
 			
 			if (isset($this->users[$id])) {
 				$this->users[$id]->updateStatus('offline');
-				$this->bot->logger->info("User went offline: {$this->users[$id]->name}");
+				$this->sharkord->logger->info("User went offline: {$this->users[$id]->name}");
 			}
 			
 		}
@@ -86,28 +86,28 @@
 				
 				if ($user->name !== $raw['name']) {
 					
-					$this->bot->logger->info("User changed their name from {$user->name} to {$raw['name']}");
-					$this->bot->emit('namechange', [$user]);
+					$this->sharkord->logger->info("User changed their name from {$user->name} to {$raw['name']}");
+					$this->sharkord->emit('namechange', [$user]);
 					
 				}
 				
 				elseif (!$user->banned && $user->banned !== $raw['banned']) {
 					
-					$this->bot->logger->info("User has been banned: {$user->name}");
-					$this->bot->emit('ban', [$user]);
+					$this->sharkord->logger->info("User has been banned: {$user->name}");
+					$this->sharkord->emit('ban', [$user]);
 					
 				}
 				
 				elseif ($user->banned && $user->banned !== $raw['banned']) {
 				
-					$this->bot->logger->info("User has been unbanned: {$user->name}");
-					$this->bot->emit('unban', [$user]);
+					$this->sharkord->logger->info("User has been unbanned: {$user->name}");
+					$this->sharkord->emit('unban', [$user]);
 					
 				}
 				
 				else {
 					
-					$this->bot->logger->info("User {$user->name} now has the following roleIds: ".implode(',', $raw['roleIds']));
+					$this->sharkord->logger->info("User {$user->name} now has the following roleIds: ".implode(',', $raw['roleIds']));
 					
 				}
 				

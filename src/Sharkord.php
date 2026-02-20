@@ -48,7 +48,7 @@
 		 * The bot's own user object.
 		 * * @var User|null
 		 */
-		public ?User $sharkordbot = null;
+		public ?User $bot = null;
 
 		/**
 		 * Sharkord constructor.
@@ -266,7 +266,7 @@
 				$this->users->handleCreate($u);
 			}
 			
-			$this->sharkordbot = $this->users->get($raw['ownUserId']);
+			$this->bot = $this->users->get($raw['ownUserId']);
 
 			$this->logger->info(sprintf("Joined. Cached %d channels, %d users.", $this->channels->count(), $this->users->count()));
 
@@ -309,7 +309,7 @@
 
 			}
 
-			$this->emit('ready', [$this->sharkordbot]);
+			$this->emit('ready', [$this->bot]);
 
 		}
 		
@@ -453,7 +453,7 @@
 		 */
 		public function ban(User $user, string $reason = 'No reason given.'): void {
 			
-			if (!$this->sharkordbot->hasPermission('MANAGE_USERS')) {
+			if (!$this->bot->hasPermission('MANAGE_USERS')) {
 				
 				$this->logger->warning("Failed to ban {$user->name}: Bot lacks MANAGE_USERS permission.");
 				return;
@@ -480,7 +480,7 @@
 		 */
 		public function unban(User $user): void {
 			
-			if (!$this->sharkordbot->hasPermission('MANAGE_USERS')) {
+			if (!$this->bot->hasPermission('MANAGE_USERS')) {
 				
 				$this->logger->warning('Failed to unban user: Bot lacks MANAGE_USERS permission.');
 				return;

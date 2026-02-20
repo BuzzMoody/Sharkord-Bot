@@ -23,7 +23,7 @@
 		 * @param string        $name    The user's display name.
 		 * @param string        $status  The user's online status.
 		 * @param array         $roleIds Array of role IDs assigned to the user.
-		 * @param Sharkord|null $bot     Reference to the bot instance.
+		 * @param Sharkord|null $sharkord     Reference to the bot instance.
 		 */
 		public function __construct(
 			public int $id,
@@ -31,20 +31,20 @@
 			public string $status,
 			public bool $banned,
 			public array $roleIds = [],
-			private ?Sharkord $bot = null
+			private ?Sharkord $sharkord = null
 		) {}
 		
 		/**
 		 * Factory method to create a User from raw API data.
 		 */
-		public static function fromArray(array $raw, ?Sharkord $bot = null): self {
+		public static function fromArray(array $raw, ?Sharkord $sharkord = null): self {
 			return new self(
 				$raw['id'],
 				$raw['name'],
 				$raw['status'] ?? 'offline',
 				$raw['banned'],
 				$raw['roleIds'] ?? [],
-				$bot
+				$sharkord
 			);
 		}
 
@@ -137,10 +137,10 @@
 		 */
 		public function __get(string $name): mixed {
 			
-			if ($name === 'roles' && $this->bot) {
+			if ($name === 'roles' && $this->sharkord) {
 				$roles = [];
 				foreach ($this->roleIds as $roleId) {
-					if ($role = $this->bot->roles->get($roleId)) {
+					if ($role = $this->sharkord->roles->get($roleId)) {
 						$roles[] = $role;
 					}
 				}

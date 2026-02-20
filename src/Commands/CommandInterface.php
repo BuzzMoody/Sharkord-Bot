@@ -46,7 +46,7 @@
 		 * @param array    $matches Regex capture groups from the command pattern.
 		 * @return void
 		 */
-		public function handle(Sharkord $bot, Message $message, string $args, array $matches): void;
+		public function handle(Sharkord $sharkord, Message $message, string $args, array $matches): void;
 
 	}
 	
