@@ -451,7 +451,7 @@
 		 * @param string $reason The reason for the ban.
 		 * @return void
 		 */
-		public function ban(User $user, string $reason): void {
+		public function ban(User $user, string $reason = 'No reason given.'): void {
 			
 			if (!$this->sharkordbot->hasPermission('MANAGE_USERS')) {
 				
@@ -460,20 +460,8 @@
 				
 			}
 			
-			// Build the payload specifically for the RPC method
-			$payload = [
-				'method' => 'mutation',
-				'params' => [
-					'input' => [
-						'userId' => $user->id,
-						'reason' => $reason
-					],
-					'path' => 'users.ban'
-				]
-			];
-			
 			// Send using existing RPC method
-			$this->sendRpc($payload);
+			$this->sendRpc("mutation", ["input" => ["userId" => $user->id, "reason" => $reason], "path" => "users.ban"]);
 			
 		}
 
@@ -491,20 +479,9 @@
 				return;
 				
 			}
-			
-			// Build the payload specifically for the RPC method
-			$payload = [
-				'method' => 'mutation',
-				'params' => [
-					'input' => [
-						'userId' => $user->id
-					],
-					'path' => 'users.unban'
-				]
-			];
-			
+
 			// Send using existing RPC method
-			$this->sendRpc($payload);
+			$this->sendRpc("mutation", ["input" => ["userId" => $user->id], "path" => "users.unban"]);
 			
 		}
 
