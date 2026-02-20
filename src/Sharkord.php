@@ -48,7 +48,7 @@
 		 * The bot's own user object.
 		 * * @var User|null
 		 */
-		public ?User $sharkordbot = null
+		public ?User $sharkordbot = null;
 
 		/**
 		 * Sharkord constructor.
