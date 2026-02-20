@@ -23,7 +23,7 @@
 		 * @param string        $name    The user's display name.
 		 * @param string        $status  The user's online status.
 		 * @param array         $roleIds Array of role IDs assigned to the user.
-		 * @param Sharkord|null $sharkord     Reference to the bot instance.
+		 * @param Sharkord		$sharkord     Reference to the bot instance.
 		 */
 		public function __construct(
 			public int $id,

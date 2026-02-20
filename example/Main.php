@@ -27,7 +27,7 @@
 	* If you want to use dynamically loaded commands as per the examples directory
 	* uncomment the below along with the preg_match if statement further down
 	*/
-	# $bot->loadCommands(__DIR__ . '/Commands');
+	# $sharkord->loadCommands(__DIR__ . '/Commands');
 
 	$sharkord->on('ready', function() use ($sharkord) {
 		$sharkord->logger->notice("Logged in as {$sharkord->bot->name} and ready to chat!");
