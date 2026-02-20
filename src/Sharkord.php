@@ -451,7 +451,7 @@
 		 * @param string $reason The reason for the ban.
 		 * @return void
 		 */
-		public function ban(int $userId, string $reason): void {
+		public function ban(User $user, string $reason): void {
 			
 			if (!$this->sharkordbot->hasPermission('MANAGE_USERS')) {
 				
@@ -465,7 +465,7 @@
 				'method' => 'mutation',
 				'params' => [
 					'input' => [
-						'userId' => $userId,
+						'userId' => $user->id,
 						'reason' => $reason
 					],
 					'path' => 'users.ban'
@@ -483,7 +483,7 @@
 		 * @param int $userId The ID of the user to unban.
 		 * @return void
 		 */
-		public function unban(int $userId): void {
+		public function unban(User $user): void {
 			
 			if (!$this->sharkordbot->hasPermission('MANAGE_USERS')) {
 				
@@ -497,7 +497,7 @@
 				'method' => 'mutation',
 				'params' => [
 					'input' => [
-						'userId' => $userId
+						'userId' => $user->id
 					],
 					'path' => 'users.unban'
 				]
