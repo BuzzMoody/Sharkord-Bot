@@ -35,7 +35,7 @@
 			private Sharkord $sharkord,
 		) {}
 		
-		public static function fromArray(array $raw, ?Sharkord $sharkord = null): self {
+		public static function fromArray(array $raw, Sharkord $sharkord): self {
 			return new self(
 				$raw['id'],
 				$raw['name'],
