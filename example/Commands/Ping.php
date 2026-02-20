@@ -2,6 +2,7 @@
 
 	use Sharkord\Commands\CommandInterface;
 	use Sharkord\Models\Message;
+	use Sharkord\Sharkord;
 
 	/**
 	 * Class Ping
@@ -48,7 +49,7 @@
 		/**
 		 * @inheritDoc
 		 */
-		public function handle(Message $message, string $args, array $matches): void {
+		public function handle(Sharkord $sharkord, Message $message, string $args, array $matches): void {
 			$message->reply(self::RESPONSES[array_rand(self::RESPONSES)]);
 		}
 

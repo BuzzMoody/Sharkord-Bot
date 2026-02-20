@@ -31,13 +31,13 @@
 			public string $status,
 			public bool $banned,
 			public array $roleIds = [],
-			private ?Sharkord $sharkord = null
+			private Sharkord $sharkord
 		) {}
 		
 		/**
 		 * Factory method to create a User from raw API data.
 		 */
-		public static function fromArray(array $raw, ?Sharkord $sharkord = null): self {
+		public static function fromArray(array $raw, Sharkord $sharkord): self {
 			return new self(
 				$raw['id'],
 				$raw['name'],

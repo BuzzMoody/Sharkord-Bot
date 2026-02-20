@@ -31,13 +31,14 @@
 			public string $color,
 			public array $permissions = [],
 			public bool $isDefault = false,
-			public int $position = 0
+			public int $position = 0,
+			private Sharkord $sharkord
 		) {}
 		
 		/**
 		 * Factory method to create a Role from raw API data.
 		 */
-		public static function fromArray(array $raw, ?Sharkord $sharkord = null): self {
+		public static function fromArray(array $raw, Sharkord $sharkord): self {
 			return new self(
 				$raw['id'], 
 				$raw['name'], 

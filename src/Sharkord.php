@@ -447,7 +447,7 @@
 		/**
 		 * Bans a user from the server.
 		 *
-		 * @param int    $userId The ID of the user to ban.
+		 * @param User   $user   The user to ban.
 		 * @param string $reason The reason for the ban.
 		 * @return void
 		 */

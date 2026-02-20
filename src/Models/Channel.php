@@ -32,7 +32,7 @@
 			public string $type,
 			public ?int $categoryId,
 			public ?string $topic,
-			private Sharkord $sharkord,
+			private Sharkord $sharkord
 		) {}
 		
 		public static function fromArray(array $raw, Sharkord $sharkord): self {

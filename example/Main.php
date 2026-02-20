@@ -8,12 +8,13 @@
 
 	use Sharkord\Sharkord;
 	use Sharkord\Models\Message;
+	use Sharkord\Models\User;
 
 	/*
 	* Supports pulling environment variables from .env file as well as Docker container.
 	* Hardcode your values at your own peril
 	*/
-	$bot = new Sharkord(
+	$sharkord = new Sharkord(
 		config: [
 			'identity' 	=> $_ENV['CHAT_USERNAME'],
 			'password'	=> $_ENV['CHAT_PASSWORD'],
@@ -28,13 +29,13 @@
 	*/
 	# $bot->loadCommands(__DIR__ . '/Commands');
 
-	$bot->on('ready', function() use ($bot) {
-		$bot->logger->notice("Logged in and ready to chat!");
+	$sharkord->on('ready', function() use ($sharkord) {
+		$sharkord->logger->notice("Logged in as {$sharkord->bot->name} and ready to chat!");
 	});
 
-	$bot->on('message', function(Message $message) use ($bot) {
+	$sharkord->on('message', function(Message $message) use ($sharkord) {
 		
-		$bot->logger->notice(sprintf(
+		$sharkord->logger->notice(sprintf(
 			"[#%s] %s: %s",
 			$message->channel->name,
 			$message->user->name,
@@ -46,14 +47,14 @@
 		* Make sure to delete the ping/pong if statement.
 		*/
 		# if (preg_match('/^!([a-zA-Z]{2,})(?:\s+(.*))?$/', $message->content, $matches)) {
-		#	 $bot->handleCommand($message, $matches);
+		#	 $sharkord->handleCommand($message, $matches);
 		# }
 		
 		if ($message->content == '!ping') $message->channel->sendMessage('Pong!');
 		
 	});
 
-	$bot->run();
+	$sharkord->run();
 
 ?>
 
