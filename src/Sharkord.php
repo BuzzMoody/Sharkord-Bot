@@ -453,7 +453,7 @@
 		 */
 		public function ban(User $user, string $reason = 'No reason given.'): void {
 			
-			if (!this->bot) {
+			if (!$this->bot) {
 				
 				$this->logger->warning("The bots own entity has not yet been set.");
 				return;
@@ -487,7 +487,7 @@
 		 */
 		public function unban(User $user): void {
 			
-			if (!this->bot) {
+			if (!$this->bot) {
 				
 				$this->logger->warning("The bots own entity has not yet been set.");
 				return;
