@@ -97,6 +97,37 @@
 			// If we checked all roles and didn't find the permission, return false
 			return false;
 		}
+		
+		/**
+		 * Checks if the user is a server owner.
+		 *
+		 * @return bool True if the user is an owner, false otherwise.
+		 */
+		public function isOwner(): bool {
+			
+			return $this->hasRole(1);
+			
+		}
+		
+		/**
+		 * Checks if the user has a specific role via their assigned role ids.
+		 *
+		 * @param int $roleId The role id to check.
+		 * @return bool True if the user has the role, false otherwise.
+		 */
+		public function hasRole(int $roleId): bool {
+			// Get all the Role objects for this user using the magic getter
+			$roles = $this->roles;
+
+			if ($roles && in_array($roleId, $roles, true)) {
+				
+				return true;
+				
+			}
+
+			// If we checked all roles and didn't find the permission, return false
+			return false;
+		}
 
 		/**
 		 * Magic getter to access Roles.

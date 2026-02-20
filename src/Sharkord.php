@@ -455,9 +455,16 @@
 			
 			if (!$this->sharkordbot->hasPermission('MANAGE_USERS')) {
 				
-				$this->logger->warning('Failed to ban user: Bot lacks MANAGE_USERS permission.');
+				$this->logger->warning("Failed to ban {$user->name}: Bot lacks MANAGE_USERS permission.");
 				return;
 				
+			}
+			
+			if ($user->isAdmin()) { 
+			
+				$this->logger->warning("Failed to ban {$user->name} as they are the server owner");
+				return
+			
 			}
 			
 			// Send using existing RPC method
