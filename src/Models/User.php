@@ -117,7 +117,7 @@
 		 */
 		public function hasRole(int $roleId): bool {
 			// Get all the Role objects for this user using the magic getter
-			$roles = $this->roles;
+			$roles = $this->roleIds;
 
 			if ($roles && in_array($roleId, $roles, true)) {
 				
