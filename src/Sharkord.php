@@ -309,7 +309,7 @@
 
 			}
 
-			$this->emit('ready', [$this->bot]);
+			$this->emit('ready');
 
 		}
 		
