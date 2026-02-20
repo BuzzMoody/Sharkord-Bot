@@ -413,7 +413,7 @@
 					$this->logger->info("Matched command: $commandName");
 					
 					// Pass the matches array (capture groups) to the handler
-					$command->handle($message, $args, $matches);
+					$command->handle($this, $message, $args, $matches);
 					
 					// Stop checking other commands after the first match
 					return;
