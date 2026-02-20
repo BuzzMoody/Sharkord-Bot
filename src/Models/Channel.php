@@ -22,7 +22,7 @@
 		 * @param Sharkord    $sharkord        Reference to the main bot instance.
 		 * @param int         $id         The unique channel ID.
 		 * @param string      $name       The channel name.
-		 * @param string      type        The channel type (e.g., 'TEXT').
+		 * @param string      $type       The channel type (e.g., 'TEXT').
 		 * @param int|null    $categoryId The ID of the category this channel belongs to.
 		 * @param string|null $topic      The channel's topic.
 		 */

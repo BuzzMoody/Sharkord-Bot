@@ -23,6 +23,7 @@
 		 * @param int           $id      The unique user ID.
 		 * @param string        $name    The user's display name.
 		 * @param string        $status  The user's online status.
+		 * @param bool          $banned  Whether the user is banned.
 		 * @param array         $roleIds Array of role IDs assigned to the user.
 		 */
 		public function __construct(

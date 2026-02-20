@@ -33,7 +33,7 @@
 			public string $color,
 			public array $permissions = [],
 			public bool $isDefault = false,
-			public int $position = 0,
+			public int $position = 0
 		) {}
 		
 		/**
