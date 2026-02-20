@@ -40,7 +40,7 @@
 		/**
 		 * Handles the execution of the command.
 		 *
-		 * @param Sharkord $bot     The main bot instance.
+		 * @param Sharkord $sharkord     The main bot instance.
 		 * @param Message  $message The message that triggered the command.
 		 * @param string   $args    The arguments passed with the command.
 		 * @param array    $matches Regex capture groups from the command pattern.

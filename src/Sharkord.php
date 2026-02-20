@@ -46,7 +46,7 @@
 		
 		/**
 		 * The bot's own user object.
-		 * * @var User|null
+		 * @var User|null
 		 */
 		public ?User $bot = null;
 
@@ -453,6 +453,13 @@
 		 */
 		public function ban(User $user, string $reason = 'No reason given.'): void {
 			
+			if (!$this->bot) {
+				
+				$this->logger->warning("The bots own entity has not yet been set.");
+				return;
+				
+			}
+			
 			if (!$this->bot->hasPermission('MANAGE_USERS')) {
 				
 				$this->logger->warning("Failed to ban {$user->name}: Bot lacks MANAGE_USERS permission.");
@@ -475,10 +482,17 @@
 		/**
 		 * Unbans a user from the server.
 		 *
-		 * @param int $userId The ID of the user to unban.
+		 * @param User $user The user to unban.
 		 * @return void
 		 */
 		public function unban(User $user): void {
+			
+			if (!$this->bot) {
+				
+				$this->logger->warning("The bots own entity has not yet been set.");
+				return;
+				
+			}
 			
 			if (!$this->bot->hasPermission('MANAGE_USERS')) {
 				
