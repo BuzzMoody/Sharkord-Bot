@@ -54,12 +54,13 @@ Create a file named `bot.php` (or `index.php`) and add the following code. This 
 
 	use Sharkord\Sharkord;
 	use Sharkord\Models\Message;
-	
+	use Sharkord\Models\User;
+
 	/*
 	* Supports pulling environment variables from .env file as well as Docker container.
-	* Hardcode your values at your own peril.
+	* Hardcode your values at your own peril
 	*/
-	$bot = new Sharkord(
+	$sharkord = new Sharkord(
 		config: [
 			'identity' 	=> $_ENV['CHAT_USERNAME'],
 			'password'	=> $_ENV['CHAT_PASSWORD'],
@@ -72,15 +73,15 @@ Create a file named `bot.php` (or `index.php`) and add the following code. This 
 	* If you want to use dynamically loaded commands as per the examples directory
 	* uncomment the below along with the preg_match if statement further down
 	*/
-	# $bot->loadCommands(__DIR__ . '/Commands');
+	# $sharkord->loadCommands(__DIR__ . '/Commands');
 
-	$bot->on('ready', function() use ($bot) {
-		$bot->logger->notice("Logged in and ready to chat!");
+	$sharkord->on('ready', function() use ($sharkord) {
+		$sharkord->logger->notice("Logged in as {$sharkord->bot->name} and ready to chat!");
 	});
 
-	$bot->on('message', function(Message $message) use ($bot) {
+	$sharkord->on('message', function(Message $message) use ($sharkord) {
 		
-		$bot->logger->notice(sprintf(
+		$sharkord->logger->notice(sprintf(
 			"[#%s] %s: %s",
 			$message->channel->name,
 			$message->user->name,
@@ -92,16 +93,17 @@ Create a file named `bot.php` (or `index.php`) and add the following code. This 
 		* Make sure to delete the ping/pong if statement.
 		*/
 		# if (preg_match('/^!([a-zA-Z]{2,})(?:\s+(.*))?$/', $message->content, $matches)) {
-		#	 $bot->handleCommand($message, $matches);
+		#	 $sharkord->handleCommand($message, $matches);
 		# }
 		
 		if ($message->content == '!ping') $message->channel->sendMessage('Pong!');
 		
 	});
 
-	$bot->run();
+	$sharkord->run();
 
 ?>
+
 ```
 
 ### 3. Create a Command (`Commands/Ping.php`)
@@ -115,7 +117,16 @@ Sharkord commands do **not** require namespaces, making them easy to write. Just
 
 	use Sharkord\Commands\CommandInterface;
 	use Sharkord\Models\Message;
+	use Sharkord\Sharkord;
 
+	/**
+	 * Class Ping
+	 *
+	 * A simple command to check if the bot is responsive.
+	 * Responds with "Pong!" when invoked.
+	 *
+	 * @package Sharkord\Commands
+	 */
 	class Ping implements CommandInterface {
 		
 		private const RESPONSES = [
@@ -129,19 +140,31 @@ Sharkord commands do **not** require namespaces, making them easy to write. Just
 			"The answer is always... pong."
 		];
 
+		/**
+		 * @inheritDoc
+		 */
 		public function getName(): string {
 			return 'ping';
 		}
 
+		/**
+		 * @inheritDoc
+		 */
 		public function getDescription(): string {
 			return 'Responds with Pong!';
 		}
 		
+		/**
+		 * @inheritDoc
+		 */
 		public function getPattern(): string {
 			return '/^ping$/';
 		}
 
-		public function handle(Message $message, string $args, array $matches): void {
+		/**
+		 * @inheritDoc
+		 */
+		public function handle(Sharkord $sharkord, Message $message, string $args, array $matches): void {
 			$message->reply(self::RESPONSES[array_rand(self::RESPONSES)]);
 		}
 
@@ -171,12 +194,24 @@ $bot->loadCommands(__DIR__ . '/src/Commands', 'MyBot\\Commands\\');
 You can hook into bot events directly from your `bot.php` file:
 
 ```php
-$bot->on('ready', function() {
-    echo "Bot is connected and ready!\n";
+$sharkord->on('ready', function() {
+    //returns when the bot is connected to the server and all users, roles, channels and permissions are cached.
 });
 
-$bot->on('message', function($message) {
-    echo "New message from {$message->author->username}: {$message->content}\n";
+$sharkord->on('message', function(Message $message) {
+    //returns the message sent to the server by any user
+});
+
+$sharkord->on('namechange', function(User $user) {
+   //returns a user who has changed their name
+});
+
+$sharkord->on('ban', function(User $user) {
+   //returns a user who has been banned
+});
+
+$sharkord->on('unban', function(User $user) {
+   //returns a user who has been unbanned
 });
 ```
 
