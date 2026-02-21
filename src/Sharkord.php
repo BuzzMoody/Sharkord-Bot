@@ -107,7 +107,7 @@
 			$this->users = new UserManager($this);
 			$this->categories = new CategoryManager($this);
 			$this->roles = new RoleManager($this);
-			$this->servers = new ServerManager($this);
+			$this->server = new ServerManager($this);
 			
 		}
 
@@ -271,7 +271,7 @@
 			}
 			
 			$this->bot = $this->users->get($raw['ownUserId']);
-			$this->servers = new ServerManager($raw['publicSettings']);
+			$this->server = $this->server->handleCreate($raw['publicSettings']);
 
 			$this->logger->info(sprintf("Joined. Cached %d channels, %d users.", $this->channels->count(), $this->users->count()));
 
