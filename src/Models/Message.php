@@ -119,7 +119,7 @@
 				return $this->sharkord->channels->get($this->attributes['channelId']);
 			}
 
-            // 3. Handle a request for the user who sent it
+			// 3. Handle a request for the user who sent it
 			if ($name === 'author' && !empty($this->attributes['userId'])) {
 				return $this->sharkord->users->get($this->attributes['userId']);
 			}
