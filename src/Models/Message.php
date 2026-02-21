@@ -87,8 +87,8 @@
 			}
 
 			// 3. If a user exists, fetch them and turn them into an array
-			if ($this->user) {
-				$debugData['user_expanded'] = $this->user->toArray();
+			if ($this->author) {
+				$debugData['user_expanded'] = $this->author->toArray();
 			}
 
 			// 4. If a server exists, fetch it and turn it into an array
