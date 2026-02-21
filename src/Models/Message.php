@@ -109,9 +109,9 @@
 		public function __get(string $name): mixed {
 			
 			// 1. Handle the request for the server!
-			if ($name === 'server' && !empty($this->attributes['serverId'])) {
+			if ($name === 'server') {
 				// We use the bot instance to ask the ServerManager for the server object
-				return $this->sharkord->servers->get($this->attributes['serverId']);
+				return $this->sharkord->servers->getFirst();
 			}
 			
 			// 2. Handle a request for the channel (if you want $message->channel to work!)

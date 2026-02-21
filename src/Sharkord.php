@@ -352,8 +352,27 @@
 
 			// Simply pass the raw payload and the bot instance to the model!
 			$message = Message::fromArray($raw, $this);
-
-			$this->emit('message', [$message]);
+			
+			try {
+				
+				// Tell the rest of the bot that a message arrived
+				$this->emit('message', [$message]);
+				
+			} catch (\Throwable $e) {
+				
+				// If ANYTHING goes wrong inside any plugin or command listening 
+				// to this event, it will be caught right here!
+				
+				$errorMessage = "Uncaught Exception/Error in message processing: " . $e->getMessage();
+				$errorMessage .= " on line " . $e->getLine() . " in " . $e->getFile();
+				
+				// Log the error so you can fix it
+				$this->logger->error($errorMessage);
+				
+				// Optional: You could even make the bot reply in Discord saying "Oops, I hit a bug!"
+				// $message->channel->sendMessage("Oops, I ran into an internal error!");
+				
+			}
 
 		}
 		

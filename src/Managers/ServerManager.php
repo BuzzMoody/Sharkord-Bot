@@ -69,6 +69,18 @@
 			unset($this->servers[$serverId]);
 			
 		}
+		
+		/**
+		 * Retrieves the first (or only) server in the cache.
+		 * Perfect for single-server bots.
+		 *
+		 * @return Server|null
+		 */
+		public function getFirst(): ?Server {
+			
+			return empty($this->servers) ? null : reset($this->servers);
+			
+		}
 
 		/**
 		 * Retrieves a server by ID.
