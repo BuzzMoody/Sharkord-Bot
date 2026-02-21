@@ -271,7 +271,7 @@
 			}
 			
 			$this->bot = $this->users->get($raw['ownUserId']);
-			$this->servers = $this->server->handleCreate($raw['publicSettings']);
+			$this->servers = $this->servers->handleCreate($raw['publicSettings']);
 
 			$this->logger->info(sprintf("Joined. Cached %d channels, %d users.", $this->channels->count(), $this->users->count()));
 
