@@ -20,11 +20,13 @@
 	use Sharkord\Models\User;
 	use Sharkord\Models\Channel;
 	use Sharkord\Models\Message;
+	use Sharkord\Models\Server;
 	use Sharkord\Commands\CommandInterface;
 	use Sharkord\Managers\ChannelManager;
 	use Sharkord\Managers\UserManager;
 	use Sharkord\Managers\CategoryManager;
 	use Sharkord\Managers\RoleManager;
+	use Sharkord\Managers\ServerManager;	
 
 	/**
 	 * Class Sharkord
@@ -43,6 +45,7 @@
 		public CategoryManager $categories;
 		public RoleManager $roles;
 		public LoggerInterface $logger;
+		public ServerManager $servers;
 		
 		/**
 		 * The bot's own user object.
@@ -104,6 +107,7 @@
 			$this->users = new UserManager($this);
 			$this->categories = new CategoryManager($this);
 			$this->roles = new RoleManager($this);
+			$this->servers = new ServerManager($this);
 			
 		}
 
@@ -267,6 +271,7 @@
 			}
 			
 			$this->bot = $this->users->get($raw['ownUserId']);
+			$this->servers = new ServerManager($raw['publicSettings']);
 
 			$this->logger->info(sprintf("Joined. Cached %d channels, %d users.", $this->channels->count(), $this->users->count()));
 
