@@ -125,6 +125,17 @@
 			// If we checked all roles and didn't find the permission, return false
 			return false;
 		}
+		
+		/**
+		 * Returns all the attributes as an array. Perfect for debugging!
+		 *
+		 * @return array
+		 */
+		public function toArray(): array {
+			
+			return $this->attributes;
+			
+		}
 
 		/**
 		 * Magic getter. This is triggered whenever you try to access a property 

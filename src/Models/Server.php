@@ -52,8 +52,19 @@
 			$this->attributes = array_merge($this->attributes, $raw);
 			
 		}
+		
+		/**
+		 * Returns all the attributes as an array. Perfect for debugging!
+		 *
+		 * @return array
+		 */
+		public function toArray(): array {
+			
+			return $this->attributes;
+			
+		}
 
-/**
+		/**
 		 * Magic getter. Triggered whenever you try to access a property 
 		 * that isn't explicitly defined.
 		 *

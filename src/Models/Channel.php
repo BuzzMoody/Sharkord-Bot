@@ -70,6 +70,17 @@
 			$this->sharkord->sendMessage($text, $this->attributes['id']);
 
 		}
+		
+		/**
+		 * Returns all the attributes as an array. Perfect for debugging!
+		 *
+		 * @return array
+		 */
+		public function toArray(): array {
+			
+			return $this->attributes;
+			
+		}
 
 		/**
 		 * Magic getter. This is triggered whenever you try to access a property 

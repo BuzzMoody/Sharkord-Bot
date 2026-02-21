@@ -66,6 +66,17 @@
 			return in_array($permission, $permissions, true);
 			
 		}
+		
+		/**
+		 * Returns all the attributes as an array. Perfect for debugging!
+		 *
+		 * @return array
+		 */
+		public function toArray(): array {
+			
+			return $this->attributes;
+			
+		}
 
 		/**
 		 * Magic getter. This is triggered whenever you try to access a property 
