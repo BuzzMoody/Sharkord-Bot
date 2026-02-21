@@ -17,41 +17,44 @@
 	class Channel {
 
 		/**
+		 * @var array Stores all dynamic channel data from the API
+		 */
+		private array $attributes = [];
+
+		/**
 		 * Channel constructor.
 		 *
-		 * @param Sharkord    $sharkord        Reference to the main bot instance.
-		 * @param int         $id         The unique channel ID.
-		 * @param string      $name       The channel name.
-		 * @param string      $type       The channel type (e.g., 'TEXT').
-		 * @param int|null    $categoryId The ID of the category this channel belongs to.
-		 * @param string|null $topic      The channel's topic.
+		 * @param Sharkord $sharkord Reference to the main bot instance.
+		 * @param array    $rawData  The raw array of data from the API.
 		 */
 		public function __construct(
 			private Sharkord $sharkord,
-			public int $id,
-			public string $name,
-			public string $type,
-			public ?int $categoryId,
-			public ?string $topic
-		) {}
-		
-		public static function fromArray(array $raw, Sharkord $sharkord): self {
-			return new self(
-				$sharkord,
-				$raw['id'],
-				$raw['name'],
-				$raw['type'] ?? 'TEXT',
-				$raw['categoryId'] ?? null,
-				$raw['topic'] ?? null
-			);
+			array $rawData
+		) {
+			$this->updateFromArray($rawData);
 		}
 		
+		/**
+		 * Factory method to create a Channel from raw API data.
+		 */
+		public static function fromArray(array $raw, Sharkord $sharkord): self {
+			return new self($sharkord, $raw);
+		}
+		
+		/**
+		 * Updates the channel's information dynamically.
+		 *
+		 * @param array $raw The raw channel data from the server.
+		 * @return void
+		 */
 		public function updateFromArray(array $raw): void {
 			
-			if (isset($raw['name'])) $this->name = $raw['name'];
-			if (isset($raw['type'])) $this->type = $raw['type'];
-			if (isset($raw['categoryId'])) $this->categoryId = $raw['categoryId'];
-			if (isset($raw['topic'])) $this->topic = $raw['topic'];
+			// Optional: If you don't want to store the access token in memory, 
+			// you can uncomment the line below to throw it away!
+			// unset($raw['fileAccessToken']);
+
+			// Merge the new data into our attributes array
+			$this->attributes = array_merge($this->attributes, $raw);
 			
 		}
 
@@ -63,23 +66,28 @@
 		 */
 		public function sendMessage(string $text): void {
 
-			$this->sharkord->sendMessage($text, $this->id);
+			// Notice how we use the attributes array to get the ID here
+			$this->sharkord->sendMessage($text, $this->attributes['id']);
 
 		}
 
 		/**
-		 * Magic getter to access the Category object.
+		 * Magic getter. This is triggered whenever you try to access a property 
+		 * that isn't explicitly defined (e.g., $channel->topic or $channel->position).
 		 *
 		 * @param string $name Property name.
 		 * @return mixed
 		 */
 		public function __get(string $name): mixed {
 			
-			if ($name === 'category' && $this->categoryId) {
+			// Handle the special 'category' relationship request
+			if ($name === 'category' && !empty($this->attributes['categoryId'])) {
 				// Access the category manager via the bot instance
-				return $this->sharkord->categories->get($this->categoryId);
+				return $this->sharkord->categories->get($this->attributes['categoryId']);
 			}
-			return null;
+
+			// If it's not 'category', look inside our magic backpack!
+			return $this->attributes[$name] ?? null;
 			
 		}
 

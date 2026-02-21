@@ -16,54 +16,40 @@
 	class Role {
 
 		/**
+		 * @var array Stores all dynamic role data from the API
+		 */
+		private array $attributes = [];
+
+		/**
 		 * Role constructor.
 		 *
-		 * @param Sharkord $sharkord        Reference to the main bot instance.
-		 * @param int    $id          The unique role ID.
-		 * @param string $name        The role name.
-		 * @param string $color       The hex color code.
-		 * @param array  $permissions List of permission strings.
-		 * @param bool   $isDefault   Whether this is the default role.
-		 * @param int    $position    The sort position.
+		 * @param Sharkord $sharkord Reference to the main bot instance.
+		 * @param array    $rawData  The raw array of data from the API.
 		 */
 		public function __construct(
 			private Sharkord $sharkord,
-			public int $id,
-			public string $name,
-			public string $color,
-			public array $permissions = [],
-			public bool $isDefault = false,
-			public int $position = 0
-		) {}
+			array $rawData
+		) {
+			$this->updateFromArray($rawData);
+		}
 		
 		/**
 		 * Factory method to create a Role from raw API data.
 		 */
 		public static function fromArray(array $raw, Sharkord $sharkord): self {
-			return new self(
-				$sharkord,
-				$raw['id'], 
-				$raw['name'], 
-				$raw['color'], 
-				$raw['permissions'] ?? [], 
-				$raw['isDefault'] ?? false,
-				$raw['position'] ?? 0
-			);
+			return new self($sharkord, $raw);
 		}
 		
 		/**
-		 * Updates the Role's information.
+		 * Updates the Role's information dynamically.
 		 *
 		 * @param array $raw The raw Role data from the server.
 		 * @return void
 		 */
 		public function updateFromArray(array $raw): void {
 			
-			if (isset($raw['name'])) $this->name = $raw['name'];
-			if (isset($raw['color'])) $this->color = $raw['color'];
-			if (isset($raw['permissions'])) $this->permissions = $raw['permissions'];
-			if (isset($raw['isDefault'])) $this->isDefault = $raw['isDefault']; 
-			if (isset($raw['position'])) $this->position = $raw['position'];
+			// Merge the new data into our attributes array
+			$this->attributes = array_merge($this->attributes, $raw);
 			
 		}
 		
@@ -75,7 +61,22 @@
 		 */
 		public function hasPermission(string $permission): bool {
 			
-			return in_array($permission, $this->permissions, true);
+			// Safely grab the permissions array from our attributes, or use an empty array if none exist
+			$permissions = $this->attributes['permissions'] ?? [];
+			return in_array($permission, $permissions, true);
+			
+		}
+
+		/**
+		 * Magic getter. This is triggered whenever you try to access a property 
+		 * that isn't explicitly defined (e.g., $role->name or $role->color).
+		 *
+		 * @param string $name Property name.
+		 * @return mixed
+		 */
+		public function __get(string $name): mixed {
+			
+			return $this->attributes[$name] ?? null;
 			
 		}
 

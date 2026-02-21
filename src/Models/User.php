@@ -15,65 +15,61 @@
 	 * @package Sharkord\Models
 	 */
 	class User {
+		
+		/**
+		 * @var array Stores all dynamic user data from the API
+		 */
+		private array $attributes = [];
 
 		/**
 		 * User constructor.
 		 *
-		 * @param Sharkord		$sharkord     Reference to the bot instance.
-		 * @param int           $id      The unique user ID.
-		 * @param string        $name    The user's display name.
-		 * @param string        $status  The user's online status.
-		 * @param bool          $banned  Whether the user is banned.
-		 * @param array         $roleIds Array of role IDs assigned to the user.
+		 * @param Sharkord $sharkord Reference to the bot instance.
+		 * @param array    $rawData  The raw array of data from the API.
 		 */
 		public function __construct(
 			private Sharkord $sharkord,
-			public int $id,
-			public string $name,
-			public string $status,
-			public bool $banned,
-			public array $roleIds = []
-		) {}
+			array $rawData
+		) {
+			$this->updateFromArray($rawData);
+		}
 		
 		/**
 		 * Factory method to create a User from raw API data.
 		 */
 		public static function fromArray(array $raw, Sharkord $sharkord): self {
-			return new self(
-				$sharkord,
-				$raw['id'],
-				$raw['name'],
-				$raw['status'] ?? 'offline',
-				$raw['banned'],
-				$raw['roleIds'] ?? []
-			);
+			return new self($sharkord, $raw);
 		}
 
 		/**
-		 * Updates the user's information.
+		 * Updates the user's information dynamically.
 		 *
 		 * @param array $raw The raw user data from the server.
 		 * @return void
 		 */
 		public function updateFromArray(array $raw): void {
 			
-			if (isset($raw['name'])) $this->name = $raw['name'];
-			if (isset($raw['status'])) $this->status = $raw['status'];
-			if (isset($raw['banned'])) $this->banned = $raw['banned'];
-			if (isset($raw['roleIds'])) $this->roleIds = $raw['roleIds'];
+			// 1. Throw away the heavy items we don't want to store
+			unset($raw['avatar'], $raw['banner']);
+
+			// 2. Default the status to offline if it wasn't provided in the payload
+			if (!isset($raw['status']) && !isset($this->attributes['status'])) {
+				$raw['status'] = 'offline';
+			}
+
+			// 3. Merge the new data into our magic backpack (attributes array)
+			$this->attributes = array_merge($this->attributes, $raw);
 			
 		}
 		
 		/**
-		 * Updates the user's status.
+		 * Updates the user's status specifically.
 		 *
 		 * @param string $status The new status.
 		 * @return void
 		 */
 		public function updateStatus(string $status): void {
-
-			$this->status = $status;
-
+			$this->attributes['status'] = $status;
 		}
 		
 		/**
@@ -131,23 +127,28 @@
 		}
 
 		/**
-		 * Magic getter to access Roles.
+		 * Magic getter. This is triggered whenever you try to access a property 
+		 * that isn't explicitly defined (e.g., $user->bio or $user->id).
 		 *
 		 * @param string $name Property name.
 		 * @return mixed
 		 */
 		public function __get(string $name): mixed {
 			
+			// Handle the special 'roles' request
 			if ($name === 'roles' && $this->sharkord) {
 				$roles = [];
-				foreach ($this->roleIds as $roleId) {
+				$roleIds = $this->attributes['roleIds'] ?? [];
+				foreach ($roleIds as $roleId) {
 					if ($role = $this->sharkord->roles->get($roleId)) {
 						$roles[] = $role;
 					}
 				}
 				return $roles;
 			}
-			return null;
+			
+			// If it's not 'roles', look inside our magic backpack!
+			return $this->attributes[$name] ?? null;
 			
 		}
 
