@@ -7,21 +7,21 @@
 	use Sharkord\Sharkord;
 
 	/**
-	 * Class Category
+	 * Class Server
 	 *
-	 * Represents a channel category.
+	 * Represents the server environment and its settings.
 	 *
 	 * @package Sharkord\Models
 	 */
-	class Category {
+	class Server {
 
 		/**
-		 * @var array Stores all dynamic category data from the API
+		 * @var array Stores all dynamic server data from the API
 		 */
 		private array $attributes = [];
 
 		/**
-		 * Category constructor.
+		 * Server constructor.
 		 *
 		 * @param Sharkord $sharkord Reference to the main bot instance.
 		 * @param array    $rawData  The raw array of data from the API.
@@ -34,16 +34,16 @@
 		}
 		
 		/**
-		 * Factory method to create a Category from raw API data.
+		 * Factory method to create a Server from raw API data.
 		 */
 		public static function fromArray(array $raw, Sharkord $sharkord): self {
 			return new self($sharkord, $raw);
 		}
 		
 		/**
-		 * Updates the Category's information dynamically.
+		 * Updates the Server's information dynamically.
 		 *
-		 * @param array $raw The raw Category data from the server.
+		 * @param array $raw The raw Server data.
 		 * @return void
 		 */
 		public function updateFromArray(array $raw): void {
@@ -65,14 +65,20 @@
 		}
 
 		/**
-		 * Magic getter. This is triggered whenever you try to access a property 
-		 * that isn't explicitly defined (e.g., $category->name or $category->position).
+		 * Magic getter. Triggered whenever you try to access a property 
+		 * that isn't explicitly defined.
 		 *
 		 * @param string $name Property name.
 		 * @return mixed
 		 */
 		public function __get(string $name): mixed {
 			
+			// Create an alias so that $server->id returns the serverId
+			if ($name === 'id') {
+				return $this->attributes['serverId'] ?? null;
+			}
+			
+			// Otherwise, look for the requested property normally
 			return $this->attributes[$name] ?? null;
 			
 		}

@@ -35,7 +35,8 @@
 		 */
 		public function handleCreate(array $raw): void {
 			
-			$category = new Category($raw['id'], $raw['name'], $raw['position']);
+			// Instantiating the Category using our new factory method
+			$category = Category::fromArray($raw, $this->sharkord);
 			$this->categories[$raw['id']] = $category;
 			
 		}
@@ -50,8 +51,9 @@
 			
 			if (isset($this->categories[$raw['id']])) {
 				$cat = $this->categories[$raw['id']];
-				$cat->name = $raw['name'];
-				$cat->position = $raw['position'];
+				
+				// Let the Category model handle its own data updates seamlessly
+				$cat->updateFromArray($raw);
 			}
 			
 		}

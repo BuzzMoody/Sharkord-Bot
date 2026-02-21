@@ -84,7 +84,7 @@ Create a file named `bot.php` (or `index.php`) and add the following code. This 
 		$sharkord->logger->notice(sprintf(
 			"[#%s] %s: %s",
 			$message->channel->name,
-			$message->user->name,
+			$message->author->name,
 			$message->content
 		));
 		
