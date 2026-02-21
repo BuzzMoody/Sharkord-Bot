@@ -146,6 +146,11 @@
 		 */
 		public function __get(string $name): mixed {
 			
+			if ($name === 'server' && $this->sharkord) {
+				// We use the bot instance to ask the ServerManager for the server object
+				return $this->sharkord->servers->getFirst();
+			}
+			
 			// Handle the special 'roles' request
 			if ($name === 'roles' && $this->sharkord) {
 				$roles = [];

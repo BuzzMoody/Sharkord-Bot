@@ -35,11 +35,19 @@
 		 */
 		public function handleCreate(array $raw): void {
 			
-			// Check if the serverId exists in the payload to avoid errors
-			if (!isset($raw['serverId'])) return;
-
+			$serverId = $raw['serverId'];
+			
+			// If a server with this ID is already cached, update it in place
+			if (isset($this->servers[$serverId])) {
+				
+				$this->servers[$serverId]->updateFromArray($raw);
+				return;
+				
+			}
+			
+			// Otherwise, create a new Server instance and cache it
 			$server = Server::fromArray($raw, $this->sharkord);
-			$this->servers[$raw['serverId']] = $server;
+			$this->servers[$serverId] = $server;
 			
 		}
 
