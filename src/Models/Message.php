@@ -16,12 +16,12 @@
 	class Message {
 
 		/**
-		 * @var array Stores all dynamic server data from the API
+		 * @var array Stores all dynamic message data from the API
 		 */
 		private array $attributes = [];
 
 		/**
-		 * Server constructor.
+		 * Message constructor.
 		 *
 		 * @param Sharkord $sharkord Reference to the main bot instance.
 		 * @param array    $rawData  The raw array of data from the API.
@@ -34,7 +34,7 @@
 		}
 		
 		/**
-		 * Factory method to create a Server from raw API data.
+		 * Factory method to create a Message from raw API data.
 		 */
 		public static function fromArray(array $raw, Sharkord $sharkord): self {
 			return new self($sharkord, $raw);

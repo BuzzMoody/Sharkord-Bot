@@ -26,7 +26,7 @@
 	use Sharkord\Managers\UserManager;
 	use Sharkord\Managers\CategoryManager;
 	use Sharkord\Managers\RoleManager;
-	use Sharkord\Managers\ServerManager;	
+	use Sharkord\Managers\ServerManager;
 
 	/**
 	 * Class Sharkord
@@ -369,7 +369,7 @@
 				// Log the error so you can fix it
 				$this->logger->error($errorMessage);
 				
-				// Optional: You could even make the bot reply in Discord saying "Oops, I hit a bug!"
+				// Optional: You could even make the bot reply in Sharkord saying "Oops, I hit a bug!"
 				// $message->channel->sendMessage("Oops, I ran into an internal error!");
 				
 			}
