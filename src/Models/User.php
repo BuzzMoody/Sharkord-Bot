@@ -127,6 +127,31 @@
 		}
 		
 		/**
+		 * Bans this user from the server.
+		 *
+		 * @param string $reason The reason for the ban.
+		 * @return void
+		 */
+		public function ban(string $reason = 'No reason given.'): void {
+			
+			// We ask the main bot instance to ban "this" specific user
+			$this->sharkord->ban($this, $reason);
+			
+		}
+
+		/**
+		 * Unbans this user from the server.
+		 *
+		 * @return void
+		 */
+		public function unban(): void {
+			
+			// We ask the main bot instance to unban "this" specific user
+			$this->sharkord->unban($this);
+			
+		}
+		
+		/**
 		 * Returns all the attributes as an array. Perfect for debugging!
 		 *
 		 * @return array
