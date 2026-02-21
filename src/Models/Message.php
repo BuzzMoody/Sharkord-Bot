@@ -71,6 +71,36 @@
 		}
 		
 		/**
+		 * Returns a complete array of the message data, including 
+		 * fully expanded User, Channel, and Server objects for debugging.
+		 *
+		 * @return array
+		 */
+		public function toArray(): array {
+			
+			// 1. Grab the base message data
+			$debugData = $this->attributes;
+
+			// 2. If a channel exists, fetch it and turn it into an array
+			if ($this->channel) {
+				$debugData['channel_expanded'] = $this->channel->toArray();
+			}
+
+			// 3. If a user exists, fetch them and turn them into an array
+			if ($this->user) {
+				$debugData['user_expanded'] = $this->user->toArray();
+			}
+
+			// 4. If a server exists, fetch it and turn it into an array
+			if ($this->server) {
+				$debugData['server_expanded'] = $this->server->toArray();
+			}
+
+			return $debugData;
+			
+		}
+		
+		/**
 		 * Magic getter for dynamic properties.
 		 *
 		 * @param string $name Property name.
