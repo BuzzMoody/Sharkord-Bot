@@ -16,18 +16,47 @@
 	class Message {
 
 		/**
-		 * Message constructor.
+		 * @var array Stores all dynamic server data from the API
+		 */
+		private array $attributes = [];
+
+		/**
+		 * Server constructor.
 		 *
-		 * @param int     $id      The unique message ID.
-		 * @param string  $content The text content of the message.
-		 * @param User    $user    The user who sent the message.
-		 * @param Channel $channel The channel where the message was sent.
+		 * @param Sharkord $sharkord Reference to the main bot instance.
+		 * @param array    $rawData  The raw array of data from the API.
 		 */
 		public function __construct(
-			public Sharkord $sharkord,
-			public int $id,
-			public string $content
-		) {}
+			private Sharkord $sharkord,
+			array $rawData
+		) {
+			$this->updateFromArray($rawData);
+		}
+		
+		/**
+		 * Factory method to create a Server from raw API data.
+		 */
+		public static function fromArray(array $raw, Sharkord $sharkord): self {
+			return new self($sharkord, $raw);
+		}
+		
+		/**
+		 * Updates the Message's information dynamically.
+		 *
+		 * @param array $raw The raw Message data.
+		 * @return void
+		 */
+		public function updateFromArray(array $raw): void {
+			
+			// Preserve your logic to strip HTML tags from the content
+			if (isset($raw['content'])) {
+				$raw['content'] = strip_tags($raw['content']);
+			}
+
+			// Merge the new data into our attributes array
+			$this->attributes = array_merge($this->attributes, $raw);
+			
+		}
 
 		/**
 		 * Replies to this message in the same channel.

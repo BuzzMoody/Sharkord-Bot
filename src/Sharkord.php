@@ -350,15 +350,8 @@
 		 */
 		private function onNewMessage(array $raw): void {
 
-			$user = $this->users->get($raw['userId']);
-			$channel = $this->channels->get($raw['channelId']);
-
-			$message = new Message(
-				(int)$raw['id'],
-				strip_tags($raw['content']),
-				$user,
-				$channel
-			);
+			// Simply pass the raw payload and the bot instance to the model!
+			$message = Message::fromArray($raw, $this);
 
 			$this->emit('message', [$message]);
 
