@@ -165,7 +165,7 @@
 		}
 		
 		/**
-		 * Delete this user from the server.
+		 * Deletes this user from the server.
 		 *
 		 * @param bool $wipe Whether to wipe all associated data for this user.
 		 * @return void

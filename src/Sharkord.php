@@ -562,7 +562,7 @@
 		 * Deletes a user from the server.
 		 *
 		 * @param User   $user   The user to delete.
-		 * @param bool $wipe Delete all user data (posts, files, emoji etc.).
+		 * @param bool  $wipe    Whether to delete all associated user data (posts, files, emoji, etc.).
 		 * @return void
 		 */
 		public function delete(User $user, bool $wipe = false): void {
