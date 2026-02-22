@@ -152,6 +152,32 @@
 		}
 		
 		/**
+		 * Kicks this user from the server.
+		 *
+		 * @param string $reason The reason for the kick.
+		 * @return void
+		 */
+		public function kick(string $reason = 'No reason given.'): void {
+			
+			// We ask the main bot instance to kick "this" specific user
+			$this->sharkord->kick($this, $reason);
+			
+		}
+		
+		/**
+		 * Delete this user from the server.
+		 *
+		 * @param string $reason The reason for the ban.
+		 * @return void
+		 */
+		public function delete(bool $wipe = false): void {
+			
+			// We ask the main bot instance to delete "this" specific user
+			$this->sharkord->kick($this, $wipe);
+			
+		}
+		
+		/**
 		 * Returns all the attributes as an array. Perfect for debugging!
 		 *
 		 * @return array
