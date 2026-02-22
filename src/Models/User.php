@@ -167,7 +167,7 @@
 		/**
 		 * Delete this user from the server.
 		 *
-		 * @param string $reason The reason for the ban.
+		 * @param string $reason The reason for the deletion.
 		 * @return void
 		 */
 		public function delete(bool $wipe = false): void {
