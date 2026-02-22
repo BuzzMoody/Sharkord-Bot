@@ -155,6 +155,7 @@
 		 * Kicks this user from the server.
 		 *
 		 * @param string $reason The reason for the kick.
+		 * @param bool $wipe Whether to permanently wipe this user's data during deletion.
 		 * @return void
 		 */
 		public function kick(string $reason = 'No reason given.'): void {
