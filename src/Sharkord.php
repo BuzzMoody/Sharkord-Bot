@@ -522,6 +522,76 @@
 			$this->sendRpc("mutation", ["input" => ["userId" => $user->id], "path" => "users.unban"]);
 			
 		}
+		
+		/**
+		 * Kicks a user from the server.
+		 *
+		 * @param User   $user   The user to ban.
+		 * @param string $reason The reason for the kick.
+		 * @return void
+		 */
+		public function kick(User $user, string $reason = 'No reason given.'): void {
+			
+			if (!$this->bot) {
+				
+				$this->logger->warning("The bots own entity has not yet been set.");
+				return;
+				
+			}
+			
+			if (!$this->bot->hasPermission('MANAGE_USERS')) {
+				
+				$this->logger->warning("Failed to kick {$user->name}: Bot lacks MANAGE_USERS permission.");
+				return;
+				
+			}
+			
+			if ($user->isOwner()) { 
+			
+				$this->logger->warning("Failed to kick {$user->name} as they are the server owner");
+				return;
+			
+			}
+			
+			// Send using existing RPC method
+			$this->sendRpc("mutation", ["input" => ["userId" => $user->id, "reason" => $reason], "path" => "users.kick"]);
+			
+		}
+		
+		/**
+		 * Deletes a user from the server.
+		 *
+		 * @param User   $user   The user to ban.
+		 * @param bool $wipe Delete all user data (posts, files, emoji etc..).
+		 * @return void
+		 */
+		public function delete(User $user, bool $wipe = false): void {
+			
+			if (!$this->bot) {
+				
+				$this->logger->warning("The bots own entity has not yet been set.");
+				return;
+				
+			}
+			
+			if (!$this->bot->hasPermission('MANAGE_USERS')) {
+				
+				$this->logger->warning("Failed to kick {$user->name}: Bot lacks MANAGE_USERS permission.");
+				return;
+				
+			}
+			
+			if ($user->isOwner()) { 
+			
+				$this->logger->warning("Failed to kick {$user->name} as they are the server owner");
+				return;
+			
+			}
+			
+			// Send using existing RPC method
+			$this->sendRpc("mutation", ["input" => ["userId" => $user->id, "wipe" => $wipe], "path" => "users.delete"]);
+			
+		}
 
 		/**
 		 * Sends a JSON-RPC request over the WebSocket.
