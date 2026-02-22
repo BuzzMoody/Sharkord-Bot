@@ -526,7 +526,7 @@
 		/**
 		 * Kicks a user from the server.
 		 *
-		 * @param User   $user   The user to ban.
+		 * @param User   $user   The user to kick.
 		 * @param string $reason The reason for the kick.
 		 * @return void
 		 */
@@ -561,8 +561,8 @@
 		/**
 		 * Deletes a user from the server.
 		 *
-		 * @param User   $user   The user to ban.
-		 * @param bool $wipe Delete all user data (posts, files, emoji etc..).
+		 * @param User   $user   The user to delete.
+		 * @param bool  $wipe    Whether to delete all associated user data (posts, files, emoji, etc.).
 		 * @return void
 		 */
 		public function delete(User $user, bool $wipe = false): void {
@@ -576,14 +576,14 @@
 			
 			if (!$this->bot->hasPermission('MANAGE_USERS')) {
 				
-				$this->logger->warning("Failed to kick {$user->name}: Bot lacks MANAGE_USERS permission.");
+				$this->logger->warning("Failed to delete {$user->name}: Bot lacks MANAGE_USERS permission.");
 				return;
 				
 			}
 			
 			if ($user->isOwner()) { 
 			
-				$this->logger->warning("Failed to kick {$user->name} as they are the server owner");
+				$this->logger->warning("Failed to delete {$user->name} as they are the server owner");
 				return;
 			
 			}

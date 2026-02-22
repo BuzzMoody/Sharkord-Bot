@@ -155,7 +155,6 @@
 		 * Kicks this user from the server.
 		 *
 		 * @param string $reason The reason for the kick.
-		 * @param bool $wipe Whether to permanently wipe this user's data during deletion.
 		 * @return void
 		 */
 		public function kick(string $reason = 'No reason given.'): void {
@@ -166,15 +165,15 @@
 		}
 		
 		/**
-		 * Delete this user from the server.
+		 * Deletes this user from the server.
 		 *
-		 * @param string $reason The reason for the deletion.
+		 * @param bool $wipe Whether to wipe all associated data for this user.
 		 * @return void
 		 */
 		public function delete(bool $wipe = false): void {
 			
 			// We ask the main bot instance to delete "this" specific user
-			$this->sharkord->kick($this, $wipe);
+			$this->sharkord->delete($this, $wipe);
 			
 		}
 		
