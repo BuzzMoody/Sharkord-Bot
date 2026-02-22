@@ -71,6 +71,22 @@
 		}
 		
 		/**
+		 * Adds an emoji reaction to this entity.
+		 *
+		 * This is a convenience method that delegates the reaction action 
+		 * to the main Sharkord client instance, passing the current object 
+		 * along with the requested emoji.
+		 *
+		 * @param string $emoji The single emoji character(s) to use for the reaction.
+		 * @return void
+		 */
+		public function react(string $emoji): void {
+			
+			$this->sharkord->react($this, $emoji);
+			
+		}
+		
+		/**
 		 * Returns a complete array of the message data, including 
 		 * fully expanded User, Channel, and Server objects for debugging.
 		 *
