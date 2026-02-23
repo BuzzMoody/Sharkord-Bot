@@ -90,7 +90,7 @@
 				return false;
 			}
 		
-			return in_array($permission->value, $this->permissions, true);
+			return in_array($permission->value, $permissions, true);
 			
 		}
 		
