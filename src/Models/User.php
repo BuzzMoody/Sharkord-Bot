@@ -21,7 +21,7 @@
 		 * Array of Role objects assigned to this user.
 		 * @var array<Role>
 		 */
-		protected array $roles = [];
+		//rotected array $roles = [];
 		
 		/**
 		 * @var array Stores all dynamic user data from the API
@@ -88,6 +88,8 @@
 		public function hasPermission(Permission $permission): bool {
 			
 			echo "Checking permissions in User.php\n";
+			
+			print_r($this->roles[0]->toArray()); 
 			
 			if (empty($this->roles)) {
 				echo "\n[DEBUG] The roles array is completely empty for this user!\n";

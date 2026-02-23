@@ -272,8 +272,6 @@
 			}
 			
 			$this->bot = $this->users->get($raw['ownUserId']);
-			
-			var_dump($this->bot->toArray());
 
 			$this->servers->handleCreate($raw['publicSettings']);
 
