@@ -654,7 +654,7 @@
 			// Added \x{1F3FB}-\x{1F3FF} to the modifier brackets to support skin tones
 			$pattern = '/^\p{Extended_Pictographic}[\x{FE0F}\p{M}\x{1F3FB}-\x{1F3FF}]*(?:\x{200D}\p{Extended_Pictographic}[\x{FE0F}\p{M}\x{1F3FB}-\x{1F3FF}]*)*$/u';
 			
-			if(!preg_match($pattern, $emoji) === 1;
+			return preg_match($pattern, $emoji) === 1;
 			
 		}
 		
