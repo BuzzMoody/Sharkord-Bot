@@ -256,8 +256,6 @@
 		private function onJoinResponse(array $data): void {
 
 			$raw = $data['result']['data'];
-			
-			var_dump(array_keys($raw));
 
 			// Hydrate Models efficiently
 			foreach ($raw['roles'] ?? [] as $r) {
@@ -621,7 +619,7 @@
 			
 			var_dump($this->bot->toArray());
 			
-			var_dump(array_keys($this->roles->roles));
+			var_dump(array_keys($this->bot->roles));
 			
 			if (!$this->bot->hasPermission(Permission::REACT_TO_MESSAGES)) {
 				
