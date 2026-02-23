@@ -83,9 +83,9 @@
 			
 			echo "Checking permissions in User.php\n";
 			
-			print_r($this->permissions);
+			$permissions = $this->permissions;
 			
-			if (empty($this->permissions)) {
+			if (empty($permissions)) {
 				echo "\n[DEBUG] The permissions array is completely empty for this user!\n";
 				return false;
 			}
