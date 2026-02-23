@@ -55,19 +55,6 @@
 		}
 		
 		/**
-		 * Determine if the role possesses a specific permission.
-		 *
-		 * @param Permission $permission The permission enum case to check.
-		 * @return bool True if the role has the permission, false otherwise.
-		 */
-		public function hasPermission(Permission $permission): bool {
-			
-			echo "Checking permissions in Role.php\n";
-			return in_array($permission->value, $this->permissions, true);
-			
-		}
-		
-		/**
 		 * Returns all the attributes as an array. Perfect for debugging!
 		 *
 		 * @return array

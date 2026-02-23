@@ -83,29 +83,13 @@
 			
 			echo "Checking permissions in User.php\n";
 			
-			var_dump($this->permissions);
-			
 			if (empty($this->roles)) {
 				echo "\n[DEBUG] The roles array is completely empty for this user!\n";
+				return false;
 			}
 		
-			// Loop through all roles assigned to this user
-			foreach ($this->roles as $role) {
-				
-				// If any individual role has the permission, the user has the permission
-				if (!$role instanceof Role) {
-					echo "\n[DEBUG] Expected a Role object, but found: " . gettype($role) . "\n";
-					continue; // Skip so it doesn't crash
-				}
-
-				if ($role->hasPermission($permission)) {
-					return true;
-				}
-				
-			}
-
-			// If no roles granted the permission, return false
-			return false;
+			return in_array($permission->value, $this->permissions, true);
+			
 		}
 		
 		/**
