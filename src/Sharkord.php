@@ -17,6 +17,7 @@
 	use Monolog\Formatter\LineFormatter;
 	use Monolog\Level;
 	use Monolog\ErrorHandler;
+	use LitEmoji\LitEmoji;
 	use Sharkord\Models\User;
 	use Sharkord\Models\Channel;
 	use Sharkord\Models\Message;
@@ -667,8 +668,8 @@
 		 */
 		private function emojiToText(string $emoji): string {
 			
-			$unicodeName = \IntlChar::charName($emoji);
-			return str_replace(' ', '_', strtolower($unicodeName));
+			$unicodeName = LitEmoji::encodeShortcode($emoji);
+			return str_replace(array(' ', ':'), array('_', ''), strtolower($unicodeName));
 			
 		}
 
