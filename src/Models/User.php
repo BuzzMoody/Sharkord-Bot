@@ -207,7 +207,6 @@
 			
 			if ($name === 'permissions' && $this->sharkord) {
 				
-				$roles = [];
 				$permissions = [];
 				$roleIds = $this->attributes['roleIds'] ?? [];
 				foreach ($roleIds as $roleId) {
