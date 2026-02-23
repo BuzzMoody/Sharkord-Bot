@@ -69,6 +69,7 @@
 		public function hasPermission(Permission $permission): bool {
 			
 			return in_array($permission->value, $this->permissions, true);
+			print_r($this->permissions);
 			
 		}
 		
