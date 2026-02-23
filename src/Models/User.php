@@ -86,10 +86,22 @@
 		 * @return bool True if any of the user's roles have the permission, false otherwise.
 		 */
 		public function hasPermission(Permission $permission): bool {
+			
+			if (empty($this->roles)) {
+				echo "\n[DEBUG] The roles array is completely empty for this user!\n";
+			}
+			
+			var_dump($this->roles);
+		
 			// Loop through all roles assigned to this user
 			foreach ($this->roles as $role) {
 				
 				// If any individual role has the permission, the user has the permission
+				if (!$role instanceof Role) {
+					echo "\n[DEBUG] Expected a Role object, but found: " . gettype($role) . "\n";
+					continue; // Skip so it doesn't crash
+				}
+
 				if ($role->hasPermission($permission)) {
 					return true;
 				}
