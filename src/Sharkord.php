@@ -619,7 +619,7 @@
 			
 			var_dump($this->bot->toArray());
 			
-			var_dump(array_keys($this->sharkord->roles->roles));
+			var_dump(array_keys($this->roles->roles));
 			
 			if (!$this->bot->hasPermission(Permission::REACT_TO_MESSAGES)) {
 				
