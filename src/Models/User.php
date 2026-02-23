@@ -83,6 +83,8 @@
 			
 			echo "Checking permissions in User.php\n";
 			
+			var_dump($this->permissions);
+			
 			if (empty($this->roles)) {
 				echo "\n[DEBUG] The roles array is completely empty for this user!\n";
 			}
@@ -223,6 +225,20 @@
 					}
 				}
 				return $roles;
+			}
+			
+			if ($name === 'permissions' && $this->sharkord) {
+				
+				$roles = [];
+				$permissions = [];
+				$roleIds = $this->attributes['roleIds'] ?? [];
+				foreach ($roleIds as $roleId) {
+					if ($role = $this->sharkord->roles->get($roleId)) {
+						$permissions = array_merge($permissions, $role->permissions);
+					}
+				}
+				return $permissions;
+				
 			}
 			
 			// If it's not 'roles', look inside our magic backpack!
