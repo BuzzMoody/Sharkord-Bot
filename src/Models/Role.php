@@ -20,12 +20,6 @@
 		 * @var array Stores all dynamic role data from the API
 		 */
 		private array $attributes = [];
-		
-		/**
-		 * Array of permissions assigned to this role (stored as strings).
-		 * @var array<string>
-		 */
-		protected array $permissions = [];
 
 		/**
 		 * Role constructor.

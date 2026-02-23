@@ -18,12 +18,6 @@
 	class User {
 		
 		/**
-		 * Array of Role objects assigned to this user.
-		 * @var array<Role>
-		 */
-		//rotected array $roles = [];
-		
-		/**
 		 * @var array Stores all dynamic user data from the API
 		 */
 		private array $attributes = [];
@@ -92,8 +86,6 @@
 			if (empty($this->roles)) {
 				echo "\n[DEBUG] The roles array is completely empty for this user!\n";
 			}
-			
-			var_dump($this->roles);
 		
 			// Loop through all roles assigned to this user
 			foreach ($this->roles as $role) {
