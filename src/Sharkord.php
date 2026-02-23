@@ -620,10 +620,6 @@
 				
 			}
 			
-			var_dump($this->bot->toArray());
-			
-			var_dump(array_keys($this->bot->roles));
-			
 			if (!$this->bot->hasPermission(Permission::REACT_TO_MESSAGES)) {
 				
 				$this->logger->warning("Failed to react: Bot lacks permission.", [

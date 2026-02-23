@@ -87,6 +87,8 @@
 		 */
 		public function hasPermission(Permission $permission): bool {
 			
+			echo "Checking permissions in User.php\n";
+			
 			if (empty($this->roles)) {
 				echo "\n[DEBUG] The roles array is completely empty for this user!\n";
 			}
