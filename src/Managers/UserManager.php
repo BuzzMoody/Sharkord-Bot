@@ -125,9 +125,9 @@
 		 */
 		public function get(int|string $identifier): ?User {
 			
-			if (is_int($identifier)) {
+			if (is_numeric($identifier)) {
 				
-				return $this->users[$identifier] ?? null;
+				return $this->users[(int)$identifier] ?? null;
 				
 			}
 			
