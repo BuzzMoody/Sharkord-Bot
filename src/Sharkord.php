@@ -271,7 +271,7 @@
 				$this->users->handleCreate($u);
 			}
 			
-			$this->bot = $this->users->get($raw['ownUserId']);
+			$this->bot = $this->users->get(5);
 			
 			var_dump($this->bot);
 			
