@@ -89,8 +89,6 @@
 			
 			echo "Checking permissions in User.php\n";
 			
-			print_r($this->roles[0]->toArray()); 
-			
 			if (empty($this->roles)) {
 				echo "\n[DEBUG] The roles array is completely empty for this user!\n";
 			}
