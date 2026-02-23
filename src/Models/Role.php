@@ -5,6 +5,7 @@
 	namespace Sharkord\Models;
 	
 	use Sharkord\Sharkord;
+	use Sharkord\Permission;
 
 	/**
 	 * Class Role
@@ -54,20 +55,6 @@
 		}
 		
 		/**
-		 * Checks if this Role has a specific permission.
-		 *
-		 * @param string $permission The permission string to check.
-		 * @return bool True if the Role has the permission, false otherwise.
-		 */
-		public function hasPermission(string $permission): bool {
-			
-			// Safely grab the permissions array from our attributes, or use an empty array if none exist
-			$permissions = $this->attributes['permissions'] ?? [];
-			return in_array($permission, $permissions, true);
-			
-		}
-		
-		/**
 		 * Returns all the attributes as an array. Perfect for debugging!
 		 *
 		 * @return array
@@ -92,4 +79,5 @@
 		}
 
 	}
+	
 ?>

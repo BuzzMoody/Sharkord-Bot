@@ -5,6 +5,7 @@
 	namespace Sharkord\Models;
 	
 	use Sharkord\Sharkord;
+	use Sharkord\Permission;
 
 	/**
 	 * Class User
@@ -73,26 +74,16 @@
 		}
 		
 		/**
-		 * Checks if the user has a specific permission via their assigned roles.
+		 * Determine if the user possesses a specific permission through any of their roles.
 		 *
-		 * @param string $permission The permission string to check.
-		 * @return bool True if the user has the permission, false otherwise.
+		 * @param Permission $permission The permission enum case to check.
+		 * @return bool True if any of the user's roles have the permission, false otherwise.
 		 */
-		public function hasPermission(string $permission): bool {
-			// Get all the Role objects for this user using the magic getter
-			$roles = $this->roles;
-
-			if ($roles) {
-				foreach ($roles as $role) {
-					// If any of their roles has the permission, return true immediately
-					if ($role->hasPermission($permission)) {
-						return true;
-					}
-				}
-			}
-
-			// If we checked all roles and didn't find the permission, return false
-			return false;
+		public function hasPermission(Permission $permission): bool {
+			
+			$permissions = $this->permissions;		
+			return in_array($permission->value, $permissions, true);
+			
 		}
 		
 		/**
@@ -116,7 +107,7 @@
 			// Get all the Role objects for this user using the magic getter
 			$roles = $this->roleIds;
 
-			if ($roles && in_array($roleId, $roles, true)) {
+			if ($roles && in_array($roleId, $roles, false)) {
 				
 				return true;
 				
@@ -212,6 +203,19 @@
 					}
 				}
 				return $roles;
+			}
+			
+			if ($name === 'permissions' && $this->sharkord) {
+				
+				$permissions = [];
+				$roleIds = $this->attributes['roleIds'] ?? [];
+				foreach ($roleIds as $roleId) {
+					if ($role = $this->sharkord->roles->get($roleId)) {
+						$permissions = array_merge($permissions, $role->permissions ?? []);
+					}
+				}
+				return $permissions;
+				
 			}
 			
 			// If it's not 'roles', look inside our magic backpack!
