@@ -133,7 +133,7 @@
 			// Get all the Role objects for this user using the magic getter
 			$roles = $this->roleIds;
 
-			if ($roles && in_array($roleId, $roles, true)) {
+			if ($roles && in_array($roleId, $roles, false)) {
 				
 				return true;
 				
