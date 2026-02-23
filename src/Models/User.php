@@ -81,15 +81,7 @@
 		 */
 		public function hasPermission(Permission $permission): bool {
 			
-			echo "Checking permissions in User.php\n";
-			
-			$permissions = $this->permissions;
-			
-			if (empty($permissions)) {
-				echo "\n[DEBUG] The permissions array is completely empty for this user!\n";
-				return false;
-			}
-		
+			$permissions = $this->permissions;		
 			return in_array($permission->value, $permissions, true);
 			
 		}
