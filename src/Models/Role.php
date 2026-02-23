@@ -5,6 +5,7 @@
 	namespace Sharkord\Models;
 	
 	use Sharkord\Sharkord;
+	use Sharkord\Permission;
 
 	/**
 	 * Class Role
@@ -19,6 +20,12 @@
 		 * @var array Stores all dynamic role data from the API
 		 */
 		private array $attributes = [];
+		
+		/**
+		 * Array of permissions assigned to this role (stored as strings).
+		 * @var array<string>
+		 */
+		protected array $permissions = [];
 
 		/**
 		 * Role constructor.
@@ -54,16 +61,14 @@
 		}
 		
 		/**
-		 * Checks if this Role has a specific permission.
+		 * Determine if the role possesses a specific permission.
 		 *
-		 * @param string $permission The permission string to check.
-		 * @return bool True if the Role has the permission, false otherwise.
+		 * @param Permission $permission The permission enum case to check.
+		 * @return bool True if the role has the permission, false otherwise.
 		 */
-		public function hasPermission(string $permission): bool {
+		public function hasPermission(Permission $permission): bool {
 			
-			// Safely grab the permissions array from our attributes, or use an empty array if none exist
-			$permissions = $this->attributes['permissions'] ?? [];
-			return in_array($permission, $permissions, true);
+			return in_array($permission->value, $this->permissions, true);
 			
 		}
 		

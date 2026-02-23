@@ -27,6 +27,7 @@
 	use Sharkord\Managers\CategoryManager;
 	use Sharkord\Managers\RoleManager;
 	use Sharkord\Managers\ServerManager;
+	use Sharkord\Permission;
 
 	/**
 	 * Class Sharkord
@@ -477,7 +478,7 @@
 				
 			}
 			
-			if (!$this->bot->hasPermission('MANAGE_USERS')) {
+			if (!$this->bot->hasPermission(Permission::MANAGE_USERS)) {
 				
 				$this->logger->warning("Failed to ban {$user->name}: Bot lacks MANAGE_USERS permission.");
 				return;
@@ -511,7 +512,7 @@
 				
 			}
 			
-			if (!$this->bot->hasPermission('MANAGE_USERS')) {
+			if (!$this->bot->hasPermission(Permission::MANAGE_USERS)) {
 				
 				$this->logger->warning('Failed to unban user: Bot lacks MANAGE_USERS permission.');
 				return;
@@ -539,7 +540,7 @@
 				
 			}
 			
-			if (!$this->bot->hasPermission('MANAGE_USERS')) {
+			if (!$this->bot->hasPermission(Permission::MANAGE_USERS)) {
 				
 				$this->logger->warning("Failed to kick {$user->name}: Bot lacks MANAGE_USERS permission.");
 				return;
@@ -574,7 +575,7 @@
 				
 			}
 			
-			if (!$this->bot->hasPermission('MANAGE_USERS')) {
+			if (!$this->bot->hasPermission(Permission::MANAGE_USERS)) {
 				
 				$this->logger->warning("Failed to delete {$user->name}: Bot lacks MANAGE_USERS permission.");
 				return;
@@ -608,48 +609,65 @@
 			
 			if (!$this->bot) {
 				
-				$this->logger->warning("The bots own entity has not yet been set.");
+				$this->logger->warning("The bots own entity has not yet been set.", [
+					'message_id' => $message->id,
+					'emoji' => $emoji,
+				]);
 				return;
 				
 			}
 			
-			if (!$this->bot->hasPermission('REACT_TO_MESSAGES')) {
+			if (!$this->bot->hasPermission(Permission::REACT_TO_MESSAGES)) {
 				
-				$this->logger->warning("Failed to react: Bot lacks REACT_TO_MESSAGES permission.");
+				$this->logger->warning("Failed to react: Bot lacks permission.", [
+					'message_id' => $message->id,
+					'permission' => Permission::REACT_TO_MESSAGES->value,
+				]);
 				return;
 				
 			}
 			
-			if (!$this->is_emoji($emoji)) { 
+			if (!$this->isEmoji($emoji)) {
 			
-				$this->logger->warning("Failed to react: Invalid emoji passed.");
+				$this->logger->warning("Failed to react: Invalid emoji passed.", [
+					'message_id' => $message->id,
+					'invalid_emoji' => $emoji,
+				]);
 				return;
 				
 			}
 			
-			$this->sendRpc("mutation", ["input" => ["messageId" => $message->id, "emoji" => $emoji], "path" => "messages.toggleReaction"]);
+			$emojiText = $this->emojiToText($emoji);
+			
+			$this->sendRpc("mutation", ["input" => ["messageId" => $message->id, "emoji" => $emojiText], "path" => "messages.toggleReaction"]);
 			
 		}
 		
 		/**
 		 * Validates whether a given string is exactly one single emoji.
 		 *
-		 * This regex enforces the structure of a single emoji grapheme cluster. 
-		 * It requires a base emoji (\p{Extended_Pictographic}), optionally followed 
-		 * by modifiers: variation selectors (\x{FE0F}), combining marks (\p{M}), 
-		 * or skin tone modifiers (\x{1F3FB}-\x{1F3FF}). 
-		 * If it is a combined emoji (e.g., professions or family combinations), 
-		 * it strictly requires the Zero-Width Joiner (\x{200D}) to bridge the components.
-		 *
 		 * @param string $emoji The string to validate.
 		 * @return bool Returns true if the string is exactly one valid emoji sequence, false otherwise.
 		 */
-		private function is_emoji(string $emoji): bool {
+		private function isEmoji(string $emoji): bool {
 			
 			// Added \x{1F3FB}-\x{1F3FF} to the modifier brackets to support skin tones
 			$pattern = '/^\p{Extended_Pictographic}[\x{FE0F}\p{M}\x{1F3FB}-\x{1F3FF}]*(?:\x{200D}\p{Extended_Pictographic}[\x{FE0F}\p{M}\x{1F3FB}-\x{1F3FF}]*)*$/u';
 			
-			return preg_match($pattern, $emoji) === 1;
+			if(!preg_match($pattern, $emoji) === 1;
+			
+		}
+		
+		/**
+		 * Turns the visual emoji into the text name
+		 *
+		 * @param string $emoji The emoji to convert.
+		 * @return string Returns the text string value of the emoji
+		 */
+		private function emojiToText(string $emoji): string {
+			
+			$unicodeName = \IntlChar::charName($emoji);
+			return str_replace(' ', '_', strtolower($unicodeName));
 			
 		}
 

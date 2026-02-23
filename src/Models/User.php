@@ -5,6 +5,7 @@
 	namespace Sharkord\Models;
 	
 	use Sharkord\Sharkord;
+	use Sharkord\Permission;
 
 	/**
 	 * Class User
@@ -15,6 +16,12 @@
 	 * @package Sharkord\Models
 	 */
 	class User {
+		
+		/**
+		 * Array of Role objects assigned to this user.
+		 * @var array<Role>
+		 */
+		protected array $roles = [];
 		
 		/**
 		 * @var array Stores all dynamic user data from the API
@@ -73,25 +80,23 @@
 		}
 		
 		/**
-		 * Checks if the user has a specific permission via their assigned roles.
+		 * Determine if the user possesses a specific permission through any of their roles.
 		 *
-		 * @param string $permission The permission string to check.
-		 * @return bool True if the user has the permission, false otherwise.
+		 * @param Permission $permission The permission enum case to check.
+		 * @return bool True if any of the user's roles have the permission, false otherwise.
 		 */
-		public function hasPermission(string $permission): bool {
-			// Get all the Role objects for this user using the magic getter
-			$roles = $this->roles;
-
-			if ($roles) {
-				foreach ($roles as $role) {
-					// If any of their roles has the permission, return true immediately
-					if ($role->hasPermission($permission)) {
-						return true;
-					}
+		public function hasPermission(Permission $permission): bool {
+			// Loop through all roles assigned to this user
+			foreach ($this->roles as $role) {
+				
+				// If any individual role has the permission, the user has the permission
+				if ($role->hasPermission($permission)) {
+					return true;
 				}
+				
 			}
 
-			// If we checked all roles and didn't find the permission, return false
+			// If no roles granted the permission, return false
 			return false;
 		}
 		
