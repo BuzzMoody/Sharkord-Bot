@@ -212,7 +212,7 @@
 				$roleIds = $this->attributes['roleIds'] ?? [];
 				foreach ($roleIds as $roleId) {
 					if ($role = $this->sharkord->roles->get($roleId)) {
-						$permissions = array_merge($permissions, $role->permissions);
+						$permissions = array_merge($permissions, $role->permissions ?? []);
 					}
 				}
 				return $permissions;
