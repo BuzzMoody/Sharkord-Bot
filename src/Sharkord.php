@@ -724,19 +724,38 @@
 			
 			$id = ++$this->rpcCounter;
 
-			// Register a PERSISTENT handler (notice we do NOT unset it!)
+			// Register a PERSISTENT handler
 			$this->rpcHandlers[$id] = function(array $response) use ($callback, $path) {
 				
-				// If the server sends an error for this subscription, log it
 				if (isset($response['error'])) {
 					$message = $response['error']['message'] ?? 'Unknown API Error';
 					$this->logger->error("Subscription Error [{$path}]: {$message}");
 					return;
 				}
 				
-				// Pass the successful event data to the registered callback
 				if (isset($response['result'])) {
-					$callback($response['result']);
+					
+					// tRPC uses 'type' to distinguish between setup confirmations and actual data
+					$type = $response['result']['type'] ?? null;
+					
+					if ($type === 'started') {
+						// The server is just confirming we are subscribed. Do NOT fire the callback!
+						$this->logger->debug("Server confirmed subscription to: {$path}");
+						return;
+					}
+					
+					if ($type === 'stopped') {
+						// The server has ended this subscription
+						$this->logger->warning("Server stopped subscription to: {$path}");
+						return;
+					}
+					
+					if ($type === 'data') {
+						// This is a REAL event! Pass the inner 'data' payload to your manager
+						$eventData = $response['result']['data'] ?? [];
+						$callback($eventData);
+					}
+					
 				}
 				
 			};
@@ -748,12 +767,13 @@
 				"method" => "subscription",
 				"params" => [
 					"path" => $path,
-					"input" => [] // Add any default input if Sharkord requires it for subscriptions
+					"input" => []
 				]
 			], JSON_THROW_ON_ERROR));
 			
 		}
-
+	
 	}
+	
 	
 ?>
