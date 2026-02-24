@@ -62,7 +62,7 @@
 		/**
 		 * Sends a message to this channel.
 		 *
-		 * @param string $text The reply content.
+		 * @param string $text The message content.
 		 * @return PromiseInterface Resolves when the message is sent.
 		 */
 		public function sendMessage(string $text): PromiseInterface {
