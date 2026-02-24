@@ -239,9 +239,7 @@
 		 */
 		private function onHandshakeResponse(array $data): void {
 
-			print_r($data);
-
-			$hash = $result['data']['handshakeHash'] ?? null;
+			$hash = $data['data']['handshakeHash'] ?? null;
 			
 			if (!$hash) {
 				$this->logger->error("Missing handshake hash in the server response.");
