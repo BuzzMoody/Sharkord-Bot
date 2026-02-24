@@ -239,6 +239,8 @@
 		 */
 		private function onHandshakeResponse(array $data): void {
 
+			print_r($data);
+
 			$hash = $result['data']['handshakeHash'] ?? null;
 			
 			if (!$hash) {
