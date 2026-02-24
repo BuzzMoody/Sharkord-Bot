@@ -8,6 +8,10 @@
 	use React\EventLoop\Loop;
 	use React\EventLoop\LoopInterface;
 	use React\Http\Browser;
+	use React\Promise\Promise;
+	use React\Promise\PromiseInterface;
+	use function React\Promise\reject;
+	use function React\Promise\resolve;
 	use Ratchet\Client\Connector;
 	use Ratchet\Client\WebSocket;
 	use Psr\Http\Message\ResponseInterface;
@@ -300,24 +304,25 @@
 				'categories.onDelete' => fn($d) => $this->categories->handleDelete($d),
 			];
 
-			foreach ($subscriptions as $path => $handler) {
-
-				$this->sendRpc('subscription', ['path' => $path], function(array $response) use ($path, $handler) {
-
-					$type = $response['result']['type'] ?? '';
-
-					if ($type === 'started') {
-						$this->logger->info("Subscribed to $path");
+			foreach ($subscriptions as $path => $callback) {
+			
+				// Use our new subscribeRpc method for persistent listening
+				$this->subscribeRpc($path, function(array $eventData) use ($callback, $path) {
+					
+					try {
+						// Execute your arrow function and pass the event data to it!
+						$callback($eventData);
+					} catch (\Exception $e) {
+						$this->logger->error("Error processing event for {$path}: " . $e->getMessage());
 					}
-					elseif ($type === 'data') {
-						$handler($response['result']['data']);
-					}
-
+					
 				});
-
+				
+				$this->logger->debug("Subscribed to event stream: {$path}");
+				
 			}
 
-			$this->emit('ready');
+			$this->emit('ready', [$this->bot]);
 
 		}
 		
@@ -454,13 +459,22 @@
 		 *
 		 * @param string     $text      The message content.
 		 * @param int|string $channelId The target channel ID.
-		 * @return void
+		 * @return PromiseInterface Resolves on success, rejects on failure.
 		 */
-		public function sendMessage(string $text, int|string $channelId): void {
+		public function sendMessage(string $text, int|string $channelId): PromiseInterface {
 
-			if (!$this->conn) return;
+			if (!$this->conn) {
+				return reject(new \RuntimeException("WebSocket connection is not established."));
+			}
 
-			$this->sendRpc("mutation", ["input" => ["content" => "<p>".htmlspecialchars($text)."</p>", "channelId" => $channelId, "files" => []], "path" => "messages.send"]);
+			return $this->sendRpc("mutation", [
+				"input" => [
+					"content" => "<p>".htmlspecialchars($text)."</p>", 
+					"channelId" => $channelId, 
+					"files" => []
+				], 
+				"path" => "messages.send"
+			]);
 
 		}
 
@@ -469,33 +483,27 @@
 		 *
 		 * @param User   $user   The user to ban.
 		 * @param string $reason The reason for the ban.
-		 * @return void
+		 * @return PromiseInterface Resolves on success, rejects on failure.
 		 */
-		public function ban(User $user, string $reason = 'No reason given.'): void {
+		public function ban(User $user, string $reason = 'No reason given.'): PromiseInterface {
 			
 			if (!$this->bot) {
-				
-				$this->logger->warning("The bots own entity has not yet been set.");
-				return;
-				
+				return reject(new \RuntimeException("Bot entity not set."));
 			}
 			
 			if (!$this->bot->hasPermission(Permission::MANAGE_USERS)) {
-				
-				$this->logger->warning("Failed to ban {$user->name}: Bot lacks MANAGE_USERS permission.");
-				return;
-				
+				return reject(new \RuntimeException("Missing MANAGE_USERS permission to ban {$user->name}."));
 			}
 			
 			if ($user->isOwner()) { 
-			
-				$this->logger->warning("Failed to ban {$user->name} as they are the server owner");
-				return;
-			
+				return reject(new \RuntimeException("Cannot ban {$user->name} as they are the server owner."));
 			}
 			
-			// Send using existing RPC method
-			$this->sendRpc("mutation", ["input" => ["userId" => $user->id, "reason" => $reason], "path" => "users.ban"]);
+			// Simply return the Promise from sendRpc directly!
+			return $this->sendRpc("mutation", [
+				"input" => ["userId" => $user->id, "reason" => $reason], 
+				"path" => "users.ban"
+			]);
 			
 		}
 
@@ -503,26 +511,22 @@
 		 * Unbans a user from the server.
 		 *
 		 * @param User $user The user to unban.
-		 * @return void
+		 * @return PromiseInterface Resolves on success, rejects on failure.
 		 */
-		public function unban(User $user): void {
+		public function unban(User $user): PromiseInterface {
 			
 			if (!$this->bot) {
-				
-				$this->logger->warning("The bots own entity has not yet been set.");
-				return;
-				
+				return reject(new \RuntimeException("Bot entity not set."));
 			}
 			
 			if (!$this->bot->hasPermission(Permission::MANAGE_USERS)) {
-				
-				$this->logger->warning('Failed to unban user: Bot lacks MANAGE_USERS permission.');
-				return;
-				
+				return reject(new \RuntimeException("Missing MANAGE_USERS permission to unban {$user->name}."));
 			}
 
-			// Send using existing RPC method
-			$this->sendRpc("mutation", ["input" => ["userId" => $user->id], "path" => "users.unban"]);
+			return $this->sendRpc("mutation", [
+				"input" => ["userId" => $user->id], 
+				"path" => "users.unban"
+			]);
 			
 		}
 		
@@ -531,117 +535,84 @@
 		 *
 		 * @param User   $user   The user to kick.
 		 * @param string $reason The reason for the kick.
-		 * @return void
+		 * @return PromiseInterface Resolves on success, rejects on failure.
 		 */
-		public function kick(User $user, string $reason = 'No reason given.'): void {
+		public function kick(User $user, string $reason = 'No reason given.'): PromiseInterface {
 			
 			if (!$this->bot) {
-				
-				$this->logger->warning("The bots own entity has not yet been set.");
-				return;
-				
+				return reject(new \RuntimeException("Bot entity not set."));
 			}
 			
 			if (!$this->bot->hasPermission(Permission::MANAGE_USERS)) {
-				
-				$this->logger->warning("Failed to kick {$user->name}: Bot lacks MANAGE_USERS permission.");
-				return;
-				
+				return reject(new \RuntimeException("Missing MANAGE_USERS permission to kick {$user->name}."));
 			}
 			
 			if ($user->isOwner()) { 
-			
-				$this->logger->warning("Failed to kick {$user->name} as they are the server owner");
-				return;
-			
+				return reject(new \RuntimeException("Cannot kick {$user->name} as they are the server owner."));
 			}
 			
-			// Send using existing RPC method
-			$this->sendRpc("mutation", ["input" => ["userId" => $user->id, "reason" => $reason], "path" => "users.kick"]);
+			return $this->sendRpc("mutation", [
+				"input" => ["userId" => $user->id, "reason" => $reason], 
+				"path" => "users.kick"
+			]);
 			
 		}
 		
 		/**
 		 * Deletes a user from the server.
 		 *
-		 * @param User   $user   The user to delete.
-		 * @param bool  $wipe    Whether to delete all associated user data (posts, files, emoji, etc.).
-		 * @return void
+		 * @param User  $user The user to delete.
+		 * @param bool  $wipe Whether to delete all associated user data (posts, files, emoji, etc.).
+		 * @return PromiseInterface Resolves on success, rejects on failure.
 		 */
-		public function delete(User $user, bool $wipe = false): void {
+		public function delete(User $user, bool $wipe = false): PromiseInterface {
 			
 			if (!$this->bot) {
-				
-				$this->logger->warning("The bots own entity has not yet been set.");
-				return;
-				
+				return reject(new \RuntimeException("Bot entity not set."));
 			}
 			
 			if (!$this->bot->hasPermission(Permission::MANAGE_USERS)) {
-				
-				$this->logger->warning("Failed to delete {$user->name}: Bot lacks MANAGE_USERS permission.");
-				return;
-				
+				return reject(new \RuntimeException("Missing MANAGE_USERS permission to delete {$user->name}."));
 			}
 			
 			if ($user->isOwner()) { 
-			
-				$this->logger->warning("Failed to delete {$user->name} as they are the server owner");
-				return;
-			
+				return reject(new \RuntimeException("Cannot delete {$user->name} as they are the server owner."));
 			}
 			
-			// Send using existing RPC method
-			$this->sendRpc("mutation", ["input" => ["userId" => $user->id, "wipe" => $wipe], "path" => "users.delete"]);
+			return $this->sendRpc("mutation", [
+				"input" => ["userId" => $user->id, "wipe" => $wipe], 
+				"path" => "users.delete"
+			]);
 			
 		}
-		
+			
 		/**
 		 * Adds or toggles an emoji reaction on a specific message.
 		 *
-		 * This method performs pre-flight checks to ensure the bot entity is set, 
-		 * has the 'REACT_TO_MESSAGES' permission, and that the provided string is 
-		 * a valid emoji. If all checks pass, it sends an RPC mutation to toggle the reaction.
-		 *
 		 * @param Message $message The message entity to react to.
 		 * @param string  $emoji   The emoji character(s) to use for the reaction.
-		 * @return void
+		 * @return PromiseInterface Resolves on success, rejects on failure.
 		 */
-		public function react(Message $message, string $emoji): void {
+		public function react(Message $message, string $emoji): PromiseInterface {
 			
 			if (!$this->bot) {
-				
-				$this->logger->warning("The bots own entity has not yet been set.", [
-					'message_id' => $message->id,
-					'emoji' => $emoji,
-				]);
-				return;
-				
+				return reject(new \RuntimeException("Bot entity not set."));
 			}
 			
 			if (!$this->bot->hasPermission(Permission::REACT_TO_MESSAGES)) {
-				
-				$this->logger->warning("Failed to react: Bot lacks permission.", [
-					'message_id' => $message->id,
-					'permission' => Permission::REACT_TO_MESSAGES->value,
-				]);
-				return;
-				
+				return reject(new \RuntimeException("Missing REACT_TO_MESSAGES permission."));
 			}
 			
 			if (!$this->isEmoji($emoji)) {
-			
-				$this->logger->warning("Failed to react: Invalid emoji passed.", [
-					'message_id' => $message->id,
-					'invalid_emoji' => $emoji,
-				]);
-				return;
-				
+				return reject(new \InvalidArgumentException("Invalid emoji provided: '{$emoji}'"));
 			}
 			
 			$emojiText = $this->emojiToText($emoji);
 			
-			$this->sendRpc("mutation", ["input" => ["messageId" => $message->id, "emoji" => $emojiText], "path" => "messages.toggleReaction"]);
+			return $this->sendRpc("mutation", [
+				"input" => ["messageId" => $message->id, "emoji" => $emojiText], 
+				"path" => "messages.toggleReaction"
+			]);
 			
 		}
 		
@@ -672,28 +643,100 @@
 			return str_replace(array(' ', ':'), array('_', ''), strtolower($unicodeName));
 			
 		}
+		
+		/**
+		 * Sends a JSON-RPC request over the WebSocket and returns a Promise.
+		 *
+		 * @param string $method The RPC method type (e.g., 'query', 'mutation', 'subscription').
+		 * @param array  $params The parameters for the RPC call.
+		 * @return PromiseInterface Resolves with the response data, or rejects on error.
+		 */
+		private function sendRpc(string $method, array $params): PromiseInterface {
+
+			return new Promise(function ($resolve, $reject) use ($method, $params) {
+				
+				$id = ++$this->rpcCounter;
+
+				$this->rpcHandlers[$id] = function(array $response) use ($resolve, $reject, $id) {
+					
+					unset($this->rpcHandlers[$id]);
+
+					if (isset($response['error'])) {
+						
+						// 1. Extract the base error message and code
+						$message = $response['error']['message'] ?? 'Unknown API Error';
+						$code = $response['error']['code'] ?? 0;
+						
+						// 2. Look for deeper details inside the 'data' object
+						$extraDetails = '';
+						if (isset($response['error']['data'])) {
+							$dataCode = $response['error']['data']['code'] ?? 'UNKNOWN';
+							$httpStatus = $response['error']['data']['httpStatus'] ?? 'N/A';
+							$extraDetails = " (Status: {$httpStatus}, Type: {$dataCode})";
+						}
+						
+						// 3. Reject with a beautifully detailed Exception
+						$reject(new \RuntimeException("Sharkord API Error [{$code}]: {$message}{$extraDetails}"));
+						
+					} else {
+						
+						// Success! Resolve the promise with the result data
+						$resolve($response['result'] ?? []);
+						
+					}
+					
+				};
+
+				$this->conn->send(json_encode([
+					"jsonrpc" => "2.0",
+					"id" => $id,
+					"method" => $method,
+					"params" => $params
+				], JSON_THROW_ON_ERROR));
+				
+			});
+
+		}
 
 		/**
-		 * Sends a JSON-RPC request over the WebSocket.
+		 * Sends a JSON-RPC subscription request and registers a persistent callback.
 		 *
-		 * @param string        $method   The RPC method type (e.g., 'query', 'mutation', 'subscription').
-		 * @param array         $params   The parameters for the RPC call.
-		 * @param callable|null $callback Optional callback to execute when a response is received.
+		 * @param string   $path     The subscription path (e.g., 'messages.create').
+		 * @param callable $callback The function to trigger when an event arrives.
 		 * @return void
 		 */
-		private function sendRpc(string $method, array $params, ?callable $callback = null): void {
-
+		private function subscribeRpc(string $path, callable $callback): void {
+			
 			$id = ++$this->rpcCounter;
 
-			if ($callback) $this->rpcHandlers[$id] = $callback;
+			// Register a PERSISTENT handler (notice we do NOT unset it!)
+			$this->rpcHandlers[$id] = function(array $response) use ($callback, $path) {
+				
+				// If the server sends an error for this subscription, log it
+				if (isset($response['error'])) {
+					$message = $response['error']['message'] ?? 'Unknown API Error';
+					$this->logger->error("Subscription Error [{$path}]: {$message}");
+					return;
+				}
+				
+				// Pass the successful event data to the registered callback
+				if (isset($response['result'])) {
+					$callback($response['result']);
+				}
+				
+			};
 
+			// Send the subscription payload
 			$this->conn->send(json_encode([
 				"jsonrpc" => "2.0",
 				"id" => $id,
-				"method" => $method,
-				"params" => $params
+				"method" => "subscription",
+				"params" => [
+					"path" => $path,
+					"input" => [] // Add any default input if Sharkord requires it for subscriptions
+				]
 			], JSON_THROW_ON_ERROR));
-
+			
 		}
 
 	}

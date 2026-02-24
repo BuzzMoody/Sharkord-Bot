@@ -121,24 +121,22 @@
 		 * Bans this user from the server.
 		 *
 		 * @param string $reason The reason for the ban.
-		 * @return void
+		 * @return PromiseInterface Resolves on success, rejects on failure.
 		 */
-		public function ban(string $reason = 'No reason given.'): void {
+		public function ban(string $reason = 'No reason given.'): PromiseInterface {
 			
-			// We ask the main bot instance to ban "this" specific user
-			$this->sharkord->ban($this, $reason);
+			return $this->sharkord->ban($this, $reason);
 			
 		}
 
 		/**
 		 * Unbans this user from the server.
 		 *
-		 * @return void
+		 * @return PromiseInterface Resolves on success, rejects on failure.
 		 */
-		public function unban(): void {
+		public function unban(): PromiseInterface {
 			
-			// We ask the main bot instance to unban "this" specific user
-			$this->sharkord->unban($this);
+			return $this->sharkord->unban($this);
 			
 		}
 		
@@ -146,12 +144,11 @@
 		 * Kicks this user from the server.
 		 *
 		 * @param string $reason The reason for the kick.
-		 * @return void
+		 * @return PromiseInterface Resolves on success, rejects on failure.
 		 */
-		public function kick(string $reason = 'No reason given.'): void {
+		public function kick(string $reason = 'No reason given.'): PromiseInterface {
 			
-			// We ask the main bot instance to kick "this" specific user
-			$this->sharkord->kick($this, $reason);
+			return $this->sharkord->kick($this, $reason);
 			
 		}
 		
@@ -159,12 +156,11 @@
 		 * Deletes this user from the server.
 		 *
 		 * @param bool $wipe Whether to wipe all associated data for this user.
-		 * @return void
+		 * @return PromiseInterface Resolves on success, rejects on failure.
 		 */
-		public function delete(bool $wipe = false): void {
+		public function delete(bool $wipe = false): PromiseInterface {
 			
-			// We ask the main bot instance to delete "this" specific user
-			$this->sharkord->delete($this, $wipe);
+			return $this->sharkord->delete($this, $wipe);
 			
 		}
 		
