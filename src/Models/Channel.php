@@ -64,7 +64,7 @@
 		 * @param string $text The reply content.
 		 * @return PromiseInterface Resolves when the message is sent.
 		 */
-		public function sendMessage(string $text): PromiseInterface {
+		public function sendMessage(string $text): Promise {
 
 			return $this->sharkord->sendMessage($text, $this->attributes['id']);
 
