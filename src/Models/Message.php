@@ -133,7 +133,7 @@
 			}
 
 			// 3. Handle a request for the user who sent it
-			if ($name === 'author' && !empty($this->attributes['userId'])) {
+			if (($name === 'author' || $name === 'user') && !empty($this->attributes['userId'])) {
 				return $this->sharkord->users->get($this->attributes['userId']);
 			}
 
