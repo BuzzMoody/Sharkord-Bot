@@ -273,8 +273,6 @@
 		 */
 		private function onJoinResponse(array $data): void {
 
-			print_r($data);
-
 			$raw = $data['data'];
 
 			// Hydrate Models efficiently
