@@ -5,6 +5,7 @@
 	namespace Sharkord\Models;
 
 	use Sharkord\Sharkord;
+	use React\Promise\PromiseInterface;
 
 	/**
 	 * Class Channel
@@ -57,17 +58,16 @@
 			$this->attributes = array_merge($this->attributes, $raw);
 			
 		}
-
+		
 		/**
 		 * Sends a message to this channel.
 		 *
 		 * @param string $text The message content.
-		 * @return void
+		 * @return PromiseInterface Resolves when the message is sent.
 		 */
-		public function sendMessage(string $text): void {
+		public function sendMessage(string $text): PromiseInterface {
 
-			// Notice how we use the attributes array to get the ID here
-			$this->sharkord->sendMessage($text, $this->attributes['id']);
+			return $this->sharkord->sendMessage($text, $this->attributes['id']);
 
 		}
 		

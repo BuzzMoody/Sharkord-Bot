@@ -5,6 +5,7 @@
 	namespace Sharkord\Models;
 	
 	use Sharkord\Sharkord;
+	use React\Promise\PromiseInterface;
 
 	/**
 	 * Class Message
@@ -62,27 +63,23 @@
 		 * Replies to this message in the same channel.
 		 *
 		 * @param string $text The reply content.
-		 * @return void
+		 * @return PromiseInterface Resolves when the message is sent.
 		 */
-		public function reply(string $text): void {
+		public function reply(string $text): PromiseInterface {
 
-			$this->channel->sendMessage($text);
+			return $this->channel->sendMessage($text);
 
 		}
 		
 		/**
 		 * Adds an emoji reaction to this entity.
 		 *
-		 * This is a convenience method that delegates the reaction action 
-		 * to the main Sharkord client instance, passing the current object 
-		 * along with the requested emoji.
-		 *
 		 * @param string $emoji The single emoji character(s) to use for the reaction.
-		 * @return void
+		 * @return PromiseInterface Resolves when the reaction is toggled.
 		 */
-		public function react(string $emoji): void {
+		public function react(string $emoji): PromiseInterface {
 			
-			$this->sharkord->react($this, $emoji);
+			return $this->sharkord->react($this, $emoji);
 			
 		}
 		
@@ -136,7 +133,7 @@
 			}
 
 			// 3. Handle a request for the user who sent it
-			if ($name === 'author' && !empty($this->attributes['userId'])) {
+			if (($name === 'author' || $name === 'user') && !empty($this->attributes['userId'])) {
 				return $this->sharkord->users->get($this->attributes['userId']);
 			}
 

@@ -29,8 +29,8 @@
 	*/
 	# $sharkord->loadCommands(__DIR__ . '/Commands');
 
-	$sharkord->on('ready', function() use ($sharkord) {
-		$sharkord->logger->notice("Logged in as {$sharkord->bot->name} and ready to chat!");
+	$sharkord->on('ready', function(User $bot) use ($sharkord) {
+		$sharkord->logger->notice("Logged in as {$bot->name} and ready to chat!");
 	});
 
 	$sharkord->on('message', function(Message $message) use ($sharkord) {
