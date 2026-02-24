@@ -216,11 +216,18 @@
 
 			$this->logger->info("Sending Handshake Request...");
 
-			$this->sendRpc(
-				"query",
-				["path" => "others.handshake"],
-				fn($response) => $this->onHandshakeResponse($response)
-			);
+			$this->sendRpc("query", ["path" => "others.handshake"])
+				->then(
+					function (array $result) {
+						// Success! Pass the resolved result to the response handler
+						$this->onHandshakeResponse($result);
+					},
+					function (\Exception $e) {
+						// Handle any API errors or connection failures
+						$this->logger->error("Handshake failed: " . $e->getMessage());
+						$this->conn->close();
+					}
+				);
 
 		}
 
@@ -232,20 +239,26 @@
 		 */
 		private function onHandshakeResponse(array $data): void {
 
-			$hash = $data['result']['data']['handshakeHash'] ?? null;
+			$hash = $result['data']['handshakeHash'] ?? null;
+			
 			if (!$hash) {
-				$this->logger->error("Missing handshake hash.");
+				$this->logger->error("Missing handshake hash in the server response.");
 				return;
 			}
 
 			$this->logger->info("Handshake OK. Joining Server...");
 
-			$this->sendRpc("query",
-				[
-					"input" => ["handshakeHash" => $hash],
-					"path" => "others.joinServer"
-				],
-				fn($response) => $this->onJoinResponse($response)
+			$this->sendRpc("query", [
+				"input" => ["handshakeHash" => $hash],
+				"path" => "others.joinServer"
+			])->then(
+				function (array $joinResult) {
+					// Trigger your new onJoinResponse method that sets up the subscriptions!
+					$this->onJoinResponse($joinResult);
+				},
+				function (\Exception $e) {
+					$this->logger->error("Failed to join the server: " . $e->getMessage());
+				}
 			);
 
 		}
