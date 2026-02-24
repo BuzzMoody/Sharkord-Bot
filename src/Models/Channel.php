@@ -5,6 +5,7 @@
 	namespace Sharkord\Models;
 
 	use Sharkord\Sharkord;
+	use React\Promise\PromiseInterface;
 
 	/**
 	 * Class Channel
@@ -64,7 +65,7 @@
 		 * @param string $text The reply content.
 		 * @return PromiseInterface Resolves when the message is sent.
 		 */
-		public function sendMessage(string $text): Promise {
+		public function sendMessage(string $text): PromiseInterface {
 
 			return $this->sharkord->sendMessage($text, $this->attributes['id']);
 

@@ -5,6 +5,7 @@
 	namespace Sharkord\Models;
 	
 	use Sharkord\Sharkord;
+	use React\Promise\PromiseInterface;
 
 	/**
 	 * Class Message

@@ -6,6 +6,7 @@
 	
 	use Sharkord\Sharkord;
 	use Sharkord\Permission;
+	use React\Promise\PromiseInterface;
 
 	/**
 	 * Class User
