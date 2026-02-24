@@ -273,7 +273,7 @@
 		 */
 		private function onJoinResponse(array $data): void {
 
-			$raw = $data['result']['data'];
+			$raw = $data['data'];
 
 			// Hydrate Models efficiently
 			foreach ($raw['roles'] ?? [] as $r) {
