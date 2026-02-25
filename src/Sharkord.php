@@ -320,7 +320,7 @@
 			foreach ($subscriptions as $path => $callback) {
 			
 				// Use our new subscribeRpc method for persistent listening
-				$this->subscribeRpc($path, function(array $eventData) use ($callback, $path) {
+				$this->subscribeRpc($path, function(array|int $eventData) use ($callback, $path) {
 					
 					try {
 						// Execute your arrow function and pass the event data to it!
@@ -331,7 +331,7 @@
 					
 				});
 				
-				$this->logger->debug("Subscribed to event stream: {$path}");
+				$this->logger->debug("Subscribing to event stream: {$path}");
 				
 			}
 
