@@ -38,7 +38,6 @@
 			$channel = Channel::fromArray($raw, $this->sharkord);
 			
 			$this->channels[$raw['id']] = $channel;
-			$this->sharkord->logger->info("New channel created: {$channel->name}");
 			
 		}
 
@@ -51,7 +50,6 @@
 		public function handleDelete(int $id): void {
 			
 			if (isset($this->channels[$id])) {
-				$this->sharkord->logger->info("Channel deleted: {$this->channels[$id]->name}");
 				unset($this->channels[$id]);
 			}
 			
@@ -67,8 +65,7 @@
 			
 			if (isset($this->channels[$raw['id']])) {
 				
-				$this->channels[$raw['id']]->updateFromArray($raw);
-				$this->sharkord->logger->info("Channel updated: {$this->channels[$raw['id']]->name}");
+				$this->channels[$raw['id']]->updateFromArray($raw); 
 				
 			}
 			
