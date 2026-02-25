@@ -38,7 +38,6 @@
 			$role = Role::fromArray($raw, $this->sharkord);
 			
 			$this->roles[$raw['id']] = $role;
-			$this->sharkord->logger->info("Role cached: {$role->name}");
 			
 		}
 
@@ -53,7 +52,6 @@
 			if (isset($this->roles[$raw['id']])) {
 				
 				$this->roles[$raw['id']]->updateFromArray($raw);
-				$this->sharkord->logger->info("Role updated: {$this->roles[$raw['id']]->name}");
 				
 			}
 			

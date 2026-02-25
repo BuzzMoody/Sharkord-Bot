@@ -126,7 +126,7 @@
 		 */
 		public function run(): void {
 
-			$this->logger->info("Starting Bot...");
+			$this->logger->debug("Starting Bot...");
 			$this->authenticate();
 			$this->loop->run();
 
@@ -140,7 +140,7 @@
 		private function authenticate(): void {
 
 			$authUrl = "https://{$this->config['host']}/login";
-			$this->logger->info("Authenticating...");
+			$this->logger->debug("Authenticating...");
 
 			$this->browser->post(
 				$authUrl,
@@ -154,7 +154,7 @@
 					$data = json_decode((string)$response->getBody(), true, 512, JSON_THROW_ON_ERROR);
 					$this->token = $data['token'] ?? throw new \RuntimeException("No token in response");
 
-					$this->logger->info("Auth Success.");
+					$this->logger->debug("Auth Success.");
 					$this->connectToWebSocket();
 				},
 				function (\Exception $e) {
@@ -176,7 +176,7 @@
 
 			($this->connector)($wsUrl, [], $headers)->then(
 				function (WebSocket $conn) {
-					$this->logger->info("WebSocket Connected.");
+					$this->logger->debug("WebSocket Connected.");
 					$this->conn = $conn;
 
 					// Attach listeners
@@ -191,7 +191,7 @@
 				},
 				function (\Exception $e) {
 					$this->logger->error("WS Connection Failed: " . $e->getMessage());
-					$this->logger->info("Retrying in 5s...");
+					$this->logger->debug("Retrying in 5s...");
 					$this->loop->addTimer(5, fn() => $this->authenticate());
 				}
 			);
@@ -214,7 +214,7 @@
 				"data" => ["token" => $this->token]
 			]));
 
-			$this->logger->info("Sending Handshake Request...");
+			$this->logger->debug("Sending Handshake Request...");
 
 			$this->sendRpc("query", ["path" => "others.handshake"])
 				->then(
@@ -246,7 +246,7 @@
 				return;
 			}
 
-			$this->logger->info("Handshake OK. Joining Server...");
+			$this->logger->debug("Handshake OK. Joining Server...");
 
 			$this->sendRpc("query", [
 				"input" => ["handshakeHash" => $hash],
@@ -293,7 +293,7 @@
 
 			$this->servers->handleCreate($raw['publicSettings']);
 
-			$this->logger->info(sprintf("Joined. Cached %d channels, %d users.", $this->channels->count(), $this->users->count()));
+			$this->logger->info(sprintf("Connected! Cached %d channels, %d users.", $this->channels->count(), $this->users->count()));
 
 			// Create server event subscriptions
 			$subscriptions = [
@@ -371,27 +371,18 @@
 		 */
 		private function onNewMessage(array $raw): void {
 
-			// Simply pass the raw payload and the bot instance to the model!
 			$message = Message::fromArray($raw, $this);
 			
 			try {
 				
-				// Tell the rest of the bot that a message arrived
 				$this->emit('message', [$message]);
 				
 			} catch (\Throwable $e) {
 				
-				// If ANYTHING goes wrong inside any plugin or command listening 
-				// to this event, it will be caught right here!
-				
 				$errorMessage = "Uncaught Exception/Error in message processing: " . $e->getMessage();
 				$errorMessage .= " on line " . $e->getLine() . " in " . $e->getFile();
 				
-				// Log the error so you can fix it
 				$this->logger->error($errorMessage);
-				
-				// Optional: You could even make the bot reply in Sharkord saying "Oops, I hit a bug!"
-				// $message->channel->sendMessage("Oops, I ran into an internal error!");
 				
 			}
 
@@ -406,7 +397,7 @@
 		public function registerCommand(CommandInterface $command): void {
 			
 			$this->commands[$command->getName()] = $command;
-			$this->logger->info("Registered command: " . $command->getName());
+			$this->logger->debug("Registered command: " . $command->getName());
 			
 		}
 		
@@ -456,7 +447,7 @@
 			foreach ($this->commands as $command) {
 				// Check if the message matches the command's regex pattern
 				if (preg_match($command->getPattern(), $commandName, $matches)) {
-					$this->logger->info("Matched command: $commandName");
+					$this->logger->debug("Matched command: $commandName");
 					
 					// Pass the matches array (capture groups) to the handler
 					$command->handle($this, $message, $args, $matches);
