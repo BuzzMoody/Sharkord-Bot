@@ -320,7 +320,7 @@
 			foreach ($subscriptions as $path => $callback) {
 			
 				// Use our new subscribeRpc method for persistent listening
-				$this->subscribeRpc($path, function(array|int $eventData) use ($callback, $path) {
+				$this->subscribeRpc($path, function(mixed $eventData) use ($callback, $path) {
 					
 					try {
 						// Execute your arrow function and pass the event data to it!
