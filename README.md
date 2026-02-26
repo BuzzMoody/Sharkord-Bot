@@ -18,7 +18,7 @@ SharkordPHP is a lightweight, asynchronous, vibe-coded [Sharkord](https://github
 
 ## Installation
 
-Install SharkordPHP into your project using Composer:
+Install the SharkordPHP framework (which provides the Sharkord classes used in the examples below) into your project using Composer:
 
 ```bash
 composer require buzzmoody/sharkordphp
