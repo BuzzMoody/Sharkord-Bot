@@ -1,8 +1,11 @@
 {
-  "name": "buzzmoody/sharkordbot",
+  "name": "buzzmoody/sharkordphp",
+  "replace": {
+    "buzzmoody/sharkordbot": "self.version"
+  },
   "description": "A ReactPHP Chatbot Framework for Sharkord",
   "type": "library",
-  "version": "2.7.0",
+  "version": "2.7.1",
   "require": {
     "php": "^8.5",
     "react/event-loop": "^1.6",

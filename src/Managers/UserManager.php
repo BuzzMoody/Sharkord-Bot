@@ -84,8 +84,9 @@
 			$user = $this->users[$raw['id']];
 
 			$nameChanged = $user->name !== $raw['name'];
-			$gotBanned   = !$user->banned && !empty($raw['banned']);
-			$gotUnbanned = $user->banned && empty($raw['banned']);
+			$banChanged  = array_key_exists('banned', $raw) && $user->banned !== $raw['banned'];
+			$gotBanned   = $banChanged && (bool)$raw['banned'];
+			$gotUnbanned = $banChanged && !(bool)$raw['banned'];
 
 			$user->updateFromArray($raw);
 

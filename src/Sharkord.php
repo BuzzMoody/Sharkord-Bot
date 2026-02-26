@@ -37,7 +37,7 @@
 	/**
 	 * Class Sharkord
 	 *
-	 * The main bot class responsible for handling WebSocket connections,
+	 * The main framework class responsible for handling WebSocket connections,
 	 * authentication, and event emission.
 	 *
 	 * @package Sharkord
@@ -54,7 +54,7 @@
 		public ServerManager $servers;
 		
 		/**
-		 * The bot's own user object.
+		 * The framework's own user object.
 		 * @var User|null
 		 */
 		public ?User $bot = null;
@@ -172,7 +172,7 @@
 		private function connectToWebSocket(): void {
 			
 			$wsUrl = "wss://{$this->config['host']}/?connectionParams=1";
-			$headers = ['Host' => $this->config['host'], 'User-Agent' => 'Sharkord ReactPHP Bot (https://github.com/BuzzMoody/Sharkord-Bot)'];
+			$headers = ['Host' => $this->config['host'], 'User-Agent' => 'SharkordPHP (https://github.com/BuzzMoody/SharkordPHP)'];
 
 			($this->connector)($wsUrl, [], $headers)->then(
 				function (WebSocket $conn) {
@@ -320,7 +320,7 @@
 			foreach ($subscriptions as $path => $callback) {
 			
 				// Use our new subscribeRpc method for persistent listening
-				$this->subscribeRpc($path, function(array|int $eventData) use ($callback, $path) {
+				$this->subscribeRpc($path, function(mixed $eventData) use ($callback, $path) {
 					
 					try {
 						// Execute your arrow function and pass the event data to it!
