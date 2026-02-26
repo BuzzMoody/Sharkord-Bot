@@ -1,8 +1,8 @@
-# Sharkord Bot
+# SharkordPHP
 
 **A ReactPHP Chatbot Framework for Sharkord**
 
-Sharkord Bot is a lightweight, asynchronous, heavily vibe-coded [Sharkord](https://github.com/Sharkord/sharkord) bot framework built on top of [ReactPHP](https://reactphp.org/). It handles the heavy lifting of WebSocket connections and event management, allowing you to focus on writing commands and logic.
+SharkordPHP is a lightweight, asynchronous, vibe-coded [Sharkord](https://github.com/Sharkord/sharkord) framework built on top of [ReactPHP](https://reactphp.org/). It handles the heavy lifting of WebSocket connections and event management, allowing you to focus on writing commands and logic.
 
 ## Features
 
@@ -18,10 +18,10 @@ Sharkord Bot is a lightweight, asynchronous, heavily vibe-coded [Sharkord](https
 
 ## Installation
 
-Install Sharkord into your project using Composer:
+Install the SharkordPHP framework (which provides the Sharkord classes used in the examples below) into your project using Composer:
 
 ```bash
-composer require buzzmoody/sharkordbot
+composer require buzzmoody/sharkordphp
 ```
 
 ## Getting Started
@@ -191,7 +191,7 @@ $bot->loadCommands(__DIR__ . '/src/Commands', 'MyBot\\Commands\\');
 ```
 
 ### Event Listeners
-You can hook into bot events directly from your `bot.php` file:
+You can hook into events directly from your `bot.php` file:
 
 ```php
 $sharkord->on('ready', function() {
