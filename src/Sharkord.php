@@ -30,6 +30,7 @@
 	use Sharkord\Managers\CategoryManager;
 	use Sharkord\Managers\RoleManager;
 	use Sharkord\Managers\ServerManager;
+	use Sharkord\Managers\MessageManager;
 	use Sharkord\Commands\CommandRouter;
 
 	/**
@@ -53,6 +54,7 @@
 		public RoleManager $roles;
 		public LoggerInterface $logger;
 		public ServerManager $servers;
+		public MessageManager $messages;
 		public CommandRouter $commands;
 		
 		/**
@@ -103,6 +105,7 @@
 			$this->categories = new CategoryManager($this);
 			$this->roles = new RoleManager($this);
 			$this->servers = new ServerManager($this);
+			$this->messages = new MessageManager($this);
 			$this->commands = new CommandRouter($this);
 
 			// Initialize Isolated Network Layers
@@ -251,6 +254,8 @@
 		private function onNewMessage(array $raw): void {
 
 			$message = Message::fromArray($raw, $this);
+			
+			$this->messages->cache($message);
 			
 			try {
 				$this->emit('message', [$message]);
