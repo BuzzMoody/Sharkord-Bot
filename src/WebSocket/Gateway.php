@@ -139,6 +139,9 @@
 			
 			if (!$hash) {
 				$this->logger->error("Missing handshake hash in the server response.");
+				if ($this->conn) {
+					$this->conn->close();
+				}
 				return;
 			}
 
