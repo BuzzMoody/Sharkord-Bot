@@ -51,11 +51,6 @@
 		 */
 		public function updateFromArray(array $raw): void {
 			
-			// Optional: If you don't want to store the access token in memory, 
-			// you can uncomment the line below to throw it away!
-			// unset($raw['fileAccessToken']);
-
-			// Merge the new data into our attributes array
 			$this->attributes = array_merge($this->attributes, $raw);
 			
 		}

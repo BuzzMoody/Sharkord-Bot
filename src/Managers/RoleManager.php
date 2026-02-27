@@ -28,7 +28,7 @@
 		) {}
 		
 		/**
-		 * Handles the creation of a roles (or hydration from initial cache).
+		 * Handles the hydration of a role.
 		 *
 		 * @param array $raw The raw role data.
 		 * @return void
@@ -36,13 +36,12 @@
 		public function hydrate(array $raw): void {
 			
 			$role = Role::fromArray($raw, $this->sharkord);
-			
 			$this->roles[$raw['id']] = $role;
 			
 		}
 
 		/**
-		 * Handles the creation of a roles (or hydration from initial cache).
+		 * Handles the creation of a roles.
 		 *
 		 * @param array $raw The raw role data.
 		 * @return void
@@ -50,8 +49,9 @@
 		public function create(array $raw): void {
 			
 			$role = Role::fromArray($raw, $this->sharkord);
-			
 			$this->roles[$raw['id']] = $role;
+			
+			$this->sharkord->emit('rolecreate', [$role]);
 			
 		}
 
@@ -67,6 +67,8 @@
 				
 				$this->roles[$raw['id']]->updateFromArray($raw);
 				
+				$this->sharkord->emit('roleupdate', [$this->roles[$raw['id']]]);
+				
 			}
 			
 		}
@@ -78,6 +80,13 @@
 		 * @return void
 		 */
 		public function delete(int $id): void {
+			
+			if (!isset($this->roles[$id])) { 
+				$this->logger->error("Role ID {$id} doesn't exist, therefore cannot be deleted.");
+				return;
+			}
+			
+			$this->sharkord->emit('roledelete', [$this->roles[$id]);
 			
 			unset($this->roles[$id]);
 			

@@ -129,11 +129,12 @@
 			$this->logger->debug("Starting Bot...");
 
 			$this->http->authenticate()
-				->then(function (string $token) {
-					return $this->gateway->connect($token);
-				})
-				->then(function (array $joinData) {
-					$this->onJoinResponse($joinData);
+				->then(fn(string $token) => $this->gateway->connect($token))
+				->then(fn(array $joinData) => $this->hydrateElements($joinData))
+				->then(fn() => $this->setupSubscriptions())
+				->then(function () {
+					$this->logger->info("Bot is fully initialized and ready.");
+					$this->emit('ready', [$this->bot]);
 				})
 				->catch(function (\Exception $e) {
 					$this->logger->error("Fatal Startup Error: " . $e->getMessage());
@@ -162,52 +163,65 @@
 		 * Hydrates the initial cache of users and channels and sets up subscriptions.
 		 *
 		 * @param array $data The JSON-decoded response data.
-		 * @return void
+		 * @return PromiseInterface Resolves when hydration is complete.
 		 */
-		private function onJoinResponse(array $data): void {
+		private function hydrateElements(array $data): PromiseInterface {
 
 			$raw = $data['data'];
 
 			// Hydrate Models efficiently
 			foreach ($raw['roles'] ?? [] as $r) {
-				$this->roles->handleHydrate($r);
+				$this->roles->hydrate($r);
 			}
 			foreach ($raw['categories'] ?? [] as $c) {
-				$this->categories->handleHydrate($c);
+				$this->categories->hydrate($c);
 			}
 			foreach ($raw['channels'] as $c) {
-				$this->channels->handleHydrate($c);
+				$this->channels->hydrate($c);
 			}
 			foreach ($raw['users'] as $u) {
-				$this->users->handleHydrate($u);
+				$this->users->hydrate($u);
 			}
 			
 			$this->bot = $this->users->get($raw['ownUserId']);
 
-			$this->servers->handleCreate($raw['publicSettings']);
+			$this->servers->hydrate($raw['publicSettings']);
 
 			$this->logger->info(sprintf("Connected! Cached %d channels, %d users.", $this->channels->count(), $this->users->count()));
+			
+			return resolve();
+			
+		}
+		
+		/**
+		 * Registers all Gateway RPC subscriptions to keep the caches and events up to date.
+		 *
+		 * @return PromiseInterface Resolves when subscriptions are mapped.
+		 */
+		private function setupSubscriptions(array $data): PromiseInterface {
 
 			// Create server event subscriptions (Delegated to Gateway)
 			$subscriptions = [
 				'messages.onNew'    => fn($d) => $this->onNewMessage($d),
 				
-				'channels.onCreate' => fn($d) => $this->channels->handleCreate($d),
-				'channels.onDelete' => fn($d) => $this->channels->handleDelete($d),
-				'channels.onUpdate' => fn($d) => $this->channels->handleUpdate($d),
+				'channels.onCreate' => fn($d) => $this->channels->create($d),
+				'channels.onDelete' => fn($d) => $this->channels->delete($d),
+				'channels.onUpdate' => fn($d) => $this->channels->update($d),
 				
-				'users.onCreate'    => fn($d) => $this->users->handleCreate($d),
-				'users.onJoin'      => fn($d) => $this->users->handleJoin($d),
-				'users.onLeave'     => fn($d) => $this->users->handleLeave($d),
-				'users.onUpdate'    => fn($d) => $this->users->handleUpdate($d),
+				'users.onCreate'    => fn($d) => $this->users->create($d),
+				'users.onJoin'      => fn($d) => $this->users->join($d),
+				'users.onLeave'     => fn($d) => $this->users->leave($d),
+				'users.onUpdate'    => fn($d) => $this->users->update($d),
 				
-				'roles.onCreate'      => fn($d) => $this->roles->handleCreate($d),
-				'roles.onUpdate'      => fn($d) => $this->roles->handleUpdate($d),
-				'roles.onDelete'      => fn($d) => $this->roles->handleDelete($d),
+				'roles.onCreate'      => fn($d) => $this->roles->create($d),
+				'roles.onUpdate'      => fn($d) => $this->roles->update($d),
+				'roles.onDelete'      => fn($d) => $this->roles->delete($d),
 				
-				'categories.onCreate' => fn($d) => $this->categories->handleCreate($d),
-				'categories.onUpdate' => fn($d) => $this->categories->handleUpdate($d),
-				'categories.onDelete' => fn($d) => $this->categories->handleDelete($d),
+				'categories.onCreate' => fn($d) => $this->categories->create($d),
+				'categories.onUpdate' => fn($d) => $this->categories->update($d),
+				'categories.onDelete' => fn($d) => $this->categories->delete($d),
+				
+				'others.onServerSettingsUpdate' => fn($d) => $this->servers->update($d),
 			];
 
 			foreach ($subscriptions as $path => $callback) {
@@ -224,7 +238,7 @@
 				
 			}
 
-			$this->emit('ready', [$this->bot]);
+			return resolve();
 
 		}
 

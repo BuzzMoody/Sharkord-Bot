@@ -27,13 +27,14 @@
 			private array $servers = []
 		) {}
 
+
 		/**
 		 * Handles creating or updating a server in the cache.
 		 *
 		 * @param array $raw The raw server data.
 		 * @return void
 		 */
-		public function handleCreate(array $raw): void {
+		public function hydrate(array $raw): void {
 			
 			$serverId = $raw['serverId'];
 			
@@ -57,7 +58,7 @@
 		 * @param array $raw The raw server data.
 		 * @return void
 		 */
-		public function handleUpdate(array $raw): void {
+		public function update(array $raw): void {
 			
 			if (isset($raw['serverId']) && isset($this->servers[$raw['serverId']])) {
 				$server = $this->servers[$raw['serverId']];
@@ -72,7 +73,7 @@
 		 * @param string $serverId The ID of the deleted server.
 		 * @return void
 		 */
-		public function handleDelete(string $serverId): void {
+		public function delete(string $serverId): void {
 			
 			unset($this->servers[$serverId]);
 			
