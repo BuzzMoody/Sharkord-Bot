@@ -79,7 +79,7 @@
 		 * @param Message  $message  The received message object.
 		 * @return void
 		 */
-		public function handle(Message $message): void {
+		public function handle(Message $message, string $matches): void {
 			
 			echo "Command handler triggered\n";
 			
