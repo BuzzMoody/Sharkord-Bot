@@ -8,7 +8,6 @@
 	use React\EventLoop\Loop;
 	use React\EventLoop\LoopInterface;
 	use React\Promise\PromiseInterface;
-	use function React\Promise\reject;
 	use function React\Promise\resolve;
 	use Psr\Log\LoggerInterface;
 	use Monolog\Logger;
@@ -17,14 +16,11 @@
 	use Monolog\Level;
 	use Monolog\ErrorHandler;
 	
-	use Sharkord\HTTP\Client as Client;
+	use Sharkord\HTTP\Client;
 	use Sharkord\WebSocket\Gateway;
 
 	use Sharkord\Models\User;
-	use Sharkord\Models\Channel;
 	use Sharkord\Models\Message;
-	use Sharkord\Models\Server;
-	use Sharkord\Commands\CommandInterface;
 	use Sharkord\Managers\ChannelManager;
 	use Sharkord\Managers\UserManager;
 	use Sharkord\Managers\CategoryManager;

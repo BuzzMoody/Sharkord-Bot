@@ -6,7 +6,6 @@
 
 	use Sharkord\Sharkord;
 	use React\Promise\PromiseInterface;
-	use function React\Promise\reject;
 
 	/**
 	 * Class Channel

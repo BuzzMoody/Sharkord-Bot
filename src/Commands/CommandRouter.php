@@ -4,7 +4,6 @@
 
 	namespace Sharkord\Commands;
 
-	use Psr\Log\LoggerInterface;
 	use Sharkord\Sharkord;
 	use Sharkord\Models\Message;
 
