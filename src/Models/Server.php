@@ -43,6 +43,7 @@
 		/**
 		 * Updates the Server's information dynamically.
 		 *
+		 * @internal This method is for internal framework use only. Do not call this directly.
 		 * @param array $raw The raw Server data.
 		 * @return void
 		 */
