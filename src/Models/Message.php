@@ -104,7 +104,7 @@
 			return $this->sharkord->gateway->sendRpc("mutation", [
 				"input" => ["messageId" => $this->id, "emoji" => $emojiText], 
 				"path" => "messages.toggleReaction"
-			])->then(function($response) use () {
+			])->then(function($response) {
 				
 				if (isset($response['type']) && $response['type'] === 'data') {
 					return true;
