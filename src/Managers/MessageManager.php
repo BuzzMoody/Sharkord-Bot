@@ -39,7 +39,7 @@
 		 * @param string $id The Message ID
 		 * @return PromiseInterface Resolves with the Message object
 		 */
-		public function fetch(string $id): PromiseInterface {
+		public function get(string $id): PromiseInterface {
 			
 			// 1. Check local cache first
 			if (isset($this->messages[$id])) {
