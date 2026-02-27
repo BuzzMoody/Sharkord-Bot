@@ -86,7 +86,7 @@
 				return;
 			}
 			
-			$this->sharkord->emit('roledelete', [$this->roles[$id]);
+			$this->sharkord->emit('roledelete', [$this->roles[$id]]);
 			
 			unset($this->roles[$id]);
 			

@@ -125,6 +125,25 @@
 		}
 		
 		/**
+		 * Handles user deletion.
+		 *
+		 * @param int $id The ID of the deleted user.
+		 * @return void
+		 */
+		 public function delete(int $id): void {
+			
+			if (!isset($this->users[$id])) { 
+				$this->logger->error("User ID {$id} doesn't exist, therefore cannot be deleted.");
+				return;
+			}
+			
+			$this->sharkord->emit('userdelete', [$this->users[$id]]);
+			
+			unset($this->users[$id]);
+			
+		}
+		
+		/**
 		 * Retrieves a user by ID or name.
 		 *
 		 * @param int|string $identifier The user ID or name.

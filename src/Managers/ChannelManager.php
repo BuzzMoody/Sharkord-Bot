@@ -75,7 +75,7 @@
 		}
 
 		/**
-		 * Handles channe; deletion.
+		 * Handles channel deletion.
 		 *
 		 * @param int $id The ID of the deleted category.
 		 * @return void
@@ -87,7 +87,7 @@
 				return;
 			}
 			
-			$this->sharkord->emit('channeldelete', [$this->channels[$id]);
+			$this->sharkord->emit('channeldelete', [$this->channels[$id]]);
 			
 			unset($this->channels[$id]);
 			

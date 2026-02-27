@@ -212,6 +212,7 @@
 				'users.onJoin'      => fn($d) => $this->users->join($d),
 				'users.onLeave'     => fn($d) => $this->users->leave($d),
 				'users.onUpdate'    => fn($d) => $this->users->update($d),
+				'users.onDelete'    => fn($d) => $this->users->delete($d),
 				
 				'roles.onCreate'      => fn($d) => $this->roles->create($d),
 				'roles.onUpdate'      => fn($d) => $this->roles->update($d),

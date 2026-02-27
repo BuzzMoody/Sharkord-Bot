@@ -88,7 +88,7 @@
 				return;
 			}
 			
-			$this->sharkord->emit('categorydelete', [$this->categories[$id]);
+			$this->sharkord->emit('categorydelete', [$this->categories[$id]]);
 			
 			unset($this->categories[$id]);
 			
