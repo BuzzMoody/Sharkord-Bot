@@ -86,7 +86,6 @@
 		 */
 		public function react(string $emoji): PromiseInterface {
 			
-			
 			if (!$this->sharkord->bot) {
 				return reject(new \RuntimeException("Bot entity not set."));
 			}
