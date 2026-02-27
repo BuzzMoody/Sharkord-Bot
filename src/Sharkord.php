@@ -199,7 +199,7 @@
 		 *
 		 * @return PromiseInterface Resolves when subscriptions are mapped.
 		 */
-		private function setupSubscriptions(array $data): PromiseInterface {
+		private function setupSubscriptions(): PromiseInterface {
 
 			// Create server event subscriptions (Delegated to Gateway)
 			$subscriptions = [
