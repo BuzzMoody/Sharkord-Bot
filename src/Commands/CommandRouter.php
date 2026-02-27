@@ -77,14 +77,13 @@
 		 * Checks if a received message matches a command pattern and executes it.
 		 *
 		 * @param Message  $message  The received message object.
+		 * @param Arrat    $matches  The original regex matches
 		 * @return void
 		 */
 		public function handle(Message $message, array $matches): void {
 
 			$commandName = strtolower($matches[1]);
 			$args = $matches[2] ?? '';
-			
-			print_r($this->commands);
 			
 			foreach ($this->commands as $command) {
 				if (preg_match($command->getPattern(), $commandName, $cmdMatches)) {

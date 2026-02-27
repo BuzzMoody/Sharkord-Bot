@@ -170,16 +170,16 @@
 
 			// Hydrate Models efficiently
 			foreach ($raw['roles'] ?? [] as $r) {
-				$this->roles->handleCreate($r);
+				$this->roles->handleHydrate($r);
 			}
 			foreach ($raw['categories'] ?? [] as $c) {
-				$this->categories->handleCreate($c);
+				$this->categories->handleHydrate($c);
 			}
 			foreach ($raw['channels'] as $c) {
-				$this->channels->handleCreate($c);
+				$this->channels->handleHydrate($c);
 			}
 			foreach ($raw['users'] as $u) {
-				$this->users->handleCreate($u);
+				$this->users->handleHydrate($u);
 			}
 			
 			$this->bot = $this->users->get($raw['ownUserId']);

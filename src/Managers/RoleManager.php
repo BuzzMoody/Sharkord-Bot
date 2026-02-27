@@ -26,6 +26,20 @@
 			private Sharkord $sharkord,
 			private array $roles = []
 		) {}
+		
+		/**
+		 * Handles the creation of a roles (or hydration from initial cache).
+		 *
+		 * @param array $raw The raw role data.
+		 * @return void
+		 */
+		public function hydrate(array $raw): void {
+			
+			$role = Role::fromArray($raw, $this->sharkord);
+			
+			$this->roles[$raw['id']] = $role;
+			
+		}
 
 		/**
 		 * Handles the creation of a roles (or hydration from initial cache).
@@ -33,7 +47,7 @@
 		 * @param array $raw The raw role data.
 		 * @return void
 		 */
-		public function handleCreate(array $raw): void {
+		public function create(array $raw): void {
 			
 			$role = Role::fromArray($raw, $this->sharkord);
 			
@@ -47,7 +61,7 @@
 		 * @param array $raw The raw role data.
 		 * @return void
 		 */
-		public function handleUpdate(array $raw): void {
+		public function update(array $raw): void {
 			
 			if (isset($this->roles[$raw['id']])) {
 				
@@ -63,7 +77,7 @@
 		 * @param int $id The ID of the deleted role.
 		 * @return void
 		 */
-		public function handleDelete(int $id): void {
+		public function delete(int $id): void {
 			
 			unset($this->roles[$id]);
 			
