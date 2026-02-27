@@ -82,7 +82,7 @@
 		public function delete(int $id): void {
 			
 			if (!isset($this->roles[$id])) { 
-				$this->logger->error("Role ID {$id} doesn't exist, therefore cannot be deleted.");
+				$this->sharkord->logger->error("Role ID {$id} doesn't exist, therefore cannot be deleted.");
 				return;
 			}
 			

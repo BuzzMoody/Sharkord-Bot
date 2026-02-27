@@ -59,7 +59,7 @@
 		/**
 		 * Handles updates to a channel.
 		 *
-		 * @param array $raw The raw category data.
+		 * @param array $raw The raw channel data.
 		 * @return void
 		 */		
 		public function update(array $raw): void {
@@ -77,13 +77,13 @@
 		/**
 		 * Handles channel deletion.
 		 *
-		 * @param int $id The ID of the deleted category.
+		 * @param int $id The ID of the deleted channel.
 		 * @return void
 		 */
 		 public function delete(int $id): void {
 			
 			if (!isset($this->channels[$id])) { 
-				$this->logger->error("Channel ID {$id} doesn't exist, therefore cannot be deleted.");
+				$this->sharkord->logger->error("Channel ID {$id} doesn't exist, therefore cannot be deleted.");
 				return;
 			}
 			

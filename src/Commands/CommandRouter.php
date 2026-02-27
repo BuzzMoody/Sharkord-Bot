@@ -76,8 +76,8 @@
 		/**
 		 * Checks if a received message matches a command pattern and executes it.
 		 *
-		 * @param Message  $message  The received message object.
-		 * @param Arrat    $matches  The original regex matches
+		 * @param Message	$message	The received message object.
+		 * @param array		$matches	The original regex matches
 		 * @return void
 		 */
 		public function handle(Message $message, array $matches): void {

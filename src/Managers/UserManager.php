@@ -133,7 +133,7 @@
 		 public function delete(int $id): void {
 			
 			if (!isset($this->users[$id])) { 
-				$this->logger->error("User ID {$id} doesn't exist, therefore cannot be deleted.");
+				$this->sharkord->logger->error("User ID {$id} doesn't exist, therefore cannot be deleted.");
 				return;
 			}
 			

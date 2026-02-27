@@ -84,7 +84,7 @@
 		 public function delete(int $id): void {
 			
 			if (!isset($this->categories[$id])) { 
-				$this->logger->error("Category ID {$id} doesn't exist, therefore cannot be deleted.");
+				$this->sharkord->logger->error("Category ID {$id} doesn't exist, therefore cannot be deleted.");
 				return;
 			}
 			

@@ -7,6 +7,8 @@
 	use Sharkord\Sharkord;
 	use React\Promise\PromiseInterface;
 	use function React\Promise\reject;
+	use LitEmoji\LitEmoji;
+	use Sharkord\Permission;
 
 	/**
 	 * Class Message
@@ -79,7 +81,6 @@
 		/**
 		 * Adds or toggles an emoji reaction on a specific message.
 		 *
-		 * @param Message $message The message entity to react to.
 		 * @param string  $emoji   The emoji character(s) to use for the reaction.
 		 * @return PromiseInterface Resolves on success, rejects on failure.
 		 */

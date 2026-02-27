@@ -16,7 +16,6 @@
 	use Monolog\Formatter\LineFormatter;
 	use Monolog\Level;
 	use Monolog\ErrorHandler;
-	use LitEmoji\LitEmoji;
 	
 	use Sharkord\HTTP\Client as Client;
 	use Sharkord\WebSocket\Gateway;
@@ -31,7 +30,6 @@
 	use Sharkord\Managers\CategoryManager;
 	use Sharkord\Managers\RoleManager;
 	use Sharkord\Managers\ServerManager;
-	use Sharkord\Permission;
 	use Sharkord\Commands\CommandRouter;
 
 	/**

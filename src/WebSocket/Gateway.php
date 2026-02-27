@@ -302,7 +302,7 @@
 		
 		/**
 		 * Safely closes the current WebSocket connection.
-		 * * @return void
+		 * @return void
 		 */
 		public function disconnect(): void {
 			
