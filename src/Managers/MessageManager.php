@@ -74,7 +74,7 @@
 				if (isset($response['type']) && $response['type'] === 'data') {
 					// If the message happens to be in our local cache, update it so it stays accurate
 					if (isset($this->messages[$messageId])) {
-						$this->messages[$messageId]->attributes['content'] = $newContent;
+						$this->messages[$messageId]->updateFromArray(['content' => $newContent]);
 					}
 					return true;
 				}
