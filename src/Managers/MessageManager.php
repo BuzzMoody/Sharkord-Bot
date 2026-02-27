@@ -64,7 +64,7 @@
 		 * @param string $newContent The new message text.
 		 * @return PromiseInterface Resolves with true on success.
 		 */
-		public function editMessage(string $messageId, string $newContent): PromiseInterface {
+		public function editMessage(int $messageId, string $newContent): PromiseInterface {
 			
 			return $this->sharkord->gateway->sendRpc("mutation", [
 				"input" => ["messageId" => $messageId, "content" => $newContent], 
