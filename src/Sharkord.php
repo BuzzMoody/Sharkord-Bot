@@ -17,7 +17,7 @@
 	use Monolog\ErrorHandler;
 	use LitEmoji\LitEmoji;
 	
-	use Sharkord\HTTP\Client as HTTPClient;
+	use Sharkord\HTTP\Client as Client;
 	use Sharkord\WebSocket\Gateway;
 
 	use Sharkord\Models\User;
@@ -107,7 +107,7 @@
 			$this->commands = new CommandRouter($this->logger);
 
 			// Initialize Isolated Network Layers
-			$this->http    = new HTTPClient($this->config, $this->loop, $this->logger);
+			$this->http    = new Client($this->config, $this->loop, $this->logger);
 			$this->gateway = new Gateway($this->config, $this->loop, $this->logger);
 
 			// Bind Core Gateway Events

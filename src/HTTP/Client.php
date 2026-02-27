@@ -18,7 +18,7 @@
 	 *
 	 * @package Sharkord\HTTP
 	 */
-	class HTTPClient {
+	class Client {
 
 		private Browser $browser;
 
