@@ -86,6 +86,8 @@
 			print_r($message->toArray());
 			
 			$text = $message->content;
+			
+			echo "Text: {$text}\n";
 
 			// Quick validation to ensure there is content to parse
 			if (empty($text)) {
