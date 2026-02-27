@@ -27,7 +27,10 @@
 		 *
 		 * @param LoggerInterface $logger The PSR-3 logger instance.
 		 */
-		public function __construct(private LoggerInterface $logger) {}
+		public function __construct(
+			private Sharkord $sharkord,
+			private LoggerInterface $logger
+		) {}
 
 		/**
 		 * Registers a single command instance to the router.
@@ -78,7 +81,7 @@
 		 * @param Message  $message  The received message object.
 		 * @return void
 		 */
-		public function handle(Sharkord $sharkord, Message $message): void {
+		public function handle(Message $message): void {
 			
 			$text = $message->content;
 
@@ -100,7 +103,7 @@
 						$this->logger->debug("Matched command: $commandName");
 						
 						try {
-							$command->handle($sharkord, $message, $args, $cmdMatches);
+							$command->handle($this->sharkord, $message, $args, $cmdMatches);
 						} catch (\Exception $e) {
 							$this->logger->error("Error executing command '{$commandName}': " . $e->getMessage());
 						}
