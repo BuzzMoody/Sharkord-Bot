@@ -83,6 +83,8 @@
 			
 			echo "Command handler triggered\n";
 			
+			print_r($message);
+			
 			$text = $message->content;
 
 			// Quick validation to ensure there is content to parse
