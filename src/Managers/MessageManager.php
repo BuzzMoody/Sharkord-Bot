@@ -90,7 +90,7 @@
 		 * @param string $messageId The ID of the message to delete.
 		 * @return PromiseInterface Resolves with true on success.
 		 */
-		public function deleteMessage(string $messageId): PromiseInterface {
+		public function deleteMessage(int $messageId): PromiseInterface {
 			
 			return $this->sharkord->gateway->sendRpc("mutation", [
 				"input" => ["messageId" => $messageId], 
