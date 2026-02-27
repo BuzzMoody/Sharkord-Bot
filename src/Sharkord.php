@@ -104,7 +104,7 @@
 			$this->categories = new CategoryManager($this);
 			$this->roles = new RoleManager($this);
 			$this->servers = new ServerManager($this);
-			$this->commands = new CommandRouter($this->logger);
+			$this->commands = new CommandRouter($this);
 
 			// Initialize Isolated Network Layers
 			$this->http    = new Client($this->config, $this->loop, $this->logger);

@@ -28,8 +28,7 @@
 		 * @param LoggerInterface $logger The PSR-3 logger instance.
 		 */
 		public function __construct(
-			private Sharkord $sharkord,
-			private LoggerInterface $logger
+			private Sharkord $sharkord
 		) {}
 
 		/**
@@ -41,7 +40,7 @@
 		public function register(CommandInterface $command): void {
 			
 			$this->commands[$command->getName()] = $command;
-			$this->logger->debug("Registered command: " . $command->getName());
+			$this->sharkord->logger->debug("Registered command: " . $command->getName());
 			
 		}
 
@@ -77,7 +76,6 @@
 		/**
 		 * Checks if a received message matches a command pattern and executes it.
 		 *
-		 * @param Sharkord $sharkord The main framework instance.
 		 * @param Message  $message  The received message object.
 		 * @return void
 		 */
@@ -100,12 +98,12 @@
 				foreach ($this->commands as $command) {
 					if (preg_match($command->getPattern(), $commandName, $cmdMatches)) {
 						
-						$this->logger->debug("Matched command: $commandName");
+						$this->sharkord->logger->debug("Matched command: $commandName");
 						
 						try {
 							$command->handle($this->sharkord, $message, $args, $cmdMatches);
 						} catch (\Exception $e) {
-							$this->logger->error("Error executing command '{$commandName}': " . $e->getMessage());
+							$this->sharkord->logger->error("Error executing command '{$commandName}': " . $e->getMessage());
 						}
 						
 						return; // Stop processing once a match is found
