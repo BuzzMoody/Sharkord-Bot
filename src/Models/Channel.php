@@ -58,8 +58,7 @@
 		/**
 		 * Sends a message to a specific channel.
 		 *
-		 * @param string     $text      The message content.
-		 * @param int|string $channelId The target channel ID.
+		 * @param string $text The message content.
 		 * @return PromiseInterface Resolves on success, rejects on failure.
 		 */
 		public function sendMessage(string $text): PromiseInterface {
