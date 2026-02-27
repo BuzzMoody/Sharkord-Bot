@@ -81,7 +81,7 @@
 		 * @param int $id The ID of the deleted category.
 		 * @return void
 		 */
-		 public function delete(int $id): void {
+		public function delete(int $id): void {
 			
 			if (!isset($this->categories[$id])) { 
 				$this->sharkord->logger->error("Category ID {$id} doesn't exist, therefore cannot be deleted.");
