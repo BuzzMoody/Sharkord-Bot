@@ -28,16 +28,30 @@
 		) {}
 
 		/**
-		 * Handles the creation of a user (or hydration from initial cache).
+		 * Handles the hydration of a user.
 		 *
 		 * @param array $raw The raw user data.
 		 * @return void
 		 */
-		public function handleCreate(array $raw): void {
+		public function hydrate(array $raw): void {
 			
 			$user = User::fromArray($raw, $this->sharkord);
-			
 			$this->users[$raw['id']] = $user;
+			
+		}
+
+		/**
+		 * Handles the creation of a user.
+		 *
+		 * @param array $raw The raw user data.
+		 * @return void
+		 */
+		public function create(array $raw): void {
+			
+			$user = User::fromArray($raw, $this->sharkord);
+			$this->users[$raw['id']] = $user;
+			
+			$this->sharkord->emit('usercreate', [$user]);
 			
 		}
 
@@ -47,10 +61,14 @@
 		 * @param array $raw The raw user data (usually just ID here).
 		 * @return void
 		 */
-		public function handleJoin(array $raw): void {
+		public function join(array $raw): void {
 			
 			if (isset($this->users[$raw['id']])) {
+				
 				$this->users[$raw['id']]->updateStatus('online');
+				
+				$this->sharkord->emit('userjoin', [$this->users[$raw['id']]]);
+				
 			}
 			
 		}
@@ -61,10 +79,14 @@
 		 * @param int $id The ID of the user leaving.
 		 * @return void
 		 */
-		public function handleLeave(int $id): void {
+		public function leave(int $id): void {
 			
 			if (isset($this->users[$id])) {
+				
 				$this->users[$id]->updateStatus('offline');
+				
+				$this->sharkord->emit('userleave', [$this->users[$id]]);
+				
 			}
 			
 		}
@@ -75,7 +97,7 @@
 		 * @param array $raw The raw user data.
 		 * @return void
 		 */
-		public function handleUpdate(array $raw): void {
+		public function update(array $raw): void {
 			
 			if (!isset($this->users[$raw['id']])) {
 				return;
@@ -99,6 +121,25 @@
 			if ($gotUnbanned) {
 				$this->sharkord->emit('unban', [$user]);
 			}
+			
+		}
+		
+		/**
+		 * Handles user deletion.
+		 *
+		 * @param int $id The ID of the deleted user.
+		 * @return void
+		 */
+		 public function delete(int $id): void {
+			
+			if (!isset($this->users[$id])) { 
+				$this->sharkord->logger->error("User ID {$id} doesn't exist, therefore cannot be deleted.");
+				return;
+			}
+			
+			$this->sharkord->emit('userdelete', [$this->users[$id]]);
+			
+			unset($this->users[$id]);
 			
 		}
 		

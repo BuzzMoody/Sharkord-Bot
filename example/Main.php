@@ -27,7 +27,7 @@
 	* If you want to use dynamically loaded commands as per the examples directory
 	* uncomment the below along with the preg_match if statement further down
 	*/
-	# $sharkord->loadCommands(__DIR__ . '/Commands');
+	# $sharkord->commands->loadFromDirectory(__DIR__ . '/Commands');
 
 	$sharkord->on('ready', function(User $bot) use ($sharkord) {
 		$sharkord->logger->notice("Logged in as {$bot->name} and ready to chat!");
@@ -47,7 +47,7 @@
 		* Make sure to delete the ping/pong if statement.
 		*/
 		# if (preg_match('/^!([a-zA-Z]{2,})(?:\s+(.*))?$/', $message->content, $matches)) {
-		#	 $sharkord->handleCommand($message, $matches);
+		#	$sharkord->commands->handle($message, $matches);
 		# }
 		
 		if ($message->content == '!ping') $message->channel->sendMessage('Pong!');

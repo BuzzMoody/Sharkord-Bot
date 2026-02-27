@@ -73,7 +73,7 @@ Create a file named `bot.php` (or `index.php`) and add the following code. This 
 	* If you want to use dynamically loaded commands as per the examples directory
 	* uncomment the below along with the preg_match if statement further down
 	*/
-	# $sharkord->loadCommands(__DIR__ . '/Commands');
+	# $sharkord->commands->loadFromDirectory(__DIR__ . '/Commands');
 
 	$sharkord->on('ready', function() use ($sharkord) {
 		$sharkord->logger->notice("Logged in as {$sharkord->bot->name} and ready to chat!");
@@ -93,7 +93,7 @@ Create a file named `bot.php` (or `index.php`) and add the following code. This 
 		* Make sure to delete the ping/pong if statement.
 		*/
 		# if (preg_match('/^!([a-zA-Z]{2,})(?:\s+(.*))?$/', $message->content, $matches)) {
-		#	 $sharkord->handleCommand($message, $matches);
+		#	 $sharkord->commands->handle($message, $matches);
 		# }
 		
 		if ($message->content == '!ping') $message->channel->sendMessage('Pong!');
@@ -187,7 +187,7 @@ php bot.php
 If you prefer to organize your commands with namespaces (PSR-4 style), you can pass the namespace as a second argument to `loadCommands`.
 
 ```php
-$bot->loadCommands(__DIR__ . '/src/Commands', 'MyBot\\Commands\\');
+$sharkord->commands->loadFromDirectory(__DIR__ . '/src/Commands', 'MyBot\\Commands\\');
 ```
 
 ### Event Listeners

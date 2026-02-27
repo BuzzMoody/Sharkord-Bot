@@ -28,12 +28,12 @@
 		) {}
 
 		/**
-		 * Handles creating or updating a category in the cache.
+		 * Handles the hydration of a category.
 		 *
 		 * @param array $raw The raw category data.
 		 * @return void
 		 */
-		public function handleCreate(array $raw): void {
+		public function hydrate(array $raw): void {
 			
 			// Instantiating the Category using our new factory method
 			$category = Category::fromArray($raw, $this->sharkord);
@@ -42,18 +42,35 @@
 		}
 
 		/**
-		 * Handles updates to a category.
+		 * Handles the creation of a category.
 		 *
 		 * @param array $raw The raw category data.
 		 * @return void
 		 */
-		public function handleUpdate(array $raw): void {
+		public function create(array $raw): void {
+			
+			// Instantiating the Category using our new factory method
+			$category = Category::fromArray($raw, $this->sharkord);
+			$this->categories[$raw['id']] = $category;
+			
+			$this->sharkord->emit('categorycreate', [$category]);
+			
+		}
+
+		/**
+		 * Handles updates to a category.
+		 *
+		 * @param array $raw The raw category data.
+		 * @return void
+		 */		
+		public function update(array $raw): void {
 			
 			if (isset($this->categories[$raw['id']])) {
-				$cat = $this->categories[$raw['id']];
 				
-				// Let the Category model handle its own data updates seamlessly
-				$cat->updateFromArray($raw);
+				$this->categories[$raw['id']]->updateFromArray($raw);
+				
+				$this->sharkord->emit('categoryupdate', [$this->categories[$raw['id']]]);
+				
 			}
 			
 		}
@@ -64,7 +81,14 @@
 		 * @param int $id The ID of the deleted category.
 		 * @return void
 		 */
-		public function handleDelete(int $id): void {
+		public function delete(int $id): void {
+			
+			if (!isset($this->categories[$id])) { 
+				$this->sharkord->logger->error("Category ID {$id} doesn't exist, therefore cannot be deleted.");
+				return;
+			}
+			
+			$this->sharkord->emit('categorydelete', [$this->categories[$id]]);
 			
 			unset($this->categories[$id]);
 			

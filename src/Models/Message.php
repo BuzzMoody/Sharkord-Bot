@@ -6,6 +6,9 @@
 	
 	use Sharkord\Sharkord;
 	use React\Promise\PromiseInterface;
+	use function React\Promise\reject;
+	use LitEmoji\LitEmoji;
+	use Sharkord\Permission;
 
 	/**
 	 * Class Message
@@ -67,21 +70,69 @@
 		 */
 		public function reply(string $text): PromiseInterface {
 
-			return $this->channel->sendMessage($text);
+			if ($this->channel) {
+				return $this->channel->sendMessage($text);
+			}
+			
+			return reject(new \RuntimeException("Channel not found for this message."));
 
 		}
 		
 		/**
-		 * Adds an emoji reaction to this entity.
+		 * Adds or toggles an emoji reaction on a specific message.
 		 *
-		 * @param string $emoji The single emoji character(s) to use for the reaction.
-		 * @return PromiseInterface Resolves when the reaction is toggled.
+		 * @param string  $emoji   The emoji character(s) to use for the reaction.
+		 * @return PromiseInterface Resolves on success, rejects on failure.
 		 */
 		public function react(string $emoji): PromiseInterface {
 			
-			return $this->sharkord->react($this, $emoji);
+			if (!$this->sharkord->bot) {
+				return reject(new \RuntimeException("Bot entity not set."));
+			}
+			
+			if (!$this->sharkord->bot->hasPermission(Permission::REACT_TO_MESSAGES)) {
+				return reject(new \RuntimeException("Missing REACT_TO_MESSAGES permission."));
+			}
+			
+			if (!$this->isEmoji($emoji)) {
+				return reject(new \InvalidArgumentException("Invalid emoji provided: '{$emoji}'"));
+			}
+			
+			$emojiText = $this->emojiToText($emoji);
+			
+			return $this->sharkord->gateway->sendRpc("mutation", [
+				"input" => ["messageId" => $this->id, "emoji" => $emojiText], 
+				"path" => "messages.toggleReaction"
+			]);
 			
 		}
+		
+		/**
+		 * Validates whether a given string is exactly one single emoji.
+		 *
+		 * @param string $emoji The string to validate.
+		 * @return bool Returns true if the string is exactly one valid emoji sequence, false otherwise.
+		 */
+		private function isEmoji(string $emoji): bool {
+			
+			$pattern = '/^\p{Extended_Pictographic}[\x{FE0F}\p{M}\x{1F3FB}-\x{1F3FF}]*(?:\x{200D}\p{Extended_Pictographic}[\x{FE0F}\p{M}\x{1F3FB}-\x{1F3FF}]*)*$/u';
+			return preg_match($pattern, $emoji) === 1;
+			
+		}
+		
+		/**
+		 * Turns the visual emoji into the text name
+		 *
+		 * @param string $emoji The emoji to convert.
+		 * @return string Returns the text string value of the emoji
+		 */
+		private function emojiToText(string $emoji): string {
+			
+			$unicodeName = LitEmoji::encodeShortcode($emoji);
+			return str_replace(array(' ', ':'), array('_', ''), strtolower($unicodeName));
+			
+		}
+
 		
 		/**
 		 * Returns a complete array of the message data, including 

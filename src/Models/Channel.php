@@ -6,6 +6,7 @@
 
 	use Sharkord\Sharkord;
 	use React\Promise\PromiseInterface;
+	use function React\Promise\reject;
 
 	/**
 	 * Class Channel
@@ -50,24 +51,26 @@
 		 */
 		public function updateFromArray(array $raw): void {
 			
-			// Optional: If you don't want to store the access token in memory, 
-			// you can uncomment the line below to throw it away!
-			// unset($raw['fileAccessToken']);
-
-			// Merge the new data into our attributes array
 			$this->attributes = array_merge($this->attributes, $raw);
 			
 		}
 		
 		/**
-		 * Sends a message to this channel.
+		 * Sends a message to a specific channel.
 		 *
 		 * @param string $text The message content.
-		 * @return PromiseInterface Resolves when the message is sent.
+		 * @return PromiseInterface Resolves on success, rejects on failure.
 		 */
 		public function sendMessage(string $text): PromiseInterface {
 
-			return $this->sharkord->sendMessage($text, $this->attributes['id']);
+			return $this->sharkord->gateway->sendRpc("mutation", [
+				"input" => [
+					"content" => "<p>".htmlspecialchars($text)."</p>", 
+					"channelId" => $this->id, 
+					"files" => []
+				], 
+				"path" => "messages.send"
+			]);
 
 		}
 		

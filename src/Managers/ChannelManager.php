@@ -27,47 +27,69 @@
 			private array $channels = []
 		) {}
 
+
 		/**
-		 * Handles the creation of a channel (or hydration from initial cache).
+		 * Handles the hydration of a channel.
 		 *
 		 * @param array $raw The raw channel data.
 		 * @return void
 		 */
-		public function handleCreate(array $raw): void {
+		public function hydrate(array $raw): void {
 			
 			$channel = Channel::fromArray($raw, $this->sharkord);
-			
 			$this->channels[$raw['id']] = $channel;
+			
+		}
+		
+		/**
+		 * Handles the creation of a channel.
+		 *
+		 * @param array $raw The raw channel data.
+		 * @return void
+		 */
+		public function create(array $raw): void {
+			
+			$channel = Channel::fromArray($raw, $this->sharkord);
+			$this->channels[$raw['id']] = $channel;
+			
+			$this->sharkord->emit('channelcreate', [$channel]);
+			
+		}
+		
+		/**
+		 * Handles updates to a channel.
+		 *
+		 * @param array $raw The raw channel data.
+		 * @return void
+		 */		
+		public function update(array $raw): void {
+			
+			if (isset($this->channels[$raw['id']])) {
+				
+				$this->channels[$raw['id']]->updateFromArray($raw);
+				
+				$this->sharkord->emit('channelupdate', [$this->channels[$raw['id']]]);
+				
+			}
 			
 		}
 
 		/**
-		 * Handles the deletion of a channel.
+		 * Handles channel deletion.
 		 *
 		 * @param int $id The ID of the deleted channel.
 		 * @return void
 		 */
-		public function handleDelete(int $id): void {
+		public function delete(int $id): void {
 			
-			if (isset($this->channels[$id])) {
-				unset($this->channels[$id]);
+			if (!isset($this->channels[$id])) { 
+				$this->sharkord->logger->error("Channel ID {$id} doesn't exist, therefore cannot be deleted.");
+				return;
 			}
 			
-		}
-
-		/**
-		 * Handles the update of channel details.
-		 *
-		 * @param array $raw The raw channel data.
-		 * @return void
-		 */
-		public function handleUpdate(array $raw): void {
+			$this->sharkord->emit('channeldelete', [$this->channels[$id]]);
 			
-			if (isset($this->channels[$raw['id']])) {
-				
-				$this->channels[$raw['id']]->updateFromArray($raw); 
-				
-			}
+			unset($this->channels[$id]);
 			
 		}
 		
