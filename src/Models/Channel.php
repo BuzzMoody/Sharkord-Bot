@@ -6,6 +6,7 @@
 
 	use Sharkord\Sharkord;
 	use React\Promise\PromiseInterface;
+	use function React\Promise\reject;
 
 	/**
 	 * Class Channel
@@ -60,14 +61,22 @@
 		}
 		
 		/**
-		 * Sends a message to this channel.
+		 * Sends a message to a specific channel.
 		 *
-		 * @param string $text The message content.
-		 * @return PromiseInterface Resolves when the message is sent.
+		 * @param string     $text      The message content.
+		 * @param int|string $channelId The target channel ID.
+		 * @return PromiseInterface Resolves on success, rejects on failure.
 		 */
 		public function sendMessage(string $text): PromiseInterface {
 
-			return $this->sharkord->sendMessage($text, $this->attributes['id']);
+			return $this->sharkord->gateway->sendRpc("mutation", [
+				"input" => [
+					"content" => "<p>".htmlspecialchars($text)."</p>", 
+					"channelId" => $this->id, 
+					"files" => []
+				], 
+				"path" => "messages.send"
+			]);
 
 		}
 		

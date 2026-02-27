@@ -7,6 +7,7 @@
 	use Sharkord\Sharkord;
 	use Sharkord\Permission;
 	use React\Promise\PromiseInterface;
+	use function React\Promise\reject;
 
 	/**
 	 * Class User
@@ -119,49 +120,105 @@
 		}
 		
 		/**
-		 * Bans this user from the server.
+		 * Bans a user from the server.
 		 *
 		 * @param string $reason The reason for the ban.
 		 * @return PromiseInterface Resolves on success, rejects on failure.
 		 */
 		public function ban(string $reason = 'No reason given.'): PromiseInterface {
 			
-			return $this->sharkord->ban($this, $reason);
+			if (!$this->sharkord->bot) {
+				return reject(new \RuntimeException("Bot entity not set."));
+			}
+			
+			if (!$this->sharkord->bot->hasPermission(Permission::MANAGE_USERS)) {
+				return reject(new \RuntimeException("Missing MANAGE_USERS permission to ban {$this->name}."));
+			}
+			
+			if ($this->isOwner()) { 
+				return reject(new \RuntimeException("Cannot ban {$this->name} as they are the server owner."));
+			}
+			
+			return $this->sharkord->gateway->sendRpc("mutation", [
+				"input" => ["userId" => $this->id, "reason" => $reason], 
+				"path" => "users.ban"
+			]);
 			
 		}
 
 		/**
-		 * Unbans this user from the server.
+		 * Unbans a user from the server.
 		 *
 		 * @return PromiseInterface Resolves on success, rejects on failure.
 		 */
 		public function unban(): PromiseInterface {
 			
-			return $this->sharkord->unban($this);
+			if (!$this->sharkord->bot) {
+				return reject(new \RuntimeException("Bot entity not set."));
+			}
+			
+			if (!$this->sharkord->bot->hasPermission(Permission::MANAGE_USERS)) {
+				return reject(new \RuntimeException("Missing MANAGE_USERS permission to unban {$this->name}."));
+			}
+
+			return $this->sharkord->gateway->sendRpc("mutation", [
+				"input" => ["userId" => $this->id], 
+				"path" => "users.unban"
+			]);
 			
 		}
 		
 		/**
-		 * Kicks this user from the server.
+		 * Kicks a user from the server.
 		 *
 		 * @param string $reason The reason for the kick.
 		 * @return PromiseInterface Resolves on success, rejects on failure.
 		 */
 		public function kick(string $reason = 'No reason given.'): PromiseInterface {
 			
-			return $this->sharkord->kick($this, $reason);
+			if (!$this->sharkord->bot) {
+				return reject(new \RuntimeException("Bot entity not set."));
+			}
+			
+			if (!$this->sharkord->bot->hasPermission(Permission::MANAGE_USERS)) {
+				return reject(new \RuntimeException("Missing MANAGE_USERS permission to kick {$this->name}."));
+			}
+			
+			if ($this->isOwner()) { 
+				return reject(new \RuntimeException("Cannot kick {$this->name} as they are the server owner."));
+			}
+			
+			return $this->sharkord->gateway->sendRpc("mutation", [
+				"input" => ["userId" => $this->id, "reason" => $reason], 
+				"path" => "users.kick"
+			]);
 			
 		}
 		
 		/**
-		 * Deletes this user from the server.
+		 * Deletes a user from the server.
 		 *
-		 * @param bool $wipe Whether to wipe all associated data for this user.
+		 * @param bool  $wipe Whether to delete all associated user data (posts, files, emoji, etc.).
 		 * @return PromiseInterface Resolves on success, rejects on failure.
 		 */
 		public function delete(bool $wipe = false): PromiseInterface {
 			
-			return $this->sharkord->delete($this, $wipe);
+			if (!$this->sharkord->bot) {
+				return reject(new \RuntimeException("Bot entity not set."));
+			}
+			
+			if (!$this->sharkord->bot->hasPermission(Permission::MANAGE_USERS)) {
+				return reject(new \RuntimeException("Missing MANAGE_USERS permission to delete {$this->name}."));
+			}
+			
+			if ($this->isOwner()) { 
+				return reject(new \RuntimeException("Cannot delete {$this->name} as they are the server owner."));
+			}
+			
+			return $this->sharkord->gateway->sendRpc("mutation", [
+				"input" => ["userId" => $this->id, "wipe" => $wipe], 
+				"path" => "users.delete"
+			]);
 			
 		}
 		
