@@ -83,7 +83,7 @@
 			
 			echo "Command handler triggered\n";
 			
-			print_r($message);
+			print_r($message->toArray());
 			
 			$text = $message->content;
 
