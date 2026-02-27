@@ -190,7 +190,7 @@
 
 			$this->logger->info(sprintf("Connected! Cached %d channels, %d users.", $this->channels->count(), $this->users->count()));
 			
-			return resolve();
+			return resolve(null);
 			
 		}
 		
@@ -240,7 +240,7 @@
 				
 			}
 
-			return resolve();
+			return resolve(null);
 
 		}
 
