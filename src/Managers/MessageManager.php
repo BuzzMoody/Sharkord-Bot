@@ -71,7 +71,7 @@
 				"path"  => "messages.edit"
 			])->then(function($response) use ($messageId, $newContent) {
 				
-				if (isset($response['result']['type']) && $response['result']['type'] === 'data') {
+				if (isset($response['type']) && $response['type'] === 'data') {
 					// If the message happens to be in our local cache, update it so it stays accurate
 					if (isset($this->messages[$messageId])) {
 						$this->messages[$messageId]->attributes['content'] = $newContent;
@@ -97,7 +97,7 @@
 				"path"  => "messages.delete"
 			])->then(function($response) use ($messageId) {
 				
-				if (isset($response['result']['type']) && $response['result']['type'] === 'data') {
+				if (isset($response['type']) && $response['type'] === 'data') {
 					// If the message happens to be in our local cache, update it so it stays accurate
 					if (isset($this->messages[$messageId])) {
 						unset($this->messages[$messageId]);

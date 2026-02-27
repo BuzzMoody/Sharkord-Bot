@@ -104,7 +104,14 @@
 			return $this->sharkord->gateway->sendRpc("mutation", [
 				"input" => ["messageId" => $this->id, "emoji" => $emojiText], 
 				"path" => "messages.toggleReaction"
-			]);
+			])->then(function($response) use () {
+				
+				if (isset($response['type']) && $response['type'] === 'data') {
+					return true;
+				}
+				
+				throw new \RuntimeException("Failed to react to message. Server responded with: " . json_encode($response));
+			});
 			
 		}
 		
