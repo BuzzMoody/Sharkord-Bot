@@ -9,6 +9,7 @@
 	use React\EventLoop\LoopInterface;
 	use React\Promise\PromiseInterface;
 	use function React\Promise\reject;
+	use function React\Promise\resolve;
 	use Psr\Log\LoggerInterface;
 	use Monolog\Logger;
 	use Monolog\Handler\StreamHandler;
