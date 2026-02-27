@@ -45,7 +45,7 @@
 		
 		use EventEmitterTrait;
 
-		public readonly HTTPClient $http;
+		public readonly Client $http;
 		public readonly Gateway $gateway;
 
 		public ChannelManager $channels;
