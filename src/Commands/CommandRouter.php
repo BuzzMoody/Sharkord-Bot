@@ -94,8 +94,12 @@
 			// This matches the logic from your original framework
 			if (preg_match('/^([a-zA-Z0-9]+)(?:\s+(.*))?$/s', $text, $matches)) {
 				
+				echo "Handler has matched command\n";
+				
 				$commandName = strtolower($matches[1]);
 				$args = $matches[2] ?? '';
+				
+				print_r($this->commands);
 				
 				foreach ($this->commands as $command) {
 					if (preg_match($command->getPattern(), $commandName, $cmdMatches)) {
