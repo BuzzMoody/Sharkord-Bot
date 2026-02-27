@@ -5,7 +5,6 @@
 	namespace Sharkord\Models;
 	
 	use Sharkord\Sharkord;
-	use Sharkord\Permission;
 
 	/**
 	 * Class Role
