@@ -81,6 +81,8 @@
 		 */
 		public function handle(Message $message): void {
 			
+			echo "Command handler triggered\n";
+			
 			$text = $message->content;
 
 			// Quick validation to ensure there is content to parse
