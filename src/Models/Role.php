@@ -44,6 +44,7 @@
 		/**
 		 * Updates the Role's information dynamically.
 		 *
+		 * @internal This method is for internal framework use only. Do not call this directly.
 		 * @param array $raw The raw Role data from the server.
 		 * @return void
 		 */

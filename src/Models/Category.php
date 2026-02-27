@@ -43,6 +43,7 @@
 		/**
 		 * Updates the Category's information dynamically.
 		 *
+		 * @internal This method is for internal framework use only. Do not call this directly.
 		 * @param array $raw The raw Category data from the server.
 		 * @return void
 		 */
