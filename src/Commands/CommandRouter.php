@@ -80,46 +80,25 @@
 		 * @return void
 		 */
 		public function handle(Message $message, array $matches): void {
-			
-			echo "Command handler triggered\n";
-			
-			print_r($message->toArray());
-			
-			$text = $message->content;
-			
-			echo "Text: {$text}\n";
 
-			// Quick validation to ensure there is content to parse
-			if (empty($text)) {
-				return;
-			}
-
-			// Extract the command name and arguments using a basic pattern
-			// This matches the logic from your original framework
-			if (preg_match('/^([a-zA-Z0-9]+)(?:\s+(.*))?$/s', $text, $matches)) {
-				
-				echo "Handler has matched command\n";
-				
-				$commandName = strtolower($matches[1]);
-				$args = $matches[2] ?? '';
-				
-				print_r($this->commands);
-				
-				foreach ($this->commands as $command) {
-					if (preg_match($command->getPattern(), $commandName, $cmdMatches)) {
-						
-						$this->sharkord->logger->debug("Matched command: $commandName");
-						
-						try {
-							$command->handle($this->sharkord, $message, $args, $cmdMatches);
-						} catch (\Exception $e) {
-							$this->sharkord->logger->error("Error executing command '{$commandName}': " . $e->getMessage());
-						}
-						
-						return; // Stop processing once a match is found
+			$commandName = strtolower($matches[1]);
+			$args = $matches[2] ?? '';
+			
+			print_r($this->commands);
+			
+			foreach ($this->commands as $command) {
+				if (preg_match($command->getPattern(), $commandName, $cmdMatches)) {
+					
+					$this->sharkord->logger->debug("Matched command: $commandName");
+					
+					try {
+						$command->handle($this->sharkord, $message, $args, $cmdMatches);
+					} catch (\Exception $e) {
+						$this->sharkord->logger->error("Error executing command '{$commandName}': " . $e->getMessage());
 					}
+					
+					return; // Stop processing once a match is found
 				}
-				
 			}
 			
 		}
