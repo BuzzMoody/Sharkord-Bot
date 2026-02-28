@@ -32,30 +32,6 @@
 				array_shift($this->messages);
 			}
 		}
-
-		/**
-		 * Retrieves a message by ID from cache, or fetches it from the API.
-		 *
-		 * @param string $id The Message ID
-		 * @return PromiseInterface Resolves with the Message object
-		 */
-		public function get(string $id): PromiseInterface {
-			
-			// 1. Check local cache first
-			if (isset($this->messages[$id])) {
-				return resolve($this->messages[$id]);
-			}
-
-			// 2. Fetch from the Sharkord API via Gateway RPC if not cached
-			return $this->sharkord->gateway->sendRpc("query", [
-				"input" => ["messageId" => $id],
-				"path"  => "messages.get" // Assuming this is your API path
-			])->then(function($raw) {
-				$message = Message::fromArray($raw['data'], $this->sharkord);
-				$this->cache($message);
-				return $message;
-			});
-		}
 		
 		/**
 		 * Edits a message directly by its ID without requiring it to be cached.
