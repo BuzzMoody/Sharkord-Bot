@@ -16,47 +16,7 @@
 	 */
 	class MessageManager {
 
-		private array $messages = [];
-		private int $cacheLimit = 1000; // Prevent memory leaks
-
 		public function __construct(private Sharkord $sharkord) {}
-
-		/**
-		 * Adds a message to the cache.
-		 */
-		public function cache(Message $message): void {
-			$this->messages[$message->id] = $message;
-
-			// Keep cache from growing infinitely
-			if (count($this->messages) > $this->cacheLimit) {
-				array_shift($this->messages);
-			}
-		}
-
-		/**
-		 * Retrieves a message by ID from cache, or fetches it from the API.
-		 *
-		 * @param string $id The Message ID
-		 * @return PromiseInterface Resolves with the Message object
-		 */
-		public function get(int $id): PromiseInterface {
-			
-			// 1. Check local cache first
-			if (isset($this->messages[$id])) {
-				return resolve($this->messages[$id]);
-			}
-
-			// 2. Fetch from the Sharkord API via Gateway RPC if not cached
-			return $this->sharkord->gateway->sendRpc("query", [
-				"input" => ["messageId" => $id],
-				"path"  => "messages.getMessage" // Assuming this is your API path
-			])->then(function($raw) {
-				print_r($raw);
-				$message = Message::fromArray($raw['data'], $this->sharkord);
-				$this->cache($message);
-				return $message;
-			});
-		}
 		
 		/**
 		 * Edits a message directly by its ID without requiring it to be cached.
@@ -73,10 +33,6 @@
 			])->then(function($response) use ($messageId, $newContent) {
 				
 				if (isset($response['type']) && $response['type'] === 'data') {
-					// If the message happens to be in our local cache, update it so it stays accurate
-					if (isset($this->messages[$messageId])) {
-						$this->messages[$messageId]->updateFromArray(['content' => $newContent]);
-					}
 					return true;
 				}
 				
@@ -99,11 +55,6 @@
 			])->then(function($response) use ($messageId) {
 				
 				if (isset($response['type']) && $response['type'] === 'data') {
-					// If the message happens to be in our local cache, update it so it stays accurate
-					if (isset($this->messages[$messageId])) {
-						unset($this->messages[$messageId]);
-					}
-					
 					return true;
 				}
 				

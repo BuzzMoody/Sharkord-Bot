@@ -255,8 +255,6 @@
 
 			$message = Message::fromArray($raw, $this);
 			
-			$this->messages->cache($message);
-			
 			try {
 				$this->emit('message', [$message]);
 			} catch (\Throwable $e) {
