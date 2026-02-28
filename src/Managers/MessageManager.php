@@ -5,9 +5,7 @@
 	namespace Sharkord\Managers;
 
 	use Sharkord\Sharkord;
-	use Sharkord\Models\Message;
 	use React\Promise\PromiseInterface;
-	use function React\Promise\resolve;
 
 	/**
 	 * Class MessageManager
@@ -21,16 +19,16 @@
 		/**
 		 * Edits a message directly by its ID without requiring it to be cached.
 		 *
-		 * @param string $messageId The ID of the message to edit.
+		 * @param int|string $messageId The ID of the message to edit.
 		 * @param string $newContent The new message text.
 		 * @return PromiseInterface Resolves with true on success.
 		 */
-		public function editMessage(int $messageId, string $newContent): PromiseInterface {
+		public function editMessage(int|string $messageId, string $newContent): PromiseInterface {
 			
 			return $this->sharkord->gateway->sendRpc("mutation", [
 				"input" => ["messageId" => $messageId, "content" => $newContent], 
 				"path"  => "messages.edit"
-			])->then(function($response) use ($messageId, $newContent) {
+			])->then(function($response) {
 				
 				if (isset($response['type']) && $response['type'] === 'data') {
 					return true;
@@ -44,15 +42,15 @@
 		/**
 		 * Deletes a message directly by its ID without requiring it to be cached.
 		 *
-		 * @param string $messageId The ID of the message to delete.
+		 * @param int|string $messageId The ID of the message to delete.
 		 * @return PromiseInterface Resolves with true on success.
 		 */
-		public function deleteMessage(int $messageId): PromiseInterface {
+		public function deleteMessage(int|string $messageId): PromiseInterface {
 			
 			return $this->sharkord->gateway->sendRpc("mutation", [
 				"input" => ["messageId" => $messageId], 
 				"path"  => "messages.delete"
-			])->then(function($response) use ($messageId) {
+			])->then(function($response) {
 				
 				if (isset($response['type']) && $response['type'] === 'data') {
 					return true;
