@@ -104,7 +104,61 @@
 			return $this->sharkord->gateway->sendRpc("mutation", [
 				"input" => ["messageId" => $this->id, "emoji" => $emojiText], 
 				"path" => "messages.toggleReaction"
-			]);
+			])->then(function($response) {
+				
+				if (isset($response['type']) && $response['type'] === 'data') {
+					return true;
+				}
+				
+				throw new \RuntimeException("Failed to react to message. Server responded with: " . json_encode($response));
+			});
+			
+		}
+		
+		/**
+		 * Edits the content of this message.
+		 *
+		 * @param string $newContent The new message text.
+		 * @return PromiseInterface Resolves when the message is edited.
+		 */
+		public function edit(string $newContent): PromiseInterface {
+			
+			if (!$this->sharkord->bot) {
+				return reject(new \RuntimeException("Bot entity not set."));
+			}
+			
+			$isOwnMessage = ($this->author && $this->author->id === $this->sharkord->bot->id);
+			
+			// If it's not our message, we need MANAGE_MESSAGES permission
+			if (!$isOwnMessage && !$this->sharkord->bot->hasPermission(\Sharkord\Permission::MANAGE_MESSAGES)) {
+				return reject(new \RuntimeException("Missing MANAGE_MESSAGES permission to edit other users' messages."));
+			}
+
+			// Pass the ID and content to our efficient MessageManager
+			return $this->sharkord->messages->editMessage($this->id, $newContent);
+			
+		}
+
+		/**
+		 * Deletes this message.
+		 *
+		 * @return PromiseInterface Resolves when the message is deleted.
+		 */
+		public function delete(): PromiseInterface {
+			
+			if (!$this->sharkord->bot) {
+				return reject(new \RuntimeException("Bot entity not set."));
+			}
+
+			$isOwnMessage = ($this->author && $this->author->id === $this->sharkord->bot->id);
+			
+			// If it's not our message, we need MANAGE_MESSAGES permission
+			if (!$isOwnMessage && !$this->sharkord->bot->hasPermission(\Sharkord\Permission::MANAGE_MESSAGES)) {
+				return reject(new \RuntimeException("Missing MANAGE_MESSAGES permission to delete other users' messages."));
+			}
+
+			// Pass the ID to our efficient MessageManager
+			return $this->sharkord->messages->deleteMessage($this->id);
 			
 		}
 		
@@ -133,7 +187,6 @@
 			return str_replace(array(' ', ':'), array('_', ''), strtolower($unicodeName));
 			
 		}
-
 		
 		/**
 		 * Returns a complete array of the message data, including 

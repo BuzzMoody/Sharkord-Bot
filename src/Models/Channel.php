@@ -70,7 +70,12 @@
 					"files" => []
 				], 
 				"path" => "messages.send"
-			]);
+			])->then(function($response) {
+				if (isset($response['type']) && $response['type'] === 'data') {
+					return true;
+				}
+				throw new \RuntimeException("Failed to send message. Server responded with: " . json_encode($response));
+			});
 
 		}
 		
