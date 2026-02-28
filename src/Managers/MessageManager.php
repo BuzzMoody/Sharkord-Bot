@@ -51,6 +51,7 @@
 				"input" => ["messageId" => $id],
 				"path"  => "messages.getMessage" // Assuming this is your API path
 			])->then(function($raw) {
+				print_r($raw);
 				$message = Message::fromArray($raw['data'], $this->sharkord);
 				$this->cache($message);
 				return $message;
