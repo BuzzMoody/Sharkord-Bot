@@ -233,7 +233,7 @@
 				$data = json_decode($payload, true, 512, JSON_THROW_ON_ERROR);
 			} catch (\JsonException) {
 				if (trim($payload) === 'PING' || trim($payload) === 'PONG') {
-						$this->logger->debug("Received heartbeat from server.");
+						$this->logger->debug("Received {$payload} heartbeat from server.");
                         if (trim($payload) === 'PING') $this->conn->send('PONG');
                         $this->resetWatchdog();
 				}		
