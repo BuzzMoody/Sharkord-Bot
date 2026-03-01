@@ -242,7 +242,7 @@
 					else if ($pingCheck === 'PONG') {
 						$this->resetWatchdog();
 					}
-				}		
+				}
 				return; // Ignore malformed JSON
 			}
 
