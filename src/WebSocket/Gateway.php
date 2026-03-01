@@ -122,6 +122,9 @@
 		 * Resets the watchdog timer using dynamic timeframes.
 		 */
 		private function resetWatchdog(): void {
+			
+			$this->logger->notice("Watchdog reset!");
+			
 			if ($this->watchdogTimer) {
 				$this->loop->cancelTimer($this->watchdogTimer);
 			}
