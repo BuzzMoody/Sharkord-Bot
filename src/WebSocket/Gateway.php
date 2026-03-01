@@ -12,7 +12,6 @@
 	use function React\Promise\reject;
 	use Ratchet\Client\Connector;
 	use Ratchet\Client\WebSocket;
-	use Ratchet\RFC6455\Messaging\Frame;
 	use Psr\Log\LoggerInterface;
 
 	/**
@@ -34,7 +33,7 @@
 		
 		// --- Watchdog Properties ---
 		private ?TimerInterface $watchdogTimer = null;
-		private int $watchdogTimeout = 60; // 30s expected + 10s grace period
+		private int $watchdogTimeout = 35; // 30s expected + 5s grace period
 
 		/**
 		 * Gateway constructor.
@@ -77,14 +76,6 @@
 						
 						// Start the initial watchdog countdown
 						$this->resetWatchdog();
-						
-						// Listen for PING frames from the server
-						$conn->on('ping', function (Frame $frame) use ($conn) {
-							$this->logger->notice("Received PING from server. Replying with PONG...");
-							// RFC 6455 requires echoing the exact payload data back in the PONG
-							$conn->send(new Frame($frame->getPayload(), true, Frame::OP_PONG));
-							$this->resetWatchdog(); // Reset the connection timeout
-						});
 
 						// Attach listeners
 						$conn->on('message', fn($msg) => $this->handleServerJSON((string)$msg));
@@ -123,7 +114,7 @@
 		 */
 		private function resetWatchdog(): void {
 			
-			$this->logger->notice("Watchdog reset!");
+			$this->logger->debug("Watchdog reset!");
 			
 			if ($this->watchdogTimer) {
 				$this->loop->cancelTimer($this->watchdogTimer);
@@ -212,11 +203,14 @@
 		 */
 		private function handleServerJSON(string $payload): void {
 
-			$this->logger->notice("Payload: $payload");
-
 			try {
 				$data = json_decode($payload, true, 512, JSON_THROW_ON_ERROR);
 			} catch (\JsonException) {
+				if (trim($payload) === 'PING') {
+						$this->logger->debug("Received 'PING' text from server. Replying with 'PONG'...");
+                        $conn->send('PONG'); // Send back regular text, NOT a Frame object
+                        $this->resetWatchdog();
+				}				
 				return; // Ignore malformed JSON
 			}
 
