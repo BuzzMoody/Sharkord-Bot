@@ -212,6 +212,8 @@
 		 */
 		private function handleServerJSON(string $payload): void {
 
+			$this->logger->notice("Payload: $payload");
+
 			try {
 				$data = json_decode($payload, true, 512, JSON_THROW_ON_ERROR);
 			} catch (\JsonException) {
