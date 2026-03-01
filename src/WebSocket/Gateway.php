@@ -232,10 +232,16 @@
 			try {
 				$data = json_decode($payload, true, 512, JSON_THROW_ON_ERROR);
 			} catch (\JsonException) {
-				if (trim($payload) === 'PING' || trim($payload) === 'PONG') {
-					$this->logger->debug("Received {$payload} heartbeat from server.");
-					if (trim($payload) === 'PING') $this->conn->send('PONG');
-					$this->resetWatchdog();
+				$pingCheck = trim($payload);
+				if ($pingCheck === 'PING' || $pingCheck === 'PONG') {
+					$this->logger->debug("Received {$pingCheck} heartbeat from server.");
+					if ($pingCheck === 'PING' && $this->conn) {
+						$this->conn->send('PONG');
+						$this->resetWatchdog();
+					}
+					else if ($pingCheck === 'PONG') {
+						$this->resetWatchdog();
+					}
 				}		
 				return; // Ignore malformed JSON
 			}
