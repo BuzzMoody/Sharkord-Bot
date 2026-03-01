@@ -6,11 +6,13 @@
 
 	use Evenement\EventEmitterTrait;
 	use React\EventLoop\LoopInterface;
+	use React\EventLoop\TimerInterface;
 	use React\Promise\Promise;
 	use React\Promise\PromiseInterface;
 	use function React\Promise\reject;
 	use Ratchet\Client\Connector;
 	use Ratchet\Client\WebSocket;
+	use Ratchet\RFC6455\Messaging\Frame;
 	use Psr\Log\LoggerInterface;
 
 	/**
@@ -29,6 +31,8 @@
 		private string $token = '';
 		private array $rpcHandlers = [];
 		private int $rpcCounter = 0;
+		private ?TimerInterface $heartbeatTimer = null;
+		private bool $pingAcknowledged = true;
 
 		/**
 		 * Gateway constructor.
@@ -68,6 +72,9 @@
 						
 						$this->logger->debug("WebSocket Connected.");
 						$this->conn = $conn;
+						
+						// Start heartbeats
+						$this->startHeartbeat($conn);
 
 						// Attach listeners
 						$conn->on('message', fn($msg) => $this->handleServerJSON((string)$msg));
@@ -75,6 +82,13 @@
 						$conn->on('close', function($code, $reason) {
 							$this->logger->warning("Connection closed ({$code}). Emitting disconnect event...");
 							$this->conn = null;
+							
+							// Cancel the heartbeat timer to prevent memory leaks
+							if ($this->heartbeatTimer) {
+								$this->loop->cancelTimer($this->heartbeatTimer);
+								$this->heartbeatTimer = null;
+							}
+							
 							$this->emit('closed', [$code, $reason]);
 						});
 
@@ -92,6 +106,37 @@
 				
 			});
 
+		}
+		
+		/**
+		 * Starts the periodic PING/PONG heartbeat to keep the connection alive.
+		 */
+		private function startHeartbeat(WebSocket $conn): void {
+			// Reset state
+			$this->pingAcknowledged = true;
+
+			// Listen for the PONG frame from the server
+			$conn->on('pong', function () {
+				$this->logger->debug("Heartbeat: Received PONG from server.");
+				$this->pingAcknowledged = true;
+			});
+
+			// Start a 30-second periodic timer
+			$this->heartbeatTimer = $this->loop->addPeriodicTimer(30, function () use ($conn) {
+				// If we haven't received a pong from the last ping, the connection is dead
+				if (!$this->pingAcknowledged) {
+					$this->logger->error("Heartbeat: Did not receive PONG. Connection seems dead. Disconnecting...");
+					$this->disconnect();
+					return;
+				}
+
+				// Send PING
+				if ($this->conn) {
+					$this->logger->debug("Heartbeat: Sending PING to server...");
+					$this->pingAcknowledged = false; // Require a PONG before the next tick
+					$conn->send(new Frame('', true, Frame::OP_PING));
+				}
+			});
 		}
 
 		/**
@@ -308,13 +353,16 @@
 		 * @return void
 		 */
 		public function disconnect(): void {
-			
+			if ($this->heartbeatTimer) {
+				$this->loop->cancelTimer($this->heartbeatTimer);
+				$this->heartbeatTimer = null;
+			}
+
 			if ($this->conn) {
 				$this->logger->debug("Disconnecting from WebSocket...");
 				$this->conn->close();
 				$this->conn = null;
 			}
-			
 		}
 
 	}
