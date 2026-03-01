@@ -31,8 +31,8 @@
 		private string $token = '';
 		private array $rpcHandlers = [];
 		private int $rpcCounter = 0;
-		private ?TimerInterface $heartbeatTimer = null;
-		private bool $pingAcknowledged = true;
+		private ?TimerInterface $watchdogTimer = null;
+		private int $watchdogTimeout = 35;
 
 		/**
 		 * Gateway constructor.
@@ -73,8 +73,16 @@
 						$this->logger->debug("WebSocket Connected.");
 						$this->conn = $conn;
 						
-						// Start heartbeats
-						$this->startHeartbeat($conn);
+						// Start the initial watchdog countdown
+						$this->resetWatchdog();
+						
+						// Listen for PING frames from the server
+						$conn->on('ping', function (Frame $frame) use ($conn) {
+							$this->logger->debug("Received PING from server. Replying with PONG...");
+							// RFC 6455 requires echoing the exact payload data back in the PONG
+							$conn->send(new Frame($frame->getPayload(), true, Frame::OP_PONG));
+							$this->resetWatchdog(); // Reset the connection timeout
+						});
 
 						// Attach listeners
 						$conn->on('message', fn($msg) => $this->handleServerJSON((string)$msg));
@@ -83,10 +91,10 @@
 							$this->logger->warning("Connection closed ({$code}). Emitting disconnect event...");
 							$this->conn = null;
 							
-							// Cancel the heartbeat timer to prevent memory leaks
-							if ($this->heartbeatTimer) {
-								$this->loop->cancelTimer($this->heartbeatTimer);
-								$this->heartbeatTimer = null;
+							// Cancel the watchdog timer to prevent memory leaks
+							if ($this->watchdogTimer) {
+								$this->loop->cancelTimer($this->watchdogTimer);
+								$this->watchdogTimer = null;
 							}
 							
 							$this->emit('closed', [$code, $reason]);
@@ -109,33 +117,17 @@
 		}
 		
 		/**
-		 * Starts the periodic PING/PONG heartbeat to keep the connection alive.
+		 * Resets the watchdog timer. If the server fails to send a PING or message
+		 * within the timeout period, the connection is considered dead.
 		 */
-		private function startHeartbeat(WebSocket $conn): void {
-			// Reset state
-			$this->pingAcknowledged = true;
+		private function resetWatchdog(): void {
+			if ($this->watchdogTimer) {
+				$this->loop->cancelTimer($this->watchdogTimer);
+			}
 
-			// Listen for the PONG frame from the server
-			$conn->on('pong', function () {
-				$this->logger->debug("Heartbeat: Received PONG from server.");
-				$this->pingAcknowledged = true;
-			});
-
-			// Start a 30-second periodic timer
-			$this->heartbeatTimer = $this->loop->addPeriodicTimer(30, function () use ($conn) {
-				// If we haven't received a pong from the last ping, the connection is dead
-				if (!$this->pingAcknowledged) {
-					$this->logger->error("Heartbeat: Did not receive PONG. Connection seems dead. Disconnecting...");
-					$this->disconnect();
-					return;
-				}
-
-				// Send PING
-				if ($this->conn) {
-					$this->logger->debug("Heartbeat: Sending PING to server...");
-					$this->pingAcknowledged = false; // Require a PONG before the next tick
-					$conn->send(new Frame('', true, Frame::OP_PING));
-				}
+			$this->watchdogTimer = $this->loop->addTimer($this->watchdogTimeout, function () {
+				$this->logger->error("Watchdog: No PING or data received from server in {$this->watchdogTimeout} seconds. Connection dead. Disconnecting...");
+				$this->disconnect();
 			});
 		}
 
@@ -353,9 +345,9 @@
 		 * @return void
 		 */
 		public function disconnect(): void {
-			if ($this->heartbeatTimer) {
-				$this->loop->cancelTimer($this->heartbeatTimer);
-				$this->heartbeatTimer = null;
+			if ($this->watchdogTimer) {
+				$this->loop->cancelTimer($this->watchdogTimer);
+				$this->watchdogTimer = null;
 			}
 
 			if ($this->conn) {
