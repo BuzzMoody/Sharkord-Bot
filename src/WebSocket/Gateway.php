@@ -208,7 +208,7 @@
 			} catch (\JsonException) {
 				if (trim($payload) === 'PING') {
 						$this->logger->debug("Received 'PING' text from server. Replying with 'PONG'...");
-                        $conn->send('PONG'); // Send back regular text, NOT a Frame object
+                        $this->conn->send('PONG'); // Send back regular text, NOT a Frame object
                         $this->resetWatchdog();
 				}				
 				return; // Ignore malformed JSON
