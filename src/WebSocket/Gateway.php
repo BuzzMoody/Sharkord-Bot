@@ -33,7 +33,8 @@
 		
 		// --- Watchdog Properties ---
 		private ?TimerInterface $watchdogTimer = null;
-		private int $watchdogTimeout = 35; // 30s expected + 5s grace period
+		private int $watchdogTimeout = 31; // 30s expected + 1s grace period
+		private int $probeTimeout = 3; // How long we wait for a PONG reply
 
 		/**
 		 * Gateway constructor.
@@ -84,10 +85,14 @@
 							$this->logger->warning("Connection closed ({$code}). Emitting disconnect event...");
 							$this->conn = null;
 							
-							// Cancel the watchdog timer to prevent memory leaks
 							if ($this->watchdogTimer) {
 								$this->loop->cancelTimer($this->watchdogTimer);
 								$this->watchdogTimer = null;
+							}
+
+							if ($this->probeTimer) {
+								$this->loop->cancelTimer($this->probeTimer);
+								$this->probeTimer = null;
 							}
 							
 							$this->emit('closed', [$code, $reason]);
@@ -110,20 +115,40 @@
 		}
 		
 		/**
-		 * Resets the watchdog timer using dynamic timeframes.
+		 * Resets the watchdog timers. If the idle timeout is reached, it probes
+		 * the server. If the probe timeout is reached, it disconnects.
 		 */
 		private function resetWatchdog(): void {
 			
-			$this->logger->debug("Watchdog reset!");
-			
+			// 1. Cancel any existing idle timer
 			if ($this->watchdogTimer) {
 				$this->loop->cancelTimer($this->watchdogTimer);
 			}
+			
+			// 2. Cancel any active probe timer (since we just got activity)
+			if ($this->probeTimer) {
+				$this->loop->cancelTimer($this->probeTimer);
+				$this->probeTimer = null;
+			}
 
+			// 3. Start the standard idle watchdog
 			$this->watchdogTimer = $this->loop->addTimer($this->watchdogTimeout, function () {
-				$this->logger->error("Watchdog: No PING or RPC response received in {$this->watchdogTimeout} seconds. Connection dead. Disconnecting...");
-				$this->disconnect();
+				
+				$this->logger->warning("Watchdog: No activity in {$this->watchdogTimeout}s. Probing server with PING...");
+				
+				// Send our probe
+				if ($this->conn) {
+					$this->conn->send('PING');
+				}
+
+				// Start the strict 10-second countdown for the PONG reply
+				$this->probeTimer = $this->loop->addTimer($this->probeTimeout, function () {
+					$this->logger->error("Watchdog: Server did not reply to probe within {$this->probeTimeout}s. Disconnecting...");
+					$this->disconnect();
+				});
+				
 			});
+
 		}
 
 		/**
@@ -206,11 +231,11 @@
 			try {
 				$data = json_decode($payload, true, 512, JSON_THROW_ON_ERROR);
 			} catch (\JsonException) {
-				if (trim($payload) === 'PING') {
-						$this->logger->debug("Received 'PING' text from server. Replying with 'PONG'...");
-                        $this->conn->send('PONG'); // Send back regular text, NOT a Frame object
+				if (trim($payload) === 'PING' || trim($payload) === 'PONG') {
+						$this->logger->debug("Received heartbeat from server.");
+                        if (trim($payload) === 'PING') $this->conn->send('PONG');
                         $this->resetWatchdog();
-				}				
+				}		
 				return; // Ignore malformed JSON
 			}
 
@@ -348,9 +373,15 @@
 		 * @return void
 		 */
 		public function disconnect(): void {
+			
 			if ($this->watchdogTimer) {
 				$this->loop->cancelTimer($this->watchdogTimer);
 				$this->watchdogTimer = null;
+			}
+			
+			if ($this->probeTimer) {
+				$this->loop->cancelTimer($this->probeTimer);
+				$this->probeTimer = null;
 			}
 
 			if ($this->conn) {
@@ -358,6 +389,7 @@
 				$this->conn->close();
 				$this->conn = null;
 			}
+			
 		}
 
 	}
