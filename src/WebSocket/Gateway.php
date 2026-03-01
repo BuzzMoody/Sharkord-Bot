@@ -142,7 +142,7 @@
 					$this->conn->send('PING');
 				}
 
-				// Start the strict 10-second countdown for the PONG reply
+				// Start the strict {$this->probeTimeout}-second countdown for the PONG reply
 				$this->probeTimer = $this->loop->addTimer($this->probeTimeout, function () {
 					$this->logger->error("Watchdog: Server did not reply to probe within {$this->probeTimeout}s. Disconnecting...");
 					$this->disconnect();
