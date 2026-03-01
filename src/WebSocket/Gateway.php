@@ -6,6 +6,7 @@
 
 	use Evenement\EventEmitterTrait;
 	use React\EventLoop\LoopInterface;
+	use React\EventLoop\TimerInterface;
 	use React\Promise\Promise;
 	use React\Promise\PromiseInterface;
 	use function React\Promise\reject;
@@ -29,6 +30,12 @@
 		private string $token = '';
 		private array $rpcHandlers = [];
 		private int $rpcCounter = 0;
+		
+		// --- Watchdog Properties ---
+		private ?TimerInterface $watchdogTimer = null;
+		private ?TimerInterface $probeTimer = null;
+		private int $watchdogTimeout = 31; // 30s expected + 1s grace period
+		private int $probeTimeout = 3; // How long we wait for a PONG reply
 
 		/**
 		 * Gateway constructor.
@@ -68,6 +75,9 @@
 						
 						$this->logger->debug("WebSocket Connected.");
 						$this->conn = $conn;
+						
+						// Start the initial watchdog countdown
+						$this->resetWatchdog();
 
 						// Attach listeners
 						$conn->on('message', fn($msg) => $this->handleServerJSON((string)$msg));
@@ -75,6 +85,17 @@
 						$conn->on('close', function($code, $reason) {
 							$this->logger->warning("Connection closed ({$code}). Emitting disconnect event...");
 							$this->conn = null;
+							
+							if ($this->watchdogTimer) {
+								$this->loop->cancelTimer($this->watchdogTimer);
+								$this->watchdogTimer = null;
+							}
+
+							if ($this->probeTimer) {
+								$this->loop->cancelTimer($this->probeTimer);
+								$this->probeTimer = null;
+							}
+							
 							$this->emit('closed', [$code, $reason]);
 						});
 
@@ -89,6 +110,43 @@
 						
 					}
 				);
+				
+			});
+
+		}
+		
+		/**
+		 * Resets the watchdog timers. If the idle timeout is reached, it probes
+		 * the server. If the probe timeout is reached, it disconnects.
+		 */
+		private function resetWatchdog(): void {
+			
+			// 1. Cancel any existing idle timer
+			if ($this->watchdogTimer) {
+				$this->loop->cancelTimer($this->watchdogTimer);
+			}
+			
+			// 2. Cancel any active probe timer (since we just got activity)
+			if ($this->probeTimer) {
+				$this->loop->cancelTimer($this->probeTimer);
+				$this->probeTimer = null;
+			}
+
+			// 3. Start the standard idle watchdog
+			$this->watchdogTimer = $this->loop->addTimer($this->watchdogTimeout, function () {
+				
+				$this->logger->warning("Watchdog: No activity in {$this->watchdogTimeout}s. Probing server with PING...");
+				
+				// Send our probe
+				if ($this->conn) {
+					$this->conn->send('PING');
+				}
+
+				// Start the strict {$this->probeTimeout}-second countdown for the PONG reply
+				$this->probeTimer = $this->loop->addTimer($this->probeTimeout, function () {
+					$this->logger->error("Watchdog: Server did not reply to probe within {$this->probeTimeout}s. Disconnecting...");
+					$this->disconnect();
+				});
 				
 			});
 
@@ -174,6 +232,17 @@
 			try {
 				$data = json_decode($payload, true, 512, JSON_THROW_ON_ERROR);
 			} catch (\JsonException) {
+				$pingCheck = trim($payload);
+				if ($pingCheck === 'PING' || $pingCheck === 'PONG') {
+					$this->logger->debug("Received {$pingCheck} heartbeat from server.");
+					if ($pingCheck === 'PING' && $this->conn) {
+						$this->conn->send('PONG');
+						$this->resetWatchdog();
+					}
+					else if ($pingCheck === 'PONG') {
+						$this->resetWatchdog();
+					}
+				}
 				return; // Ignore malformed JSON
 			}
 
@@ -208,6 +277,8 @@
 				$this->rpcHandlers[$id] = function(array $response) use ($resolve, $reject, $id) {
 					
 					unset($this->rpcHandlers[$id]);
+					
+					$this->resetWatchdog();
 
 					if (isset($response['error'])) {
 						
@@ -272,6 +343,7 @@
 					
 					if ($type === 'started') {
 						$this->logger->debug("Server confirmed subscription to: {$path}");
+						$this->resetWatchdog();
 						return;
 					}
 					
@@ -309,6 +381,16 @@
 		 */
 		public function disconnect(): void {
 			
+			if ($this->watchdogTimer) {
+				$this->loop->cancelTimer($this->watchdogTimer);
+				$this->watchdogTimer = null;
+			}
+			
+			if ($this->probeTimer) {
+				$this->loop->cancelTimer($this->probeTimer);
+				$this->probeTimer = null;
+			}
+
 			if ($this->conn) {
 				$this->logger->debug("Disconnecting from WebSocket...");
 				$this->conn->close();
