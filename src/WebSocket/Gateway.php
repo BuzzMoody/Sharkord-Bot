@@ -34,7 +34,7 @@
 		
 		// --- Watchdog Properties ---
 		private ?TimerInterface $watchdogTimer = null;
-		private int $watchdogTimeout = 35; // 30s expected + 10s grace period
+		private int $watchdogTimeout = 60; // 30s expected + 10s grace period
 
 		/**
 		 * Gateway constructor.
