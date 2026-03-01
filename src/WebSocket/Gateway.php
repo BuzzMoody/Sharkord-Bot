@@ -80,7 +80,7 @@
 						
 						// Listen for PING frames from the server
 						$conn->on('ping', function (Frame $frame) use ($conn) {
-							$this->logger->debug("Received PING from server. Replying with PONG...");
+							$this->logger->notice("Received PING from server. Replying with PONG...");
 							// RFC 6455 requires echoing the exact payload data back in the PONG
 							$conn->send(new Frame($frame->getPayload(), true, Frame::OP_PONG));
 							$this->resetWatchdog(); // Reset the connection timeout
