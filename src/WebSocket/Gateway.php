@@ -31,8 +31,10 @@
 		private string $token = '';
 		private array $rpcHandlers = [];
 		private int $rpcCounter = 0;
+		
+		// --- Watchdog Properties ---
 		private ?TimerInterface $watchdogTimer = null;
-		private int $watchdogTimeout = 35;
+		private int $watchdogTimeout = 35; // 30s expected + 10s grace period
 
 		/**
 		 * Gateway constructor.
@@ -117,8 +119,7 @@
 		}
 		
 		/**
-		 * Resets the watchdog timer. If the server fails to send a PING or message
-		 * within the timeout period, the connection is considered dead.
+		 * Resets the watchdog timer using dynamic timeframes.
 		 */
 		private function resetWatchdog(): void {
 			if ($this->watchdogTimer) {
@@ -126,7 +127,7 @@
 			}
 
 			$this->watchdogTimer = $this->loop->addTimer($this->watchdogTimeout, function () {
-				$this->logger->error("Watchdog: No PING or data received from server in {$this->watchdogTimeout} seconds. Connection dead. Disconnecting...");
+				$this->logger->error("Watchdog: No PING or RPC response received in {$this->watchdogTimeout} seconds. Connection dead. Disconnecting...");
 				$this->disconnect();
 			});
 		}
@@ -245,6 +246,8 @@
 				$this->rpcHandlers[$id] = function(array $response) use ($resolve, $reject, $id) {
 					
 					unset($this->rpcHandlers[$id]);
+					
+					$this->resetWatchdog();
 
 					if (isset($response['error'])) {
 						
@@ -309,6 +312,7 @@
 					
 					if ($type === 'started') {
 						$this->logger->debug("Server confirmed subscription to: {$path}");
+						$this->resetWatchdog();
 						return;
 					}
 					
