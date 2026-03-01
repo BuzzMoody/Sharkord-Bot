@@ -33,6 +33,7 @@
 		
 		// --- Watchdog Properties ---
 		private ?TimerInterface $watchdogTimer = null;
+		private ?TimerInterface $probeTimer = null;
 		private int $watchdogTimeout = 31; // 30s expected + 1s grace period
 		private int $probeTimeout = 3; // How long we wait for a PONG reply
 
