@@ -35,6 +35,11 @@
 		 */
 		public function hydrate(array $raw): void {
 			
+			if (!isset($raw['id'])) {
+				$this->sharkord->logger->warning("Cannot hydrate role: missing 'id' in data.");
+				return;
+			}
+			
 			$role = Role::fromArray($raw, $this->sharkord);
 			$this->roles[$raw['id']] = $role;
 			
@@ -47,6 +52,11 @@
 		 * @return void
 		 */
 		public function create(array $raw): void {
+			
+			if (!isset($raw['id'])) {
+				$this->sharkord->logger->warning("Cannot create role: missing 'id' in data.");
+				return;
+			}
 			
 			$role = Role::fromArray($raw, $this->sharkord);
 			$this->roles[$raw['id']] = $role;
@@ -62,6 +72,11 @@
 		 * @return void
 		 */
 		public function update(array $raw): void {
+			
+			if (!isset($raw['id'])) {
+				$this->sharkord->logger->warning("Cannot update role: missing 'id' in data.");
+				return;
+			}
 			
 			if (isset($this->roles[$raw['id']])) {
 				

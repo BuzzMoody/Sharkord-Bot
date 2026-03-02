@@ -35,6 +35,11 @@
 		 */
 		public function hydrate(array $raw): void {
 			
+			if (!isset($raw['id'])) {
+				$this->sharkord->logger->warning("Cannot hydrate user: missing 'id' in data.");
+				return;
+			}
+			
 			$user = User::fromArray($raw, $this->sharkord);
 			$this->users[$raw['id']] = $user;
 			
@@ -47,6 +52,11 @@
 		 * @return void
 		 */
 		public function create(array $raw): void {
+			
+			if (!isset($raw['id'])) {
+				$this->sharkord->logger->warning("Cannot create user: missing 'id' in data.");
+				return;
+			}
 			
 			$user = User::fromArray($raw, $this->sharkord);
 			$this->users[$raw['id']] = $user;
@@ -62,6 +72,11 @@
 		 * @return void
 		 */
 		public function join(array $raw): void {
+			
+			if (!isset($raw['id'])) {
+				$this->sharkord->logger->warning("Cannot process user join: missing 'id' in data.");
+				return;
+			}
 			
 			if (isset($this->users[$raw['id']])) {
 				
@@ -98,6 +113,11 @@
 		 * @return void
 		 */
 		public function update(array $raw): void {
+			
+			if (!isset($raw['id'])) {
+				$this->sharkord->logger->warning("Cannot update user: missing 'id' in data.");
+				return;
+			}
 			
 			if (!isset($this->users[$raw['id']])) {
 				return;
