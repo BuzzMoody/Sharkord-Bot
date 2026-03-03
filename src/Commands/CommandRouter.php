@@ -80,7 +80,7 @@
 							$this->register(new $fullClassName());
 						}
 					}
-				} catch (\ReflectionException $e) {
+				} catch (\Throwable $e) {
 					$this->sharkord->logger->error("Failed to load command class '{$fullClassName}': " . $e->getMessage());
 				}
 				
