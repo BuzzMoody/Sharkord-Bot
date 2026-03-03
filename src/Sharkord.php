@@ -201,6 +201,12 @@
 			}
 			
 			$this->bot = $this->users->get($raw['ownUserId']);
+			if ($this->bot === null) {
+				throw new \RuntimeException(sprintf(
+					"Invalid join response: bot user with ID '%s' not found in hydrated users list.",
+					(string) $raw['ownUserId']
+				));
+			}
 
 			$this->servers->hydrate($raw['publicSettings'] ?? []);
 
