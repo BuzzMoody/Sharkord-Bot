@@ -52,20 +52,36 @@
 		 */
 		public function loadFromDirectory(string $directory, string $namespace = ''): void {
 			
+			if (!is_dir($directory)) {
+				$this->sharkord->logger->warning("Command directory does not exist: {$directory}");
+				return;
+			}
+			
 			$namespace = rtrim($namespace, '\\');
 
-			foreach (glob($directory . '/*.php') as $file) {
+			$files = glob($directory . '/*.php');
+			
+			if ($files === false) {
+				$this->sharkord->logger->warning("Failed to scan command directory: {$directory}");
+				return;
+			}
+
+			foreach ($files as $file) {
 				
 				require_once $file;
 				$className = basename($file, '.php');
 				$fullClassName = $namespace ? $namespace . '\\' . $className : $className;
 
-				if (class_exists($fullClassName)) {
-					$reflection = new \ReflectionClass($fullClassName);
-					
-					if ($reflection->implementsInterface(CommandInterface::class) && !$reflection->isAbstract()) {
-						$this->register(new $fullClassName());
+				try {
+					if (class_exists($fullClassName)) {
+						$reflection = new \ReflectionClass($fullClassName);
+						
+						if ($reflection->implementsInterface(CommandInterface::class) && !$reflection->isAbstract()) {
+							$this->register(new $fullClassName());
+						}
 					}
+				} catch (\Throwable $e) {
+					$this->sharkord->logger->error("Failed to load command class '{$fullClassName}': " . $e->getMessage());
 				}
 				
 			}

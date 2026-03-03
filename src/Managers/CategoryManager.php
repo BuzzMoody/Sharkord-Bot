@@ -35,6 +35,11 @@
 		 */
 		public function hydrate(array $raw): void {
 			
+			if (!isset($raw['id'])) {
+				$this->sharkord->logger->warning("Cannot hydrate category: missing 'id' in data.");
+				return;
+			}
+			
 			// Instantiating the Category using our new factory method
 			$category = Category::fromArray($raw, $this->sharkord);
 			$this->categories[$raw['id']] = $category;
@@ -48,6 +53,11 @@
 		 * @return void
 		 */
 		public function create(array $raw): void {
+			
+			if (!isset($raw['id'])) {
+				$this->sharkord->logger->warning("Cannot create category: missing 'id' in data.");
+				return;
+			}
 			
 			// Instantiating the Category using our new factory method
 			$category = Category::fromArray($raw, $this->sharkord);
@@ -64,6 +74,11 @@
 		 * @return void
 		 */		
 		public function update(array $raw): void {
+			
+			if (!isset($raw['id'])) {
+				$this->sharkord->logger->warning("Cannot update category: missing 'id' in data.");
+				return;
+			}
 			
 			if (isset($this->categories[$raw['id']])) {
 				

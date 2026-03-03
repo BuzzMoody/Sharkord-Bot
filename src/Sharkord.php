@@ -74,12 +74,23 @@
 			string $logLevel = 'Notice'
 		) {
 
+			// Validate required config keys
+			foreach (['host', 'identity', 'password'] as $key) {
+				if (!isset($this->config[$key]) || $this->config[$key] === '') {
+					throw new \InvalidArgumentException("Missing required config key: '{$key}'.");
+				}
+			}
+
 			$this->loop = $this->loop ?? Loop::get();
 			
 			// Restore default Monolog instantiation
 			if ($logger === null) {
 				
-				$level = Level::fromName(ucfirst(strtolower($logLevel)));
+				try {
+					$level = Level::fromName(ucfirst(strtolower($logLevel)));
+				} catch (\ValueError $e) {
+					throw new \InvalidArgumentException("Invalid log level '{$logLevel}': " . $e->getMessage(), 0, $e);
+				}
 				
 				$outputFormat = null;
 				$dateFormat = "d/m h:i:sA";
@@ -165,6 +176,10 @@
 		 */
 		private function hydrateElements(array $data): PromiseInterface {
 
+			if (!isset($data['data']) || !is_array($data['data'])) {
+				throw new \RuntimeException("Invalid join response: missing 'data' payload.");
+			}
+
 			$raw = $data['data'];
 
 			// Hydrate Models efficiently
@@ -174,16 +189,26 @@
 			foreach ($raw['categories'] ?? [] as $c) {
 				$this->categories->hydrate($c);
 			}
-			foreach ($raw['channels'] as $c) {
+			foreach ($raw['channels'] ?? [] as $c) {
 				$this->channels->hydrate($c);
 			}
-			foreach ($raw['users'] as $u) {
+			foreach ($raw['users'] ?? [] as $u) {
 				$this->users->hydrate($u);
 			}
 			
+			if (!isset($raw['ownUserId'])) {
+				throw new \RuntimeException("Invalid join response: missing 'ownUserId'.");
+			}
+			
 			$this->bot = $this->users->get($raw['ownUserId']);
+			if ($this->bot === null) {
+				throw new \RuntimeException(sprintf(
+					"Invalid join response: bot user with ID '%s' not found in hydrated users list.",
+					(string) $raw['ownUserId']
+				));
+			}
 
-			$this->servers->hydrate($raw['publicSettings']);
+			$this->servers->hydrate($raw['publicSettings'] ?? []);
 
 			$this->logger->info(sprintf("Connected! Cached %d channels, %d users.", $this->channels->count(), $this->users->count()));
 			
