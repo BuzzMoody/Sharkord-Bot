@@ -218,6 +218,31 @@
 			
 		}
 		
+		public function hasMentions(string $content): bool {
+			
+			$patten = '/<span[^>]*(?:\bdata-type="mention"[^>]*\bdata-user-id="\d+"|\bdata-user-id="\d+"[^>]*\bdata-type="mention")[^>]*>/gm';
+			return preg_match($pattern, $content);
+			
+		}
+		
+		public function getMentions(string $content): array {
+			
+			$patten = '/data-user-id="(\d+)"/mi';
+			
+			if (!preg_match_all($pattern, $content, $matches)) {
+				
+				return [];
+				
+			}
+			
+			$userIds = array_unique($matches[1]);
+			
+			return array_values(array_filter(
+				array_map(fn($id) => $this->sharkord->users->get($id), $userIds)
+			));
+			
+		}
+		
 		/**
 		 * Magic getter for dynamic properties.
 		 *
@@ -240,6 +265,18 @@
 			// 3. Handle a request for the user who sent it
 			if (($name === 'author' || $name === 'user') && !empty($this->attributes['userId'])) {
 				return $this->sharkord->users->get($this->attributes['userId']);
+			}
+			
+			if ($name === 'mentions' && !empty($this->attributes['content'])) {
+				
+				if ($this->hasMentions($this->attributes['content'])) {
+					
+					return $this->getMentions($this->attributes['content']);
+					
+				}
+				
+				return null;
+				
 			}
 
 			// Otherwise, look inside our magic backpack!

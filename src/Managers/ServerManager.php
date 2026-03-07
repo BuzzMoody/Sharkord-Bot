@@ -36,6 +36,11 @@
 		 */
 		public function hydrate(array $raw): void {
 			
+			if (!isset($raw['serverId'])) {
+				$this->sharkord->logger->warning("Cannot hydrate server: missing 'serverId' in data.");
+				return;
+			}
+			
 			$serverId = $raw['serverId'];
 			
 			// If a server with this ID is already cached, update it in place
