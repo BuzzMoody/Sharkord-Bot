@@ -16,11 +16,23 @@
 	class MessageTest extends TestCase
 	{
 		private $sharkordMock;
+		
+		private function injectMockProperty(object $object, string $property, $value): void
+		{
+			$reflection = new \ReflectionClass($object);
+			$prop = $reflection->getProperty($property);
+			$prop->setAccessible(true);
+			$prop->setValue($object, $value);
+		}
 
 		protected function setUp(): void
 		{
+		
 			// Mock the main Sharkord instance
 			$this->sharkordMock = $this->createMock(Sharkord::class);
+			
+			$this->injectMockProperty($this->sharkordMock, 'users', $this->createMock(\Sharkord\Managers\UserManager::class));
+			
 			
 			// Mock the Bot User for permission checks
 			$botUserMock = $this->createMock(User::class);
@@ -49,7 +61,7 @@
 			$rawData = ['id' => 'msg_001'];
 			$message = Message::fromArray($rawData, $this->sharkordMock);
 
-			$gatewayMock = $this->createMock(Gateway::class);
+			$this->injectMockProperty($this->sharkordMock, 'gateway', $gatewayMock);
 			
 			// Expect a mutation RPC call to be sent to the Gateway
 			$gatewayMock->expects($this->once())

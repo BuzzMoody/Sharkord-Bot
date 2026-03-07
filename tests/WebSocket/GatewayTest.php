@@ -13,66 +13,56 @@
 
 	class GatewayTest extends TestCase
 	{
-		private Sharkord $sharkordMock;
-		private LoggerInterface $loggerMock;
+		private array $config = ['host' => 'example.com'];
+		private $loopMock;
+		private $loggerMock;
 
 		protected function setUp(): void
 		{
-			$this->sharkordMock = $this->createMock(Sharkord::class);
+			$this->loopMock = $this->createMock(LoopInterface::class);
 			$this->loggerMock = $this->createMock(LoggerInterface::class);
-			
-			// The Gateway usually relies on the loop and logger from the main instance
-			$this->sharkordMock->logger = $this->loggerMock;
-			$this->sharkordMock->loop = $this->createMock(LoopInterface::class);
 		}
 
 		public function testGatewayInitialization(): void
 		{
-			$gateway = new Gateway($this->sharkordMock);
+			// Gateway constructor signature fix
+			$gateway = new Gateway($this->config, $this->loopMock, $this->loggerMock);
 			$this->assertInstanceOf(Gateway::class, $gateway);
 		}
 
 		public function testSendRpcCreatesPromise(): void
 		{
-			$gateway = new Gateway($this->sharkordMock);
+			$gateway = new Gateway($this->config, $this->loopMock, $this->loggerMock);
 			
-			// Simulating the Gateway's RPC send method routing
 			$promise = $gateway->sendRpc('mutation', [
 				'path' => 'ping',
 				'input' => []
 			]);
 			
-			$this->assertInstanceOf(PromiseInterface::class, $promise, 'sendRpc must return a ReactPHP Promise');
+			$this->assertInstanceOf(PromiseInterface::class, $promise);
 		}
 
 		public function testHandleIncomingMessageEmitsEvent(): void
 		{
-			$gateway = new Gateway($this->sharkordMock);
+			$gateway = new Gateway($this->config, $this->loopMock, $this->loggerMock);
 			
-			// We expect the Gateway to parse the payload and tell Sharkord to emit a specific event
-			$eventEmitted = false;
-			$this->sharkordMock->expects($this->once())
-							   ->method('emit')
-							   ->willReturnCallback(function($event, $args) use (&$eventEmitted) {
-								   if ($event === 'MESSAGE_CREATE') {
-									   $eventEmitted = true;
-								   }
-							   });
-
-			// Simulate an incoming raw JSON WebSocket message from the Sharkord server
-			$rawPayload = json_encode([
-				'op' => 0,
-				't' => 'MESSAGE_CREATE',
-				'd' => ['id' => 'msg_1', 'content' => 'Hello from WebSocket!']
-			]);
-
-			// Note: If handleMessage is protected/private, you may need to use ReflectionClass to test it, 
-			// or trigger it by mocking the underlying ReactPHP connection stream.
 			if (method_exists($gateway, 'handleMessage')) {
+				// Emitting to the gateway trait
+				$eventEmitted = false;
+				$gateway->on('MESSAGE_CREATE', function() use (&$eventEmitted) {
+					$eventEmitted = true;
+				});
+
+				$rawPayload = json_encode([
+					'op' => 0,
+					't' => 'MESSAGE_CREATE',
+					'd' => ['id' => 'msg_1', 'content' => 'Hello from WebSocket!']
+				]);
+
 				$gateway->handleMessage($rawPayload);
-				$this->assertTrue($eventEmitted, 'Gateway should parse the payload and emit MESSAGE_CREATE.');
+				$this->assertTrue($eventEmitted);
 			} else {
-				$this->markTestSkipped('handleMessage method is not public or accessible for direct testing.');
+				$this->markTestSkipped('handleMessage is not public.');
 			}
 		}
 	}

@@ -14,11 +14,19 @@
 	{
 		private Sharkord $sharkordMock;
 		private $gatewayMock;
+		
+		private function injectMockProperty(object $object, string $property, $value): void
+		{
+			$reflection = new \ReflectionClass($object);
+			$prop = $reflection->getProperty($property);
+			$prop->setAccessible(true);
+			$prop->setValue($object, $value);
+		}
 
 		protected function setUp(): void
 		{
 			$this->sharkordMock = $this->createMock(Sharkord::class);
-			$this->gatewayMock = $this->createMock(Gateway::class);
+			$this->injectMockProperty($this->sharkordMock, 'gateway', $gatewayMock);
 			
 			$this->sharkordMock->gateway = $this->gatewayMock;
 		}

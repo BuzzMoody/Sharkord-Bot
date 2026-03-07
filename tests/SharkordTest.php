@@ -51,6 +51,9 @@
 			$bot->emit('ready', [null]);
 
 			$this->assertTrue($eventFired, 'The ready event should be emitted upon successful connection.');
+			
+			restore_error_handler();
+			restore_exception_handler();
 		}
 	}
 

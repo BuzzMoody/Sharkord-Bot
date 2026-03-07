@@ -6,7 +6,6 @@
 
 	use PHPUnit\Framework\TestCase;
 	use Sharkord\Managers\ChannelManager;
-	use Sharkord\Models\Channel;
 	use Sharkord\Sharkord;
 
 	class ChannelManagerTest extends TestCase
@@ -15,7 +14,6 @@
 
 		protected function setUp(): void
 		{
-			// Mock the main Sharkord instance to pass into the manager and models
 			$this->sharkordMock = $this->createMock(Sharkord::class);
 		}
 
@@ -23,10 +21,8 @@
 		{
 			$manager = new ChannelManager($this->sharkordMock);
 			
-			$channelData = ['id' => 'chan_123', 'name' => 'general', 'type' => 'text'];
-			$channel = new Channel($this->sharkordMock, $channelData);
-			
-			$manager->add($channel);
+			// Use hydrate instead of add
+			$manager->hydrate(['id' => 'chan_123', 'name' => 'general', 'type' => 'text']);
 			
 			$retrieved = $manager->get('chan_123');
 			
@@ -38,25 +34,22 @@
 		public function testHasChannel(): void
 		{
 			$manager = new ChannelManager($this->sharkordMock);
-			$channel = new Channel($this->sharkordMock, ['id' => 'chan_456']);
-			
-			$manager->add($channel);
+			$manager->hydrate(['id' => 'chan_456', 'name' => 'test']);
 			
 			$this->assertTrue($manager->has('chan_456'));
-			$this->assertFalse($manager->has('chan_999'), 'Manager should return false for non-existent channels');
+			$this->assertFalse($manager->has('chan_999'));
 		}
 
 		public function testRemoveChannel(): void
 		{
 			$manager = new ChannelManager($this->sharkordMock);
-			$channel = new Channel($this->sharkordMock, ['id' => 'chan_789']);
+			$manager->hydrate(['id' => 'chan_789', 'name' => 'test2']);
 			
-			$manager->add($channel);
 			$this->assertTrue($manager->has('chan_789'));
 			
 			$manager->remove('chan_789');
-			$this->assertFalse($manager->has('chan_789'), 'Channel should be removed from the manager');
+			$this->assertFalse($manager->has('chan_789'));
 		}
 	}
-	
+
 ?>

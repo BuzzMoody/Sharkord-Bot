@@ -15,6 +15,14 @@
 	class ChannelTest extends TestCase
 	{
 		private Sharkord $sharkordMock;
+		
+		private function injectMockProperty(object $object, string $property, $value): void
+		{
+			$reflection = new \ReflectionClass($object);
+			$prop = $reflection->getProperty($property);
+			$prop->setAccessible(true);
+			$prop->setValue($object, $value);
+		}
 
 		protected function setUp(): void
 		{
@@ -58,7 +66,7 @@
 		{
 			$channel = new Channel($this->sharkordMock, ['id' => 'chan_3']);
 			
-			$gatewayMock = $this->createMock(Gateway::class);
+			$this->injectMockProperty($this->sharkordMock, 'gateway', $gatewayMock);
 			$gatewayMock->expects($this->once())
 				->method('sendRpc')
 				->with(

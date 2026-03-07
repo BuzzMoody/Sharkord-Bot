@@ -14,6 +14,14 @@
 	class UserTest extends TestCase
 	{
 		private $sharkordMock;
+		
+		private function injectMockProperty(object $object, string $property, $value): void
+		{
+			$reflection = new \ReflectionClass($object);
+			$prop = $reflection->getProperty($property);
+			$prop->setAccessible(true);
+			$prop->setValue($object, $value);
+		}
 
 		protected function setUp(): void
 		{
@@ -37,7 +45,7 @@
 		{
 			$user = new User($this->sharkordMock, ['id' => 'bad_user', 'roleIds' => [2]]);
 			
-			$gatewayMock = $this->createMock(Gateway::class);
+			$this->injectMockProperty($this->sharkordMock, 'gateway', $gatewayMock);
 			$gatewayMock->expects($this->once())
 				->method('sendRpc')
 				->with(
