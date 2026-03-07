@@ -36,8 +36,9 @@ jobs:
 
       # 4. Install dependencies (including PHPUnit)
       - name: Install Dependencies
-        if: steps.composer-cache.outputs.cache-hit != 'true'
-        run: composer install --prefer-dist --no-progress --no-suggest --optimize-autoloader
+        run: |
+          composer install --prefer-dist --no-progress --no-suggest --optimize-autoloader
+          composer require --dev phpunit/phpunit
 
       # 5. Run the test suite
       - name: Run PHPUnit Tests
