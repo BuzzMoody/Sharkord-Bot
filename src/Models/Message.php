@@ -71,9 +71,11 @@
 		 * @return PromiseInterface Resolves when the message is sent.
 		 */
 		public function reply(string $text): PromiseInterface {
+			
+			$replyStr = "<span data-type=\"mention\" data-user-id=\"{$this->author->id}\" class=\"mention\">@{$this->author->name}</span>";
 
 			if ($this->channel) {
-				return $this->channel->sendMessage($text);
+				return $this->channel->sendMessage("{$replyStr} {$text}");
 			}
 			
 			return reject(new \RuntimeException("Channel not found for this message."));
@@ -254,24 +256,6 @@
 			// Return unique IDs in the order they appear
 			return array_values(array_unique($ids));
 
-		}
-		
-		public function getMentions(): array {
-			
-			$pattern = '/data-user-id="(\d+)"/';
-			
-			if (!preg_match_all($pattern, $this->attributes['content'], $matches)) {
-				
-				return [];
-				
-			}
-			
-			$userIds = array_unique($matches[1]);
-			
-			return array_values(array_filter(
-				array_map(fn($id) => $this->sharkord->users->get($id), $userIds)
-			));
-			
 		}
 		
 		/**
