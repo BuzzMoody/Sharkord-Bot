@@ -302,12 +302,17 @@
 					
 				};
 
-				$this->conn->send(json_encode([
-					"jsonrpc" => "2.0",
-					"id" => $id,
-					"method" => $method,
-					"params" => $params
-				], JSON_THROW_ON_ERROR));
+				try {
+					$this->conn->send(json_encode([
+						"jsonrpc" => "2.0",
+						"id" => $id,
+						"method" => $method,
+						"params" => $params
+					], JSON_THROW_ON_ERROR));
+				} catch (\JsonException $e) {
+					unset($this->rpcHandlers[$id]);
+					$reject(new \RuntimeException("Failed to encode RPC payload: " . $e->getMessage(), 0, $e));
+				}
 				
 			});
 
@@ -363,15 +368,20 @@
 			};
 
 			// Send the subscription payload
-			$this->conn->send(json_encode([
-				"jsonrpc" => "2.0",
-				"id" => $id,
-				"method" => "subscription",
-				"params" => [
-					"path" => $path,
-					"input" => []
-				]
-			], JSON_THROW_ON_ERROR));
+			try {
+				$this->conn->send(json_encode([
+					"jsonrpc" => "2.0",
+					"id" => $id,
+					"method" => "subscription",
+					"params" => [
+						"path" => $path,
+						"input" => []
+					]
+				], JSON_THROW_ON_ERROR));
+			} catch (\JsonException $e) {
+				unset($this->rpcHandlers[$id]);
+				$this->logger->error("Failed to encode subscription payload for '{$path}': " . $e->getMessage());
+			}
 			
 		}
 		

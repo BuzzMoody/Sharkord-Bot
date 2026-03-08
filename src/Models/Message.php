@@ -53,8 +53,9 @@
 		 */
 		public function updateFromArray(array $raw): void {
 			
-			// Preserve your logic to strip HTML tags from the content
+			// Extract mention data from the raw HTML before tags are stripped
 			if (isset($raw['content'])) {
+				$raw['mentionedUserIds'] = $this->parseMentionedUserIds($raw['content']);
 				$raw['content'] = strip_tags($raw['content']);
 			}
 
@@ -70,12 +71,16 @@
 		 * @return PromiseInterface Resolves when the message is sent.
 		 */
 		public function reply(string $text): PromiseInterface {
-
-			if ($this->channel) {
-				return $this->channel->sendMessage($text);
-			}
 			
-			return reject(new \RuntimeException("Channel not found for this message."));
+			if ($this->channel && $this->author) {
+				
+				$author = htmlspecialchars($this->author->name, ENT_QUOTES, 'UTF-8');
+				$mention = "<span data-type=\"mention\" data-user-id=\"{$this->author->id}\" class=\"mention\">@{$author}</span>";
+				return $this->channel->sendRawMessage("{$mention} ".htmlspecialchars($text));
+				
+			}
+
+			return reject(new \RuntimeException("Channel or author not found for this message."));
 
 		}
 		
@@ -219,6 +224,43 @@
 		}
 		
 		/**
+		 * Determines whether this message contains any user mentions.
+		 *
+		 * @return bool True if the message mentions one or more users, false otherwise.
+		 */
+		public function hasMentions(): bool {
+			
+			return !empty($this->attributes['mentionedUserIds']);
+			
+		}
+		
+		/**
+		 * Parses all user mention spans from a raw HTML content string.
+		 *
+		 * Extracts the data-user-id attribute from any element matching the
+		 * Sharkord mention format before HTML tags are stripped from content.
+		 *
+		 * @param string $html The raw HTML content string.
+		 * @return array<int> An array of unique integer user IDs found in the content.
+		 */
+		private function parseMentionedUserIds(string $html): array {
+
+			$ids = [];
+
+			if (!preg_match_all('/<[^>]+data-type=["\']mention["\'][^>]+data-user-id=["\'](\d+)["\'][^>]*>/i', $html, $matches)) {
+				return $ids;
+			}
+
+			foreach ($matches[1] as $userId) {
+				$ids[] = (int)$userId;
+			}
+
+			// Return unique IDs in the order they appear
+			return array_values(array_unique($ids));
+
+		}
+		
+		/**
 		 * Magic getter for dynamic properties.
 		 *
 		 * @param string $name Property name.
@@ -240,6 +282,17 @@
 			// 3. Handle a request for the user who sent it
 			if (($name === 'author' || $name === 'user') && !empty($this->attributes['userId'])) {
 				return $this->sharkord->users->get($this->attributes['userId']);
+			}
+			
+			// Handle a request for resolved User objects for all mentions
+			if ($name === 'mentions') {
+				$users = [];
+				foreach ($this->attributes['mentionedUserIds'] ?? [] as $userId) {
+					if ($user = $this->sharkord->users->get($userId)) {
+						$users[] = $user;
+					}
+				}
+				return $users;
 			}
 
 			// Otherwise, look inside our magic backpack!

@@ -36,6 +36,11 @@
 		 */
 		public function hydrate(array $raw): void {
 			
+			if (!isset($raw['id'])) {
+				$this->sharkord->logger->warning("Cannot hydrate channel: missing 'id' in data.");
+				return;
+			}
+			
 			$channel = Channel::fromArray($raw, $this->sharkord);
 			$this->channels[$raw['id']] = $channel;
 			
@@ -48,6 +53,11 @@
 		 * @return void
 		 */
 		public function create(array $raw): void {
+			
+			if (!isset($raw['id'])) {
+				$this->sharkord->logger->warning("Cannot create channel: missing 'id' in data.");
+				return;
+			}
 			
 			$channel = Channel::fromArray($raw, $this->sharkord);
 			$this->channels[$raw['id']] = $channel;
@@ -63,6 +73,11 @@
 		 * @return void
 		 */		
 		public function update(array $raw): void {
+			
+			if (!isset($raw['id'])) {
+				$this->sharkord->logger->warning("Cannot update channel: missing 'id' in data.");
+				return;
+			}
 			
 			if (isset($this->channels[$raw['id']])) {
 				

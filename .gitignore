@@ -1,3 +1,17 @@
+# Composer dependencies
 /vendor/
-.env
 composer.phar
+
+# Environment variables
+.env
+
+# PHPUnit cache (so temporary test files don't get uploaded)
+.phpunit.result.cache
+
+# IDE and Editor folders (prevents your personal editor settings from being uploaded)
+.idea/
+.vscode/
+
+# OS generated files (keeps Mac/Windows hidden files out of the repo)
+.DS_Store
+Thumbs.db

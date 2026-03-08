@@ -1,2 +1,8 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Exclude development and testing files from Composer dist archives
+/tests/ export-ignore
+phpunit.xml export-ignore
+/.github/ export-ignore
+/example/ export-ignore
