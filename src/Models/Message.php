@@ -73,8 +73,9 @@
 		public function reply(string $text): PromiseInterface {
 			
 			if ($this->channel && $this->author) {
-			
-				$mention = "<span data-type=\"mention\" data-user-id=\"{$this->author->id}\" class=\"mention\">@{$this->author->name}</span>";
+				
+				$author = htmlspecialchars($this->author->name, ENT_QUOTES, 'UTF-8');
+				$mention = "<span data-type=\"mention\" data-user-id=\"{$this->author->id}\" class=\"mention\">@{$author}</span>";
 				return $this->channel->sendRawMessage("{$mention} ".htmlspecialchars($text));
 				
 			}
