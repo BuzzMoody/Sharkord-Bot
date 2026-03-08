@@ -72,13 +72,14 @@
 		 */
 		public function reply(string $text): PromiseInterface {
 			
-			$replyStr = "<span data-type=\"mention\" data-user-id=\"{$this->author->id}\" class=\"mention\">@{$this->author->name}</span>";
-
-			if ($this->channel) {
-				return $this->channel->sendMessage("{$replyStr} {$text}");
-			}
+			if ($this->channel && $this->author) {
 			
-			return reject(new \RuntimeException("Channel not found for this message."));
+				$mention = "<span data-type=\"mention\" data-user-id=\"{$this->author->id}\" class=\"mention\">@{$this->author->name}</span>";
+				return $this->channel->sendRawMessage("{$mention} ".htmlspecialchars($text));
+				
+			}
+
+			return reject(new \RuntimeException("Channel or author not found for this message."));
 
 		}
 		

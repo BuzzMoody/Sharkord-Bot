@@ -80,6 +80,35 @@
 		}
 		
 		/**
+		 * Sends a pre-built HTML string to the channel without escaping.
+		 *
+		 * Intended for internal framework use where the content has already been
+		 * constructed as safe HTML (e.g., mention spans). For plain text, use
+		 * sendMessage() instead.
+		 *
+		 * @internal
+		 * @param string $html The raw HTML content string.
+		 * @return PromiseInterface Resolves on success, rejects on failure.
+		 */
+		public function sendRawMessage(string $html): PromiseInterface {
+
+			return $this->sharkord->gateway->sendRpc("mutation", [
+				"input" => [
+					"content"   => "<p>{$html}</p>",
+					"channelId" => $this->id,
+					"files"     => []
+				],
+				"path" => "messages.send"
+			])->then(function($response) {
+				if (isset($response['type']) && $response['type'] === 'data') {
+					return true;
+				}
+				throw new \RuntimeException("Failed to send message. Server responded with: " . json_encode($response));
+			});
+
+		}
+		
+		/**
 		 * Returns all the attributes as an array. Perfect for debugging!
 		 *
 		 * @return array
