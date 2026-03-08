@@ -220,14 +220,14 @@
 		
 		public function hasMentions(): bool {
 			
-			$pattern = '/<span[^>]*(?:\bdata-type="mention"[^>]*\bdata-user-id="\d+"|\bdata-user-id="\d+"[^>]*\bdata-type="mention")[^>]*>/gm';
+			$pattern = '/<span[^>]*(?:\bdata-type="mention"[^>]*\bdata-user-id="\d+"|\bdata-user-id="\d+"[^>]*\bdata-type="mention")[^>]*>/';
 			return preg_match($pattern, $this->attributes['content']);
 			
 		}
 		
 		public function getMentions(): array {
 			
-			$pattern = '/data-user-id="(\d+)"/mi';
+			$pattern = '/data-user-id="(\d+)"/';
 			
 			if (!preg_match_all($pattern, $this->attributes['content'], $matches)) {
 				
