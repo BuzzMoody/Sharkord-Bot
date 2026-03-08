@@ -220,6 +220,8 @@
 		
 		public function hasMentions(): bool {
 			
+			var_dump($this->attributes);
+			
 			return (bool) preg_match('/<span[^>]*data-type="mention"[^>]*>/', $this->attributes['content']);
 			
 		}
