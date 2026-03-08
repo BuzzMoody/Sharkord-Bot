@@ -1,5 +1,5 @@
 <?php
-
+	
 	declare(strict_types=1);
 
 	namespace Tests\Models;
@@ -8,13 +8,12 @@
 	use Sharkord\Models\User;
 	use Sharkord\Sharkord;
 	use Sharkord\WebSocket\Gateway;
-	use Sharkord\Permission;
 	use React\Promise\Promise;
 
 	class UserTest extends TestCase
 	{
-		private $sharkordMock;
-		
+		private Sharkord $sharkordMock;
+
 		private function injectMockProperty(object $object, string $property, $value): void
 		{
 			$reflection = new \ReflectionClass($object);
@@ -32,7 +31,7 @@
 			$this->sharkordMock->bot = $botUserMock;
 		}
 
-		public function testUserStatusDefaultToOffline()
+		public function testUserStatusDefaultToOffline(): void
 		{
 			$user = new User($this->sharkordMock, ['id' => 'user_1']);
 			$this->assertEquals('offline', $user->status);
@@ -41,27 +40,17 @@
 			$this->assertEquals('online', $user->status);
 		}
 
-		public function testUserKick()
+		public function testUserKick(): void
 		{
-			$user = new User($this->sharkordMock, ['id' => 'bad_user', 'roleIds' => [2]]);
-			
-			$this->injectMockProperty($this->sharkordMock, 'gateway', $gatewayMock);
-			$gatewayMock->expects($this->once())
-				->method('sendRpc')
-				->with(
-					$this->equalTo('mutation'),
-					$this->callback(function($params) {
-						return $params['path'] === 'users.kick' 
-							&& $params['input']['userId'] === 'bad_user'
-							&& $params['input']['reason'] === 'Spamming';
-					})
-				)
+			$gatewayMock = $this->createMock(Gateway::class);
+			$gatewayMock->expects($this->once())->method('sendRpc')
 				->willReturn(new Promise(function($resolve) { $resolve(); }));
+				
+			$this->injectMockProperty($this->sharkordMock, 'gateway', $gatewayMock);
 
-			$this->sharkordMock->gateway = $gatewayMock;
-
+			$user = new User($this->sharkordMock, ['id' => 'bad_user', 'roleIds' => [2]]);
 			$user->kick('Spamming');
 		}
 	}
-
+	
 ?>

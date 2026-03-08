@@ -21,34 +21,29 @@
 		{
 			$manager = new ChannelManager($this->sharkordMock);
 			
-			// Use hydrate instead of add
-			$manager->hydrate(['id' => 'chan_123', 'name' => 'general', 'type' => 'text']);
+			// Use integer IDs since get() strictly checks array keys for ints, 
+			// but searches by 'name' if a string is provided!
+			$manager->hydrate(['id' => 123, 'name' => 'general', 'type' => 'text']);
 			
-			$retrieved = $manager->get('chan_123');
+			$retrievedById = $manager->get(123);
+			$this->assertNotNull($retrievedById);
+			$this->assertEquals(123, $retrievedById->id);
 			
-			$this->assertNotNull($retrieved);
-			$this->assertEquals('chan_123', $retrieved->id);
-			$this->assertEquals('general', $retrieved->name);
+			$retrievedByName = $manager->get('general');
+			$this->assertNotNull($retrievedByName);
+			$this->assertEquals(123, $retrievedByName->id);
 		}
 
-		public function testHasChannel(): void
+		public function testDeleteChannel(): void
 		{
 			$manager = new ChannelManager($this->sharkordMock);
-			$manager->hydrate(['id' => 'chan_456', 'name' => 'test']);
+			$manager->hydrate(['id' => 789, 'name' => 'test_delete']);
 			
-			$this->assertTrue($manager->has('chan_456'));
-			$this->assertFalse($manager->has('chan_999'));
-		}
-
-		public function testRemoveChannel(): void
-		{
-			$manager = new ChannelManager($this->sharkordMock);
-			$manager->hydrate(['id' => 'chan_789', 'name' => 'test2']);
+			$this->assertNotNull($manager->get(789));
 			
-			$this->assertTrue($manager->has('chan_789'));
+			$manager->delete(789); // ChannelManager uses delete(), not remove()
 			
-			$manager->remove('chan_789');
-			$this->assertFalse($manager->has('chan_789'));
+			$this->assertNull($manager->get(789));
 		}
 	}
 
