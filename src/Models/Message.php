@@ -53,10 +53,11 @@
 		 */
 		public function updateFromArray(array $raw): void {
 			
-			// Preserve your logic to strip HTML tags from the content
-			// if (isset($raw['content'])) {
-				// $raw['content'] = strip_tags($raw['content']);
-			// }
+			// Extract mention data from the raw HTML before tags are stripped
+			if (isset($raw['content'])) {
+				$raw['mentionedUserIds'] = $this->parseMentionedUserIds($raw['content']);
+				$raw['content'] = strip_tags($raw['content']);
+			}
 
 			// Merge the new data into our attributes array
 			$this->attributes = array_merge($this->attributes, $raw);
@@ -218,10 +219,41 @@
 			
 		}
 		
+		/**
+		 * Determines whether this message contains any user mentions.
+		 *
+		 * @return bool True if the message mentions one or more users, false otherwise.
+		 */
 		public function hasMentions(): bool {
-		
-			return (bool) preg_match('/<span[^>]*data-type="mention"[^>]*>/', $this->attributes['content']);
 			
+			return !empty($this->attributes['mentionedUserIds']);
+			
+		}
+		
+		/**
+		 * Parses all user mention spans from a raw HTML content string.
+		 *
+		 * Extracts the data-user-id attribute from any element matching the
+		 * Sharkord mention format before HTML tags are stripped from content.
+		 *
+		 * @param string $html The raw HTML content string.
+		 * @return array<int> An array of unique integer user IDs found in the content.
+		 */
+		private function parseMentionedUserIds(string $html): array {
+
+			$ids = [];
+
+			if (!preg_match_all('/<[^>]+data-type=["\']mention["\'][^>]+data-user-id=["\'](\d+)["\'][^>]*>/i', $html, $matches)) {
+				return $ids;
+			}
+
+			foreach ($matches[1] as $userId) {
+				$ids[] = (int)$userId;
+			}
+
+			// Return unique IDs in the order they appear
+			return array_values(array_unique($ids));
+
 		}
 		
 		public function getMentions(): array {
@@ -266,16 +298,15 @@
 				return $this->sharkord->users->get($this->attributes['userId']);
 			}
 			
-			if ($name === 'mentions' && !empty($this->attributes['content'])) {
-				
-				if ($this->hasMentions()) {
-					
-					return $this->getMentions();
-					
+			// Handle a request for resolved User objects for all mentions
+			if ($name === 'mentions') {
+				$users = [];
+				foreach ($this->attributes['mentionedUserIds'] ?? [] as $userId) {
+					if ($user = $this->sharkord->users->get($userId)) {
+						$users[] = $user;
+					}
 				}
-				
-				return null;
-				
+				return $users;
 			}
 
 			// Otherwise, look inside our magic backpack!
