@@ -218,18 +218,18 @@
 			
 		}
 		
-		public function hasMentions(string $content): bool {
+		public function hasMentions(): bool {
 			
 			$patten = '/<span[^>]*(?:\bdata-type="mention"[^>]*\bdata-user-id="\d+"|\bdata-user-id="\d+"[^>]*\bdata-type="mention")[^>]*>/gm';
-			return preg_match($pattern, $content);
+			return preg_match($pattern, $this->attributes['content']);
 			
 		}
 		
-		public function getMentions(string $content): array {
+		public function getMentions(): array {
 			
 			$patten = '/data-user-id="(\d+)"/mi';
 			
-			if (!preg_match_all($pattern, $content, $matches)) {
+			if (!preg_match_all($pattern, $this->attributes['content'], $matches)) {
 				
 				return [];
 				
@@ -269,9 +269,9 @@
 			
 			if ($name === 'mentions' && !empty($this->attributes['content'])) {
 				
-				if ($this->hasMentions($this->attributes['content'])) {
+				if ($this->hasMentions()) {
 					
-					return $this->getMentions($this->attributes['content']);
+					return $this->getMentions();
 					
 				}
 				
