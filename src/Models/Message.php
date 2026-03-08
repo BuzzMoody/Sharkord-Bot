@@ -54,9 +54,9 @@
 		public function updateFromArray(array $raw): void {
 			
 			// Preserve your logic to strip HTML tags from the content
-			if (isset($raw['content'])) {
-				$raw['content'] = strip_tags($raw['content']);
-			}
+			// if (isset($raw['content'])) {
+				// $raw['content'] = strip_tags($raw['content']);
+			// }
 
 			// Merge the new data into our attributes array
 			$this->attributes = array_merge($this->attributes, $raw);
@@ -219,9 +219,7 @@
 		}
 		
 		public function hasMentions(): bool {
-			
-			var_dump($this->attributes);
-			
+		
 			return (bool) preg_match('/<span[^>]*data-type="mention"[^>]*>/', $this->attributes['content']);
 			
 		}
