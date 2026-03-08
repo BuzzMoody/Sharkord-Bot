@@ -221,6 +221,7 @@
 		public function hasMentions(): bool {
 			
 			$pattern = '/<span[^>]*(?:\bdata-type="mention"[^>]*\bdata-user-id="\d+"|\bdata-user-id="\d+"[^>]*\bdata-type="mention")[^>]*>/';
+			print_r(preg_match($pattern, $this->attributes['content']));
 			return preg_match($pattern, $this->attributes['content']);
 			
 		}
