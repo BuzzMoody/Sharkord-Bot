@@ -5,7 +5,11 @@
 	namespace Sharkord\Managers;
 
 	use Sharkord\Sharkord;
+	use Sharkord\Models\Message;
+	use Sharkord\Permission
+
 	use React\Promise\PromiseInterface;
+	use React\Promise\Promise;
 
 	/**
 	 * Class MessageManager
@@ -77,7 +81,7 @@
 				return reject(new \RuntimeException("Bot entity not set."));
 			}
 
-			if (!$this->sharkord->bot->hasPermission(\Sharkord\Permission::MANAGE_MESSAGES)) {
+			if (!$this->sharkord->bot->hasPermission(Permission::MANAGE_MESSAGES)) {
 				return reject(new \RuntimeException("Missing MANAGE_MESSAGES permission to pin/unpin messages."));
 			}
 
@@ -94,7 +98,7 @@
 					}
 
 					$listener = null;
-					$listener = function(\Sharkord\Models\Message $updated) use ($resolve, $messageId, &$listener) {
+					$listener = function(Message $updated) use ($resolve, $messageId, &$listener) {
 						if ($updated->id === $messageId) {
 							$this->sharkord->removeListener('messageupdate', $listener);
 							$resolve((bool)$updated->pinned);
@@ -118,20 +122,18 @@
 		 * @param \Sharkord\Models\Message|int|string $message The Message object or message ID.
 		 * @return bool|PromiseInterface Returns a bool directly for Message objects, or a PromiseInterface resolving to a bool for ID lookups.
 		 */
-		public function isPinned(\Sharkord\Models\Message|int|string $message): bool|PromiseInterface {
+		public function isPinned(Message|int|string $message, int|string|null $channelId = null): bool|PromiseInterface {
 
-			// If we already have the object, just read the attribute directly
-			if ($message instanceof \Sharkord\Models\Message) {
+			if ($message instanceof Message) {
 				return $message->isPinned();
 			}
 
-			// Otherwise fetch the current state from the server
-			return $this->sharkord->gateway->sendRpc("query", [
-				"input" => ["messageId" => $message],
-				"path"  => "messages.get"
-			])->then(function($response) {
-				return (bool)($response['data']['pinned'] ?? false);
-			});
+			if ($channelId === null) {
+				throw new \InvalidArgumentException("A channelId is required when checking isPinned() by message ID.");
+			}
+
+			return $this->get($message, $channelId)
+				->then(fn(Message $msg) => $msg->isPinned());
 
 		}
 		
@@ -164,12 +166,12 @@
 				// then fall back to a full scan in case the channel has fewer than 20
 				// older messages (e.g. near the beginning of channel history).
 				if (isset($messages[20]) && $messages[20]['id'] === $messageId) {
-					return \Sharkord\Models\Message::fromArray($messages[20], $this->sharkord);
+					return Message::fromArray($messages[20], $this->sharkord);
 				}
 
 				foreach ($messages as $raw) {
 					if ($raw['id'] === $messageId) {
-						return \Sharkord\Models\Message::fromArray($raw, $this->sharkord);
+						return Message::fromArray($raw, $this->sharkord);
 					}
 				}
 
