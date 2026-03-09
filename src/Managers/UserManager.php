@@ -171,7 +171,8 @@
 		 */
 		public function get(int|string $identifier): ?User {
 			
-			if (is_int($identifier)) {
+			if (is_int($identifier) || ctype_digit($identifier)) {
+				$id = (int)$identifier;
 				return $this->users[$identifier] ?? null;
 			}
 			

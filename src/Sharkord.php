@@ -64,6 +64,12 @@
 		 * @var int
 		 */
 		private int $reconnectAttempts = 0;
+		
+		/**
+		 * Guards against concurrent reconnect attempts being scheduled simultaneously.
+		 * @var bool
+		 */
+		private bool $reconnecting = false;
 
 		/**
 		 * Sharkord constructor.
@@ -184,6 +190,12 @@
 		 */
 		private function attemptReconnect(): void {
 
+			if ($this->reconnecting) {
+				$this->logger->debug("Reconnect already in progress, ignoring duplicate trigger.");
+				return;
+			}
+
+			$this->reconnecting = true;
 			$this->reconnectAttempts++;
 
 			if ($this->reconnectAttempts > $this->maxReconnectAttempts) {
@@ -207,12 +219,14 @@
 					->then(fn(array $joinData) => $this->hydrateElements($joinData))
 					->then(fn() => $this->setupSubscriptions())
 					->then(function () {
+						$this->reconnecting = false;
 						$this->reconnectAttempts = 0;
 						$this->logger->info("Reconnected successfully.");
 						$this->emit('ready', [$this->bot]);
 					})
 					->catch(function (\Exception $e) {
 						$this->logger->error("Reconnect attempt failed: " . $e->getMessage());
+						$this->reconnecting = false;
 						$this->attemptReconnect();
 					});
 

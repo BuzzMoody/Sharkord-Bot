@@ -83,21 +83,23 @@
 						$conn->on('message', fn($msg) => $this->handleServerJSON((string)$msg));
 						
 						$conn->on('close', function($code, $reason) {
-							$this->logger->warning("Connection closed ({$code}). Emitting disconnect event...");
-							$this->conn = null;
-							
-							if ($this->watchdogTimer) {
-								$this->loop->cancelTimer($this->watchdogTimer);
-								$this->watchdogTimer = null;
-							}
+						$this->logger->warning("Connection closed ({$code}). Emitting disconnect event...");
+						$this->conn = null;
+						
+						if ($this->watchdogTimer) {
+							$this->loop->cancelTimer($this->watchdogTimer);
+							$this->watchdogTimer = null;
+						}
 
-							if ($this->probeTimer) {
-								$this->loop->cancelTimer($this->probeTimer);
-								$this->probeTimer = null;
-							}
-							
-							$this->emit('closed', [$code, $reason]);
-						});
+						if ($this->probeTimer) {
+							$this->loop->cancelTimer($this->probeTimer);
+							$this->probeTimer = null;
+						}
+
+						$this->rejectPendingHandlers();
+						
+						$this->emit('closed', [$code, $reason]);
+					});
 
 						// Start protocol and resolve the promise once we fully join
 						$this->performHandshake($resolve);
@@ -275,10 +277,8 @@
 				$id = ($this->rpcCounter = ($this->rpcCounter % PHP_INT_MAX) + 1);
 
 				$this->rpcHandlers[$id] = function(array $response) use ($resolve, $reject, $id) {
-					
+	
 					unset($this->rpcHandlers[$id]);
-					
-					$this->resetWatchdog();
 
 					if (isset($response['error'])) {
 						
@@ -295,6 +295,10 @@
 						$reject(new \RuntimeException("Sharkord API Error [{$code}]: {$message}{$extraDetails}"));
 						
 					} else {
+						
+						// Only reset the watchdog on a genuine server response, not on
+						// synthetic errors injected by rejectPendingHandlers() during disconnect.
+						$this->resetWatchdog();
 						
 						$resolve($response['result'] ?? []);
 						
@@ -404,16 +408,7 @@
 				$this->probeTimer = null;
 			}
 
-			// Reject and clear any Promises that will never resolve
-			foreach ($this->rpcHandlers as $id => $handler) {
-				$handler([
-					'error' => [
-						'code'    => 0,
-						'message' => 'Connection closed before a response was received.',
-					]
-				]);
-			}
-			$this->rpcHandlers = [];
+			$this->rejectPendingHandlers();
 
 			if ($this->conn) {
 				$this->logger->debug("Disconnecting from WebSocket...");
@@ -421,6 +416,29 @@
 				$this->conn = null;
 			}
 			
+		}
+		
+		/**
+		 * Rejects and clears all pending RPC handler Promises.
+		 *
+		 * Called on both explicit disconnect and server-initiated close to prevent
+		 * memory leaks from Promises that will never resolve.
+		 *
+		 * @return void
+		 */
+		private function rejectPendingHandlers(): void {
+
+			foreach ($this->rpcHandlers as $handler) {
+				$handler([
+					'error' => [
+						'code'    => 0,
+						'message' => 'Connection closed before a response was received.',
+					]
+				]);
+			}
+
+			$this->rpcHandlers = [];
+
 		}
 
 	}
