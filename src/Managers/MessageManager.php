@@ -149,10 +149,10 @@
 
 			return $this->sharkord->gateway->sendRpc("query", [
 				"input" => [
-					"channelId"       => $channelId,
-					"targetMessageId" => $messageId,
+					"channelId"       => (int) $channelId,
+					"targetMessageId" => (int) $messageId,
 					"cursor"          => null,
-					"limit"           => 10
+					"limit"           => 1
 				],
 				"path" => "messages.get"
 			])->then(function($response) use ($messageId) {
