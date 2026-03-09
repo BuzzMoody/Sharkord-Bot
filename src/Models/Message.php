@@ -207,37 +207,7 @@
 				return reject(new \RuntimeException("Bot entity not set."));
 			}
 
-			if (!$this->sharkord->bot->hasPermission(Permission::MANAGE_MESSAGES)) {
-				return reject(new \RuntimeException("Missing MANAGE_MESSAGES permission to pin/unpin messages."));
-			}
-
-			return new \React\Promise\Promise(function($resolve, $reject) {
-
-				$this->sharkord->gateway->sendRpc("mutation", [
-					"input" => ["messageId" => $this->id],
-					"path"  => "messages.togglePin"
-				])->then(function($response) use ($resolve, $reject) {
-
-					if (!isset($response['type']) || $response['type'] !== 'data') {
-						$reject(new \RuntimeException("Failed to toggle pin. Server responded with: " . json_encode($response)));
-						return;
-					}
-
-					// RPC confirmed success — now wait for the messages.onUpdate subscription
-					// event to arrive with the actual new pinned state for this message ID.
-					$listener = null;
-					$listener = function(Message $updated) use ($resolve, &$listener) {
-						if ($updated->id === $this->id) {
-							$this->sharkord->removeListener('messageupdate', $listener);
-							$resolve((bool)$updated->pinned);
-						}
-					};
-
-					$this->sharkord->on('messageupdate', $listener);
-
-				})->catch($reject);
-
-			});
+			return $this->sharkord->messages->togglePin($this->id);
 
 		}
 		
