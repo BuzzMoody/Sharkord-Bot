@@ -141,12 +141,13 @@
 				$this->logger->warning("Gateway connection lost. Code: {$code}. Reason: {$reason}");
 
 				if (!$this->reconnect) {
-					$this->logger->notice("Reconnection is disabled. Exiting.");
 					$this->loop->stop();
 					return;
 				}
 
-				$this->attemptReconnect();
+				$this->loop->futureTick(function () {
+					$this->attemptReconnect();
+				});
 
 			});
 
@@ -242,6 +243,7 @@
 		public function stop(): void {
 
 			$this->logger->info("Shutting down...");
+			$this->reconnect = false;
 			$this->gateway->disconnect();
 			$this->loop->stop();
 

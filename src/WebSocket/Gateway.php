@@ -83,23 +83,25 @@
 						$conn->on('message', fn($msg) => $this->handleServerJSON((string)$msg));
 						
 						$conn->on('close', function($code, $reason) {
-						$this->logger->warning("Connection closed ({$code}). Emitting disconnect event...");
-						$this->conn = null;
-						
-						if ($this->watchdogTimer) {
-							$this->loop->cancelTimer($this->watchdogTimer);
-							$this->watchdogTimer = null;
-						}
+							
+							$this->logger->warning("Connection closed ({$code}). Emitting disconnect event...");
+							$this->conn = null;
+							
+							if ($this->watchdogTimer) {
+								$this->loop->cancelTimer($this->watchdogTimer);
+								$this->watchdogTimer = null;
+							}
 
-						if ($this->probeTimer) {
-							$this->loop->cancelTimer($this->probeTimer);
-							$this->probeTimer = null;
-						}
+							if ($this->probeTimer) {
+								$this->loop->cancelTimer($this->probeTimer);
+								$this->probeTimer = null;
+							}
 
-						$this->rejectPendingHandlers();
-						
-						$this->emit('closed', [$code, $reason]);
-					});
+							$this->rejectPendingHandlers();
+							
+							$this->emit('closed', [$code, $reason]);
+							
+						});
 
 						// Start protocol and resolve the promise once we fully join
 						$this->performHandshake($resolve);
@@ -280,6 +282,12 @@
 	
 					unset($this->rpcHandlers[$id]);
 
+					// Only reset the watchdog on genuine server responses, not on synthetic
+					// errors injected by rejectPendingHandlers() during disconnect.
+					if (empty($response['_synthetic'])) {
+						$this->resetWatchdog();
+					}
+
 					if (isset($response['error'])) {
 						
 						$message = $response['error']['message'] ?? 'Unknown API Error';
@@ -295,10 +303,6 @@
 						$reject(new \RuntimeException("Sharkord API Error [{$code}]: {$message}{$extraDetails}"));
 						
 					} else {
-						
-						// Only reset the watchdog on a genuine server response, not on
-						// synthetic errors injected by rejectPendingHandlers() during disconnect.
-						$this->resetWatchdog();
 						
 						$resolve($response['result'] ?? []);
 						
@@ -430,6 +434,7 @@
 
 			foreach ($this->rpcHandlers as $handler) {
 				$handler([
+					'_synthetic' => true,
 					'error' => [
 						'code'    => 0,
 						'message' => 'Connection closed before a response was received.',

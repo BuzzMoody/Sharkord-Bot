@@ -67,13 +67,18 @@
 		
 		/**
 		 * Magic isset check. Allows isset() and empty() to work correctly
-		 * against dynamic properties stored in the attributes array.
+		 * against both stored attributes and virtual relational properties.
 		 *
 		 * @param string $name Property name.
 		 * @return bool
 		 */
 		public function __isset(string $name): bool {
-			return isset($this->attributes[$name]);
+
+			return match($name) {
+				'id'    => isset($this->attributes['serverId']),
+				default => isset($this->attributes[$name]),
+			};
+
 		}
 
 		/**

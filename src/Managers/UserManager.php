@@ -173,7 +173,7 @@
 			
 			if (is_int($identifier) || ctype_digit($identifier)) {
 				$id = (int)$identifier;
-				return $this->users[$identifier] ?? null;
+				return $this->users[$id] ?? null;
 			}
 			
 			foreach ($this->users as $user) {
