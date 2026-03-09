@@ -5,15 +5,15 @@
 	namespace Sharkord\Models;
 	
 	use Sharkord\Sharkord;
+	use Sharkord\Permission;
+	use Sharkord\Models\Message;
+	
+	use React\Promise\Promise;
 	use React\Promise\PromiseInterface;
 	use function React\Promise\reject;
+	
 	use LitEmoji\LitEmoji;
-	use Sharkord\Permission;
-	use Sharkord\Sharkord;
-	use Sharkord\Models\Message;
-	use Sharkord\Permission;
-	use React\Promise\Promise;
-
+	
 	/**
 	 * Class Message
 	 *
