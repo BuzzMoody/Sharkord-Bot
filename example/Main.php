@@ -53,7 +53,7 @@
 		#	$sharkord->commands->handle($message, $matches);
 		# }
 		
-		if ($message->content == '!ping') $message->channel->sendMessage('Pong!');
+		if ($message->content == '!ping') $message->reply('Pong!');
 		
 	});
 
