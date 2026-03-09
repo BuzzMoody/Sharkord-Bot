@@ -9,6 +9,10 @@
 	use function React\Promise\reject;
 	use LitEmoji\LitEmoji;
 	use Sharkord\Permission;
+	use Sharkord\Sharkord;
+	use Sharkord\Models\Message;
+	use Sharkord\Permission;
+	use React\Promise\Promise;
 
 	/**
 	 * Class Message
@@ -212,48 +216,12 @@
 		}
 		
 		/**
-		 * Checks whether a message is currently pinned.
+		 * Checks whether this message is currently pinned.
 		 *
-		 * Accepts either a Message object for an immediate local check, or a
-		 * message ID and channel ID which fetches the current state from the
-		 * server via RPC using targetMessageId to scope the query precisely.
-		 *
-		 * @param \Sharkord\Models\Message|int|string $message   The Message object or message ID.
-		 * @param int|string|null                     $channelId Required when passing a message ID instead of a Message object.
-		 * @return bool|PromiseInterface Returns a bool directly for Message objects, or a PromiseInterface resolving to a bool for ID lookups.
+		 * @return bool True if the message is pinned, false otherwise.
 		 */
-		public function isPinned(\Sharkord\Models\Message|int|string $message, int|string|null $channelId = null): bool|PromiseInterface {
-
-			if ($message instanceof \Sharkord\Models\Message) {
-				return $message->isPinned();
-			}
-
-			if ($channelId === null) {
-				throw new \InvalidArgumentException("A channelId is required when checking isPinned() by message ID.");
-			}
-
-			return $this->sharkord->gateway->sendRpc("query", [
-				"input" => [
-					"channelId"       => $channelId,
-					"targetMessageId" => $message,
-					"cursor"          => null,
-					"limit"           => 1
-				],
-				"path" => "messages.get"
-			])->then(function($response) use ($message) {
-
-				$messages = $response['data'] ?? [];
-
-				foreach ($messages as $msg) {
-					if ($msg['id'] === $message) {
-						return (bool)($msg['pinned'] ?? false);
-					}
-				}
-
-				throw new \RuntimeException("Message ID {$message} was not found in the server response.");
-
-			});
-
+		public function isPinned(): bool {
+			return (bool)($this->attributes['pinned'] ?? false);
 		}
 		
 		/**

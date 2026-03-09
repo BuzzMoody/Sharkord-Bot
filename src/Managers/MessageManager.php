@@ -10,6 +10,7 @@
 
 	use React\Promise\PromiseInterface;
 	use React\Promise\Promise;
+	use function React\Promise\reject;
 
 	/**
 	 * Class MessageManager
@@ -114,25 +115,18 @@
 		}
 		
 		/**
-		 * Checks whether a message is currently pinned.
+		 * Fetches the pinned state of a message from the server by its ID.
 		 *
-		 * Accepts either a Message object for an immediate local check, or a
-		 * message ID which fetches the current state from the server via RPC.
+		 * For local checks on an already-resolved Message object, use
+		 * Message::isPinned() directly instead.
 		 *
-		 * @param \Sharkord\Models\Message|int|string $message The Message object or message ID.
-		 * @return bool|PromiseInterface Returns a bool directly for Message objects, or a PromiseInterface resolving to a bool for ID lookups.
+		 * @param int|string $messageId The ID of the message to check.
+		 * @param int|string $channelId The ID of the channel the message belongs to.
+		 * @return PromiseInterface Resolves with a bool indicating the pinned state.
 		 */
-		public function isPinned(Message|int|string $message, int|string|null $channelId = null): bool|PromiseInterface {
+		public function checkPinned(int|string $messageId, int|string $channelId): PromiseInterface {
 
-			if ($message instanceof Message) {
-				return $message->isPinned();
-			}
-
-			if ($channelId === null) {
-				throw new \InvalidArgumentException("A channelId is required when checking isPinned() by message ID.");
-			}
-
-			return $this->get($message, $channelId)
+			return $this->get($messageId, $channelId)
 				->then(fn(Message $msg) => $msg->isPinned());
 
 		}
