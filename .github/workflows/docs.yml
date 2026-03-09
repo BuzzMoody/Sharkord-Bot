@@ -37,13 +37,10 @@ jobs:
       - name: Generate Documentation
         run: php phpDocumentor.phar run -c phpdoc.xml
 
-      - name: List Generated Output
-        run: find docs -type f | head -50
-
       - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: docs/api
+          path: docs
 
   deploy:
     name: Deploy to GitHub Pages
