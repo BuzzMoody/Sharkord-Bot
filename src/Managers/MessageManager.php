@@ -6,7 +6,7 @@
 
 	use Sharkord\Sharkord;
 	use Sharkord\Models\Message;
-	use Sharkord\Permission
+	use Sharkord\Permission;
 
 	use React\Promise\PromiseInterface;
 	use React\Promise\Promise;
