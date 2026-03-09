@@ -157,7 +157,7 @@
 				"path" => "messages.get"
 			])->then(function($response) use ($messageId) {
 
-				$messages = $response['data'] ?? [];
+				$messages = $response['data']['messages'] ?? [];
 
 				foreach ($messages as $raw) {
 					if ($raw['id'] === $messageId) {
