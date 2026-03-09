@@ -212,6 +212,51 @@
 		}
 		
 		/**
+		 * Checks whether a message is currently pinned.
+		 *
+		 * Accepts either a Message object for an immediate local check, or a
+		 * message ID and channel ID which fetches the current state from the
+		 * server via RPC using targetMessageId to scope the query precisely.
+		 *
+		 * @param \Sharkord\Models\Message|int|string $message   The Message object or message ID.
+		 * @param int|string|null                     $channelId Required when passing a message ID instead of a Message object.
+		 * @return bool|PromiseInterface Returns a bool directly for Message objects, or a PromiseInterface resolving to a bool for ID lookups.
+		 */
+		public function isPinned(\Sharkord\Models\Message|int|string $message, int|string|null $channelId = null): bool|PromiseInterface {
+
+			if ($message instanceof \Sharkord\Models\Message) {
+				return $message->isPinned();
+			}
+
+			if ($channelId === null) {
+				throw new \InvalidArgumentException("A channelId is required when checking isPinned() by message ID.");
+			}
+
+			return $this->sharkord->gateway->sendRpc("query", [
+				"input" => [
+					"channelId"       => $channelId,
+					"targetMessageId" => $message,
+					"cursor"          => null,
+					"limit"           => 1
+				],
+				"path" => "messages.get"
+			])->then(function($response) use ($message) {
+
+				$messages = $response['data'] ?? [];
+
+				foreach ($messages as $msg) {
+					if ($msg['id'] === $message) {
+						return (bool)($msg['pinned'] ?? false);
+					}
+				}
+
+				throw new \RuntimeException("Message ID {$message} was not found in the server response.");
+
+			});
+
+		}
+		
+		/**
 		 * Returns a complete array of the message data, including 
 		 * fully expanded User, Channel, and Server objects for debugging.
 		 *

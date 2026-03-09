@@ -108,6 +108,68 @@
 			});
 
 		}
+		
+		/**
+		 * Checks whether a message is currently pinned.
+		 *
+		 * Accepts either a Message object for an immediate local check, or a
+		 * message ID which fetches the current state from the server via RPC.
+		 *
+		 * @param \Sharkord\Models\Message|int|string $message The Message object or message ID.
+		 * @return bool|PromiseInterface Returns a bool directly for Message objects, or a PromiseInterface resolving to a bool for ID lookups.
+		 */
+		public function isPinned(\Sharkord\Models\Message|int|string $message): bool|PromiseInterface {
+
+			// If we already have the object, just read the attribute directly
+			if ($message instanceof \Sharkord\Models\Message) {
+				return $message->isPinned();
+			}
+
+			// Otherwise fetch the current state from the server
+			return $this->sharkord->gateway->sendRpc("query", [
+				"input" => ["messageId" => $message],
+				"path"  => "messages.get"
+			])->then(function($response) {
+				return (bool)($response['data']['pinned'] ?? false);
+			});
+
+		}
+		
+		/**
+		 * Fetches a single message from the server by its ID.
+		 *
+		 * Uses the messages.get RPC path with targetMessageId to scope the query
+		 * to a specific message, requiring the channelId for context.
+		 *
+		 * @param int|string $messageId The ID of the message to fetch.
+		 * @param int|string $channelId The ID of the channel the message belongs to.
+		 * @return PromiseInterface Resolves with a Message object, or rejects if not found.
+		 */
+		public function get(int|string $messageId, int|string $channelId): PromiseInterface {
+
+			return $this->sharkord->gateway->sendRpc("query", [
+				"input" => [
+					"channelId"       => $channelId,
+					"targetMessageId" => $messageId,
+					"cursor"          => null,
+					"limit"           => 1
+				],
+				"path" => "messages.get"
+			])->then(function($response) use ($messageId) {
+
+				$messages = $response['data'] ?? [];
+
+				foreach ($messages as $raw) {
+					if ($raw['id'] === $messageId) {
+						return \Sharkord\Models\Message::fromArray($raw, $this->sharkord);
+					}
+				}
+
+				throw new \RuntimeException("Message ID {$messageId} was not found in the server response.");
+
+			});
+
+		}
 
 	}
 ?>
