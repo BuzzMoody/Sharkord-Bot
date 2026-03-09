@@ -152,7 +152,7 @@
 					"channelId"       => $channelId,
 					"targetMessageId" => $messageId,
 					"cursor"          => null,
-					"limit"           => 1
+					"limit"           => 10
 				],
 				"path" => "messages.get"
 			])->then(function($response) use ($messageId) {
