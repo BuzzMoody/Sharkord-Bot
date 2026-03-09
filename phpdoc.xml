@@ -25,7 +25,7 @@
 				<extension>php</extension>
 			</extensions>
 			<visibility>public</visibility>
-			<default-package-name>SharkordPHP</default-package-name>
+			<default-package-name>Sharkord</default-package-name>
 			<include-source>true</include-source>
 		</api>
 	</version>
