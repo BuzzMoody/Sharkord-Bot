@@ -5,11 +5,15 @@
 	namespace Sharkord\Models;
 	
 	use Sharkord\Sharkord;
+	use Sharkord\Permission;
+	use Sharkord\Models\Message;
+	
+	use React\Promise\Promise;
 	use React\Promise\PromiseInterface;
 	use function React\Promise\reject;
+	
 	use LitEmoji\LitEmoji;
-	use Sharkord\Permission;
-
+	
 	/**
 	 * Class Message
 	 *
@@ -191,6 +195,33 @@
 			$unicodeName = LitEmoji::encodeShortcode($emoji);
 			return str_replace(array(' ', ':'), array('_', ''), strtolower($unicodeName));
 			
+		}
+		
+		/**
+		 * Toggles the pinned state of this message.
+		 *
+		 * Sends the togglePin mutation and waits for the subsequent messages.onUpdate
+		 * subscription event to confirm and return the new pinned state.
+		 *
+		 * @return PromiseInterface Resolves with a bool indicating the new pinned state (true = pinned, false = unpinned).
+		 */
+		public function togglePin(): PromiseInterface {
+
+			if (!$this->sharkord->bot) {
+				return reject(new \RuntimeException("Bot entity not set."));
+			}
+
+			return $this->sharkord->messages->togglePin($this->id);
+
+		}
+		
+		/**
+		 * Checks whether this message is currently pinned.
+		 *
+		 * @return bool True if the message is pinned, false otherwise.
+		 */
+		public function isPinned(): bool {
+			return (bool)($this->attributes['pinned'] ?? false);
 		}
 		
 		/**

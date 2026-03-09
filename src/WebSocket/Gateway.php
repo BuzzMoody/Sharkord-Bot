@@ -36,6 +36,11 @@
 		private ?TimerInterface $probeTimer = null;
 		private int $watchdogTimeout = 31; // 30s expected + 1s grace period
 		private int $probeTimeout = 3; // How long we wait for a PONG reply
+		
+		/**
+		 * @var array<int> IDs of persistent subscription handlers, excluded from rejection on disconnect.
+		 */
+		private array $subscriptionIds = [];
 
 		/**
 		 * Gateway constructor.
@@ -340,6 +345,9 @@
 			}
 
 			$id = ($this->rpcCounter = ($this->rpcCounter % PHP_INT_MAX) + 1);
+			
+			// Track this as a persistent subscription so it is not rejected on disconnect
+			$this->subscriptionIds[] = $id;
 
 			// Register a PERSISTENT handler (we do NOT unset this one)
 			$this->rpcHandlers[$id] = function(array $response) use ($callback, $path) {
@@ -432,7 +440,14 @@
 		 */
 		private function rejectPendingHandlers(): void {
 
-			foreach ($this->rpcHandlers as $handler) {
+			foreach ($this->rpcHandlers as $id => $handler) {
+
+				// Skip persistent subscription handlers — they are not Promises
+				// awaiting a response and should not be rejected on disconnect.
+				if (in_array($id, $this->subscriptionIds, true)) {
+					continue;
+				}
+
 				$handler([
 					'_synthetic' => true,
 					'error' => [
@@ -440,9 +455,11 @@
 						'message' => 'Connection closed before a response was received.',
 					]
 				]);
+
 			}
 
 			$this->rpcHandlers = [];
+			$this->subscriptionIds = [];
 
 		}
 

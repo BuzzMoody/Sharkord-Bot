@@ -5,7 +5,12 @@
 	namespace Sharkord\Managers;
 
 	use Sharkord\Sharkord;
+	use Sharkord\Permission;
+	use Sharkord\Models\Message;
+
+	use React\Promise\Promise;
 	use React\Promise\PromiseInterface;
+	use function React\Promise\reject;
 
 	/**
 	 * Class MessageManager
@@ -60,6 +65,131 @@
 				
 			});
 			
+		}
+		
+		/**
+		 * Toggles the pinned state of a message directly by its ID.
+		 *
+		 * Sends the togglePin mutation and waits for the subsequent messages.onUpdate
+		 * subscription event to confirm and return the new pinned state.
+		 *
+		 * @param int|string $messageId The ID of the message to pin or unpin.
+		 * @param int        $timeout   Seconds to wait for the onUpdate confirmation before rejecting.
+		 * @return PromiseInterface Resolves with a bool indicating the new pinned state (true = pinned, false = unpinned).
+		 */
+		public function togglePin(int|string $messageId, int $timeout = 10): PromiseInterface {
+
+			if (!$this->sharkord->bot) {
+				return reject(new \RuntimeException("Bot entity not set."));
+			}
+
+			if (!$this->sharkord->bot->hasPermission(\Sharkord\Permission::MANAGE_MESSAGES)) {
+				return reject(new \RuntimeException("Missing MANAGE_MESSAGES permission to pin/unpin messages."));
+			}
+
+			return new Promise(function($resolve, $reject) use ($messageId, $timeout) {
+
+				$this->sharkord->gateway->sendRpc("mutation", [
+					"input" => ["messageId" => $messageId],
+					"path"  => "messages.togglePin"
+				])->then(function($response) use ($resolve, $reject, $messageId, $timeout) {
+
+					if (!isset($response['type']) || $response['type'] !== 'data') {
+						$reject(new \RuntimeException("Failed to toggle pin. Server responded with: " . json_encode($response)));
+						return;
+					}
+
+					$normalizedId = (string)$messageId;
+					$listener     = null;
+					$timer        = null;
+
+					$cleanup = function() use (&$listener, &$timer) {
+						$this->sharkord->removeListener('messageupdate', $listener);
+						if ($timer) {
+							$this->sharkord->loop->cancelTimer($timer);
+							$timer = null;
+						}
+					};
+
+					$listener = function(Message $updated) use ($resolve, $normalizedId, &$cleanup) {
+						if ((string)$updated->id === $normalizedId) {
+							$cleanup();
+							$resolve((bool)$updated->pinned);
+						}
+					};
+
+					$timer = $this->sharkord->loop->addTimer($timeout, function() use ($reject, $normalizedId, &$cleanup) {
+						$cleanup();
+						$reject(new \RuntimeException("togglePin timed out waiting for onUpdate confirmation for message ID {$normalizedId}."));
+					});
+
+					$this->sharkord->on('messageupdate', $listener);
+
+				})->catch($reject);
+
+			});
+
+		}
+		
+		/**
+		 * Fetches the pinned state of a message from the server by its ID.
+		 *
+		 * For local checks on an already-resolved Message object, use
+		 * Message::isPinned() directly instead.
+		 *
+		 * @param int|string $messageId The ID of the message to check.
+		 * @param int|string $channelId The ID of the channel the message belongs to.
+		 * @return PromiseInterface Resolves with a bool indicating the pinned state.
+		 */
+		public function checkPinned(int|string $messageId, int|string $channelId): PromiseInterface {
+
+			return $this->get($messageId, $channelId)
+				->then(fn(Message $msg) => $msg->isPinned());
+
+		}
+		
+		/**
+		 * Fetches a single message from the server by its ID.
+		 *
+		 * Uses the messages.get RPC path with targetMessageId to scope the query
+		 * to a specific message, requiring the channelId for context.
+		 *
+		 * @param int|string $messageId The ID of the message to fetch.
+		 * @param int|string $channelId The ID of the channel the message belongs to.
+		 * @return PromiseInterface Resolves with a Message object, or rejects if not found.
+		 */
+		public function get(int|string $messageId, int|string $channelId): PromiseInterface {
+
+			return $this->sharkord->gateway->sendRpc("query", [
+				"input" => [
+					"channelId"       => $channelId,
+					"targetMessageId" => $messageId,
+					"cursor"          => null,
+				],
+				"path" => "messages.get"
+			])->then(function($response) use ($messageId) {
+
+				$messages     = $response['data']['messages'] ?? [];
+				$normalizedId = (string)$messageId;
+
+				// The server always returns exactly 20 older messages before the target,
+				// so the target is always at index 20. Check there first for efficiency,
+				// then fall back to a full scan in case the channel has fewer than 20
+				// older messages (e.g. near the beginning of channel history).
+				if (isset($messages[20]) && (string)$messages[20]['id'] === $normalizedId) {
+					return Message::fromArray($messages[20], $this->sharkord);
+				}
+
+				foreach ($messages as $raw) {
+					if ((string)$raw['id'] === $normalizedId) {
+						return Message::fromArray($raw, $this->sharkord);
+					}
+				}
+
+				throw new \RuntimeException("Message ID {$messageId} was not found in the server response.");
+
+			});
+
 		}
 
 	}
