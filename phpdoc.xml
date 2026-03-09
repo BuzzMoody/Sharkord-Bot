@@ -8,7 +8,7 @@
 	<title>SharkordPHP</title>
 
 	<paths>
-		<docs>docs</docs>
+		<output>docs</output>
 		<cache>.phpdoc/cache</cache>
 	</paths>
 
@@ -25,7 +25,7 @@
 				<extension>php</extension>
 			</extensions>
 			<visibility>public</visibility>
-			<default-package-name>Sharkord</default-package-name>
+			<default-package-name>SharkordPHP</default-package-name>
 			<include-source>true</include-source>
 		</api>
 	</version>
