@@ -159,6 +159,14 @@
 
 				$messages = $response['data']['messages'] ?? [];
 
+				// The server always returns exactly 20 older messages before the target,
+				// so the target is always at index 20. Check there first for efficiency,
+				// then fall back to a full scan in case the channel has fewer than 20
+				// older messages (e.g. near the beginning of channel history).
+				if (isset($messages[20]) && $messages[20]['id'] === $messageId) {
+					return \Sharkord\Models\Message::fromArray($messages[20], $this->sharkord);
+				}
+
 				foreach ($messages as $raw) {
 					if ($raw['id'] === $messageId) {
 						return \Sharkord\Models\Message::fromArray($raw, $this->sharkord);
