@@ -171,8 +171,8 @@
 		 */
 		public function get(int|string $identifier): ?User {
 			
-			if (is_numeric($identifier)) {
-				return $this->users[(int)$identifier] ?? null;
+			if (is_int($identifier)) {
+				return $this->users[$identifier] ?? null;
 			}
 			
 			foreach ($this->users as $user) {
