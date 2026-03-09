@@ -118,6 +118,22 @@
 			return $this->attributes;
 			
 		}
+		
+		/**
+		 * Magic isset check. Allows isset() and empty() to work correctly
+		 * against both stored attributes and virtual relational properties.
+		 *
+		 * @param string $name Property name.
+		 * @return bool
+		 */
+		public function __isset(string $name): bool {
+
+			return match($name) {
+				'category' => !empty($this->attributes['categoryId']) && $this->sharkord->categories->get($this->attributes['categoryId']) !== null,
+				default    => isset($this->attributes[$name]),
+			};
+
+		}
 
 		/**
 		 * Magic getter. This is triggered whenever you try to access a property 

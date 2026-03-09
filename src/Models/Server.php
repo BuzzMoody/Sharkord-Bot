@@ -64,6 +64,17 @@
 			return $this->attributes;
 			
 		}
+		
+		/**
+		 * Magic isset check. Allows isset() and empty() to work correctly
+		 * against dynamic properties stored in the attributes array.
+		 *
+		 * @param string $name Property name.
+		 * @return bool
+		 */
+		public function __isset(string $name): bool {
+			return isset($this->attributes[$name]);
+		}
 
 		/**
 		 * Magic getter. Triggered whenever you try to access a property 

@@ -386,52 +386,6 @@
 		}
 		
 		/**
-		 * Schedules a reconnection attempt using exponential backoff.
-		 *
-		 * Backs off at 2^attempt seconds (2s, 4s, 8s, 16s...) up to a cap of 60 seconds.
-		 * Stops the event loop after maxReconnectAttempts is exceeded.
-		 *
-		 * @return void
-		 */
-		private function attemptReconnect(): void {
-
-			$this->reconnectAttempts++;
-
-			if ($this->reconnectAttempts > $this->maxReconnectAttempts) {
-				$this->logger->error(
-					"Reconnection failed after {$this->maxReconnectAttempts} attempts. Exiting."
-				);
-				$this->loop->stop();
-				return;
-			}
-
-			$delay = min(2 ** $this->reconnectAttempts, 60);
-
-			$this->logger->notice(
-				"Reconnect attempt {$this->reconnectAttempts}/{$this->maxReconnectAttempts} in {$delay}s..."
-			);
-
-			$this->loop->addTimer($delay, function () {
-
-				$this->http->authenticate()
-					->then(fn(string $token) => $this->gateway->connect($token))
-					->then(fn(array $joinData) => $this->hydrateElements($joinData))
-					->then(fn() => $this->setupSubscriptions())
-					->then(function () {
-						$this->reconnectAttempts = 0;
-						$this->logger->info("Reconnected successfully.");
-						$this->emit('ready', [$this->bot]);
-					})
-					->catch(function (\Exception $e) {
-						$this->logger->error("Reconnect attempt failed: " . $e->getMessage());
-						$this->attemptReconnect();
-					});
-
-			});
-
-		}
-		
-		/**
 		 * Safely closes the current WebSocket connection.
 		 *
 		 * Rejects all pending RPC Promises to prevent memory leaks across reconnect attempts.

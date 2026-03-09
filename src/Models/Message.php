@@ -260,8 +260,24 @@
 
 		}
 		
+		/**
+		 * Magic isset check. Allows isset() and empty() to work correctly
+		 * against both stored attributes and virtual relational properties.
+		 *
+		 * @param string $name Property name.
+		 * @return bool
+		 */
 		public function __isset(string $name): bool {
-			return isset($this->attributes[$name]);
+
+			return match($name) {
+				'server'   => $this->sharkord->servers->getFirst() !== null,
+				'channel'  => !empty($this->attributes['channelId']) && $this->sharkord->channels->get($this->attributes['channelId']) !== null,
+				'author',
+				'user'     => !empty($this->attributes['userId']) && $this->sharkord->users->get($this->attributes['userId']) !== null,
+				'mentions' => !empty($this->attributes['mentionedUserIds']),
+				default    => isset($this->attributes[$name]),
+			};
+
 		}
 		
 		/**
