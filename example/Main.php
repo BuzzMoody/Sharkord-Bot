@@ -20,7 +20,10 @@
 			'password'	=> $_ENV['CHAT_PASSWORD'],
 			'host'		=> $_ENV['CHAT_HOST'],
 		],
-		logLevel: 'Notice'
+		logLevel: 'Notice',
+		reconnect: true,
+		maxReconnectAttempts: 5
+		
 	);
 	
 	/*

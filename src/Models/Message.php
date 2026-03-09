@@ -260,6 +260,10 @@
 
 		}
 		
+		public function __isset(string $name): bool {
+			return isset($this->attributes[$name]);
+		}
+		
 		/**
 		 * Magic getter for dynamic properties.
 		 *

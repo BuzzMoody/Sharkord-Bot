@@ -58,20 +58,30 @@
 		 * @var User|null
 		 */
 		public ?User $bot = null;
+		
+		/**
+		 * Tracks the number of reconnect attempts made since last successful connection.
+		 * @var int
+		 */
+		private int $reconnectAttempts = 0;
 
 		/**
 		 * Sharkord constructor.
 		 *
-		 * @param array								$config       Configuration array containing 'host', 'identity', and 'password'.
-		 * @param LoopInterface|null				$loop         The ReactPHP event loop instance.
-		 * @param LoggerInterface|null				$logger       The PSR-3 logger instance.
-		 * @param string							$logLevel     Default log level if instantiating Monolog.
+		 * @param array               $config               Configuration array containing 'host', 'identity', and 'password'.
+		 * @param LoopInterface|null  $loop                 The ReactPHP event loop instance.
+		 * @param LoggerInterface|null $logger              The PSR-3 logger instance.
+		 * @param string              $logLevel             Default log level if instantiating Monolog.
+		 * @param bool                $reconnect            Whether to attempt reconnection on disconnect.
+		 * @param int                 $maxReconnectAttempts Maximum number of reconnect attempts before exiting.
 		 */
 		public function __construct(
 			private array $config,
 			private ?LoopInterface $loop = null,
 			?LoggerInterface $logger = null,
-			string $logLevel = 'Notice'
+			string $logLevel = 'Notice',
+			private bool $reconnect = true,
+			private int $maxReconnectAttempts = 5
 		) {
 
 			// Validate required config keys
@@ -121,7 +131,17 @@
 
 			// Bind Core Gateway Events
 			$this->gateway->on('closed', function($code, $reason) {
+
 				$this->logger->warning("Gateway connection lost. Code: {$code}. Reason: {$reason}");
+
+				if (!$this->reconnect) {
+					$this->logger->notice("Reconnection is disabled. Exiting.");
+					$this->loop->stop();
+					return;
+				}
+
+				$this->attemptReconnect();
+
 			});
 
 		}
@@ -142,6 +162,7 @@
 				->then(fn(array $joinData) => $this->hydrateElements($joinData))
 				->then(fn() => $this->setupSubscriptions())
 				->then(function () {
+					$this->reconnectAttempts = 0;
 					$this->logger->info("Bot is fully initialized and ready.");
 					$this->emit('ready', [$this->bot]);
 				})

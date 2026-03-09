@@ -66,7 +66,10 @@ Create a file named `bot.php` (or `index.php`) and add the following code. This 
 			'password'	=> $_ENV['CHAT_PASSWORD'],
 			'host'		=> $_ENV['CHAT_HOST'],
 		],
-		logLevel: 'Notice'
+		logLevel: 'Notice',
+		reconnect: true,
+		maxReconnectAttempts: 5
+		
 	);
 	
 	/*
@@ -96,7 +99,7 @@ Create a file named `bot.php` (or `index.php`) and add the following code. This 
 		#	 $sharkord->commands->handle($message, $matches);
 		# }
 		
-		if ($message->content == '!ping') $message->channel->sendMessage('Pong!');
+		if ($message->content == '!ping') $message->reply('Pong!');
 		
 	});
 
@@ -106,7 +109,7 @@ Create a file named `bot.php` (or `index.php`) and add the following code. This 
 
 ```
 
-### 3. Create a Command (`Commands/Ping.php`)
+### 3. Create a Command (`Commands/Ping.php`) if using dynamically loaded commands.
 
 Create a `Commands` folder. Inside, create a file named `Ping.php`.
 
