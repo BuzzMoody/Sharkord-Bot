@@ -83,6 +83,7 @@
 						$conn->on('message', fn($msg) => $this->handleServerJSON((string)$msg));
 						
 						$conn->on('close', function($code, $reason) {
+							
 							$this->logger->warning("Connection closed ({$code}). Emitting disconnect event...");
 							$this->conn = null;
 							
@@ -95,8 +96,11 @@
 								$this->loop->cancelTimer($this->probeTimer);
 								$this->probeTimer = null;
 							}
+
+							$this->rejectPendingHandlers();
 							
 							$this->emit('closed', [$code, $reason]);
+							
 						});
 
 						// Start protocol and resolve the promise once we fully join
@@ -272,13 +276,17 @@
 
 			return new Promise(function ($resolve, $reject) use ($method, $params) {
 				
-				$id = ++$this->rpcCounter;
+				$id = ($this->rpcCounter = ($this->rpcCounter % PHP_INT_MAX) + 1);
 
 				$this->rpcHandlers[$id] = function(array $response) use ($resolve, $reject, $id) {
-					
+	
 					unset($this->rpcHandlers[$id]);
-					
-					$this->resetWatchdog();
+
+					// Only reset the watchdog on genuine server responses, not on synthetic
+					// errors injected by rejectPendingHandlers() during disconnect.
+					if (empty($response['_synthetic'])) {
+						$this->resetWatchdog();
+					}
 
 					if (isset($response['error'])) {
 						
@@ -331,7 +339,7 @@
 				throw new \RuntimeException("Cannot subscribe to RPC: WebSocket is not connected.");
 			}
 
-			$id = ++$this->rpcCounter;
+			$id = ($this->rpcCounter = ($this->rpcCounter % PHP_INT_MAX) + 1);
 
 			// Register a PERSISTENT handler (we do NOT unset this one)
 			$this->rpcHandlers[$id] = function(array $response) use ($callback, $path) {
@@ -387,6 +395,9 @@
 		
 		/**
 		 * Safely closes the current WebSocket connection.
+		 *
+		 * Rejects all pending RPC Promises to prevent memory leaks across reconnect attempts.
+		 *
 		 * @return void
 		 */
 		public function disconnect(): void {
@@ -401,12 +412,38 @@
 				$this->probeTimer = null;
 			}
 
+			$this->rejectPendingHandlers();
+
 			if ($this->conn) {
 				$this->logger->debug("Disconnecting from WebSocket...");
 				$this->conn->close();
 				$this->conn = null;
 			}
 			
+		}
+		
+		/**
+		 * Rejects and clears all pending RPC handler Promises.
+		 *
+		 * Called on both explicit disconnect and server-initiated close to prevent
+		 * memory leaks from Promises that will never resolve.
+		 *
+		 * @return void
+		 */
+		private function rejectPendingHandlers(): void {
+
+			foreach ($this->rpcHandlers as $handler) {
+				$handler([
+					'_synthetic' => true,
+					'error' => [
+						'code'    => 0,
+						'message' => 'Connection closed before a response was received.',
+					]
+				]);
+			}
+
+			$this->rpcHandlers = [];
+
 		}
 
 	}

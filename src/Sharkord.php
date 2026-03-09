@@ -58,20 +58,36 @@
 		 * @var User|null
 		 */
 		public ?User $bot = null;
+		
+		/**
+		 * Tracks the number of reconnect attempts made since last successful connection.
+		 * @var int
+		 */
+		private int $reconnectAttempts = 0;
+		
+		/**
+		 * Guards against concurrent reconnect attempts being scheduled simultaneously.
+		 * @var bool
+		 */
+		private bool $reconnecting = false;
 
 		/**
 		 * Sharkord constructor.
 		 *
-		 * @param array								$config       Configuration array containing 'host', 'identity', and 'password'.
-		 * @param LoopInterface|null				$loop         The ReactPHP event loop instance.
-		 * @param LoggerInterface|null				$logger       The PSR-3 logger instance.
-		 * @param string							$logLevel     Default log level if instantiating Monolog.
+		 * @param array               $config               Configuration array containing 'host', 'identity', and 'password'.
+		 * @param LoopInterface|null  $loop                 The ReactPHP event loop instance.
+		 * @param LoggerInterface|null $logger              The PSR-3 logger instance.
+		 * @param string              $logLevel             Default log level if instantiating Monolog.
+		 * @param bool                $reconnect            Whether to attempt reconnection on disconnect.
+		 * @param int                 $maxReconnectAttempts Maximum number of reconnect attempts before exiting.
 		 */
 		public function __construct(
 			private array $config,
 			private ?LoopInterface $loop = null,
 			?LoggerInterface $logger = null,
-			string $logLevel = 'Notice'
+			string $logLevel = 'Notice',
+			private bool $reconnect = true,
+			private int $maxReconnectAttempts = 5
 		) {
 
 			// Validate required config keys
@@ -121,7 +137,18 @@
 
 			// Bind Core Gateway Events
 			$this->gateway->on('closed', function($code, $reason) {
+
 				$this->logger->warning("Gateway connection lost. Code: {$code}. Reason: {$reason}");
+
+				if (!$this->reconnect) {
+					$this->loop->stop();
+					return;
+				}
+
+				$this->loop->futureTick(function () {
+					$this->attemptReconnect();
+				});
+
 			});
 
 		}
@@ -142,6 +169,7 @@
 				->then(fn(array $joinData) => $this->hydrateElements($joinData))
 				->then(fn() => $this->setupSubscriptions())
 				->then(function () {
+					$this->reconnectAttempts = 0;
 					$this->logger->info("Bot is fully initialized and ready.");
 					$this->emit('ready', [$this->bot]);
 				})
@@ -154,6 +182,60 @@
 		}
 		
 		/**
+		 * Schedules a reconnection attempt using exponential backoff.
+		 *
+		 * Backs off at 2^attempt seconds (2s, 4s, 8s, 16s...) up to a cap of 60 seconds.
+		 * Stops the event loop after maxReconnectAttempts is exceeded.
+		 *
+		 * @return void
+		 */
+		private function attemptReconnect(): void {
+
+			if ($this->reconnecting) {
+				$this->logger->debug("Reconnect already in progress, ignoring duplicate trigger.");
+				return;
+			}
+
+			$this->reconnecting = true;
+			$this->reconnectAttempts++;
+
+			if ($this->reconnectAttempts > $this->maxReconnectAttempts) {
+				$this->logger->error(
+					"Reconnection failed after {$this->maxReconnectAttempts} attempts. Exiting."
+				);
+				$this->loop->stop();
+				return;
+			}
+
+			$delay = min(2 ** $this->reconnectAttempts, 60);
+
+			$this->logger->notice(
+				"Reconnect attempt {$this->reconnectAttempts}/{$this->maxReconnectAttempts} in {$delay}s..."
+			);
+
+			$this->loop->addTimer($delay, function () {
+
+				$this->http->authenticate()
+					->then(fn(string $token) => $this->gateway->connect($token))
+					->then(fn(array $joinData) => $this->hydrateElements($joinData))
+					->then(fn() => $this->setupSubscriptions())
+					->then(function () {
+						$this->reconnecting = false;
+						$this->reconnectAttempts = 0;
+						$this->logger->info("Reconnected successfully.");
+						$this->emit('ready', [$this->bot]);
+					})
+					->catch(function (\Exception $e) {
+						$this->logger->error("Reconnect attempt failed: " . $e->getMessage());
+						$this->reconnecting = false;
+						$this->attemptReconnect();
+					});
+
+			});
+
+		}
+		
+		/**
 		 * Gracefully shuts down the framework.
 		 *
 		 * @return void
@@ -161,6 +243,7 @@
 		public function stop(): void {
 
 			$this->logger->info("Shutting down...");
+			$this->reconnect = false;
 			$this->gateway->disconnect();
 			$this->loop->stop();
 

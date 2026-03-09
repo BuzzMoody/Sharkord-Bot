@@ -171,20 +171,15 @@
 		 */
 		public function get(int|string $identifier): ?User {
 			
-			if (is_int($identifier) || (is_string($identifier) && ctype_digit($identifier))) {
-				
-				return $this->users[(int)$identifier] ?? null;
-				
+			if (is_int($identifier) || ctype_digit($identifier)) {
+				$id = (int)$identifier;
+				return $this->users[$id] ?? null;
 			}
 			
 			foreach ($this->users as $user) {
-				
 				if ($user->name === $identifier) {
-					
 					return $user;
-					
 				}
-				
 			}
 			
 			return null;
