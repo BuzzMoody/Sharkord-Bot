@@ -309,6 +309,7 @@
 			// Create server event subscriptions (Delegated to Gateway)
 			$subscriptions = [
 				'messages.onNew'    => fn($d) => $this->onNewMessage($d),
+				'messages.onUpdate' => fn($d) => $this->onMessageUpdate($d),
 				
 				'channels.onCreate' => fn($d) => $this->channels->create($d),
 				'channels.onDelete' => fn($d) => $this->channels->delete($d),
@@ -363,6 +364,26 @@
 				$this->emit('message', [$message]);
 			} catch (\Throwable $e) {
 				$errorMessage = "Uncaught Exception/Error in message processing: " . $e->getMessage();
+				$errorMessage .= " on line " . $e->getLine() . " in " . $e->getFile();
+				$this->logger->error($errorMessage);
+			}
+
+		}
+		
+		/**
+		 * Handles a message update event (edits, pins, reactions, etc).
+		 *
+		 * @param array $raw The raw message data.
+		 * @return void
+		 */
+		private function onMessageUpdate(array $raw): void {
+
+			$message = Message::fromArray($raw, $this);
+
+			try {
+				$this->emit('messageupdate', [$message]);
+			} catch (\Throwable $e) {
+				$errorMessage = "Uncaught Exception/Error in messageupdate processing: " . $e->getMessage();
 				$errorMessage .= " on line " . $e->getLine() . " in " . $e->getFile();
 				$this->logger->error($errorMessage);
 			}

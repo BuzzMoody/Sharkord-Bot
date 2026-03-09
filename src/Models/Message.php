@@ -194,6 +194,54 @@
 		}
 		
 		/**
+		 * Toggles the pinned state of this message.
+		 *
+		 * Sends the togglePin mutation and waits for the subsequent messages.onUpdate
+		 * subscription event to confirm and return the new pinned state.
+		 *
+		 * @return PromiseInterface Resolves with a bool indicating the new pinned state (true = pinned, false = unpinned).
+		 */
+		public function togglePin(): PromiseInterface {
+
+			if (!$this->sharkord->bot) {
+				return reject(new \RuntimeException("Bot entity not set."));
+			}
+
+			if (!$this->sharkord->bot->hasPermission(Permission::MANAGE_MESSAGES)) {
+				return reject(new \RuntimeException("Missing MANAGE_MESSAGES permission to pin/unpin messages."));
+			}
+
+			return new \React\Promise\Promise(function($resolve, $reject) {
+
+				$this->sharkord->gateway->sendRpc("mutation", [
+					"input" => ["messageId" => $this->id],
+					"path"  => "messages.togglePin"
+				])->then(function($response) use ($resolve, $reject) {
+
+					if (!isset($response['type']) || $response['type'] !== 'data') {
+						$reject(new \RuntimeException("Failed to toggle pin. Server responded with: " . json_encode($response)));
+						return;
+					}
+
+					// RPC confirmed success — now wait for the messages.onUpdate subscription
+					// event to arrive with the actual new pinned state for this message ID.
+					$listener = null;
+					$listener = function(Message $updated) use ($resolve, &$listener) {
+						if ($updated->id === $this->id) {
+							$this->sharkord->removeListener('messageupdate', $listener);
+							$resolve((bool)$updated->pinned);
+						}
+					};
+
+					$this->sharkord->on('messageupdate', $listener);
+
+				})->catch($reject);
+
+			});
+
+		}
+		
+		/**
 		 * Returns a complete array of the message data, including 
 		 * fully expanded User, Channel, and Server objects for debugging.
 		 *
