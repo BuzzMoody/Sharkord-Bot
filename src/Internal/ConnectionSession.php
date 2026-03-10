@@ -7,9 +7,10 @@
 	use Psr\Log\LoggerInterface;
 	use React\Promise\PromiseInterface;
 	use function React\Promise\resolve;
-	use Sharkord\Models\Message;
+	
 	use Sharkord\Sharkord;
-
+	use Sharkord\Models\Message;
+	
 	/**
 	 * Class ConnectionSession
 	 *
@@ -61,9 +62,9 @@
 
 			$raw = $data['data'];
 
-			foreach ($raw['roles']      ?? [] as $r) { $this->sharkord->roles->hydrate($r);      }
-			foreach ($raw['categories'] ?? [] as $c) { $this->sharkord->categories->hydrate($c); }
-			foreach ($raw['channels']   ?? [] as $c) { $this->sharkord->channels->hydrate($c);   }
+			foreach ($raw['roles']      ?? [] as $r) { $this->sharkord->roles->hydrate($r);       }
+			foreach ($raw['categories'] ?? [] as $c) { $this->sharkord->categories->hydrate($c);  }
+			foreach ($raw['channels']   ?? [] as $c) { $this->sharkord->channels->hydrate($c);    }
 			foreach ($raw['users']      ?? [] as $u) { $this->sharkord->users->hydrate($u);       }
 
 			if (!isset($raw['ownUserId'])) {
@@ -98,6 +99,7 @@
 			$subscriptions = [
 				'messages.onNew'    => fn($d) => $this->onNewMessage($d),
 				'messages.onUpdate' => fn($d) => $this->onMessageUpdate($d),
+				'messages.onDelete' => fn($d) => $this->onMessageDelete($d),
 				'messages.onTyping' => fn($d) => $this->onMessageTyping($d),
 
 				'channels.onCreate' => fn($d) => $this->sharkord->channels->create($d),
@@ -147,10 +149,22 @@
 		/**
 		 * Handles an incoming new message event from the gateway.
 		 *
-		 * @param array $raw The raw message payload.
+		 * @param mixed $raw The raw event payload. Expected to be a non-empty array.
 		 * @return void
+		 *
+		 * @example
+		 * ```php
+		 * $sharkord->on('message', function(Message $message) {
+		 *     echo $message->author->name . ': ' . $message->content;
+		 * });
+		 * ```
 		 */
-		private function onNewMessage(array $raw): void {
+		private function onNewMessage(mixed $raw): void {
+
+			if (!is_array($raw) || empty($raw)) {
+				$this->logger->warning("Received messages.onNew event with an unexpected payload type: " . get_debug_type($raw));
+				return;
+			}
 
 			$message = Message::fromArray($raw, $this->sharkord);
 
@@ -168,10 +182,26 @@
 		/**
 		 * Handles an incoming message update event from the gateway.
 		 *
-		 * @param array $raw The raw message payload.
+		 * Fired when a message is edited, pinned, unpinned, or receives a reaction.
+		 *
+		 * @param mixed $raw The raw event payload. Expected to be a non-empty array.
 		 * @return void
+		 *
+		 * @example
+		 * ```php
+		 * $sharkord->on('messageupdate', function(Message $message) {
+		 *     if ($message->isPinned()) {
+		 *         echo "Message {$message->id} was just pinned.";
+		 *     }
+		 * });
+		 * ```
 		 */
-		private function onMessageUpdate(array $raw): void {
+		private function onMessageUpdate(mixed $raw): void {
+
+			if (!is_array($raw) || empty($raw)) {
+				$this->logger->warning("Received messages.onUpdate event with an unexpected payload type: " . get_debug_type($raw));
+				return;
+			}
 
 			$message = Message::fromArray($raw, $this->sharkord);
 
@@ -185,14 +215,80 @@
 			}
 
 		}
-		
+
+		/**
+		 * Handles an incoming message delete event from the gateway.
+		 *
+		 * Fired when any message is deleted by any user. Because a deleted message no
+		 * longer exists on the server, only the identifying fields supplied by the API
+		 * are available — a full Message model cannot be reconstructed. The raw payload
+		 * array is emitted directly so listeners can act on the IDs they receive.
+		 *
+		 * The payload is guaranteed to contain a scalar 'id' for the deleted message.
+		 * 'channelId' is included by the server where available but must be treated as
+		 * optional by listeners.
+		 *
+		 * @param mixed $raw The raw event payload. Expected to be an array containing
+		 *                   at least a scalar 'id' field. 'channelId' may or may not
+		 *                   be present depending on the server payload.
+		 * @return void
+		 *
+		 * @example
+		 * ```php
+		 * $sharkord->on('messagedelete', function(array $data) {
+		 *     $messageId = $data['id'];
+		 *     $channelId = $data['channelId'] ?? null;
+		 *     echo "Message {$messageId} was deleted" . ($channelId ? " from channel {$channelId}" : '') . ".";
+		 * });
+		 * ```
+		 */
+		private function onMessageDelete(mixed $raw): void {
+
+			if (!is_array($raw) || empty($raw)) {
+				$this->logger->warning("Received messages.onDelete event with an unexpected payload type: " . get_debug_type($raw));
+				return;
+			}
+
+			if (!isset($raw['id']) || !is_scalar($raw['id'])) {
+				$this->logger->warning("Received messages.onDelete event with a missing or non-scalar 'id' in payload.");
+				return;
+			}
+
+			try {
+				$this->sharkord->emit('messagedelete', [$raw]);
+			} catch (\Throwable $e) {
+				$this->logger->error(sprintf(
+					"Uncaught error in 'messagedelete' handler: %s on line %d in %s",
+					$e->getMessage(), $e->getLine(), $e->getFile()
+				));
+			}
+
+		}
+
 		/**
 		 * Handles an incoming typing indicator event from the gateway.
 		 *
-		 * @param array $raw The raw typing payload containing userId and channelId.
+		 * Fired when a user begins typing in a channel. Both the User and Channel
+		 * models must be resolvable from the cache for the event to be emitted —
+		 * if either is missing the event is silently dropped.
+		 *
+		 * @param mixed $raw The raw event payload. Expected to be an array containing
+		 *                   'userId' and 'channelId' fields.
 		 * @return void
+		 *
+		 * @example
+		 * ```php
+		 * $sharkord->on('messagetyping', function(User $user, Channel $channel) {
+		 *     echo "{$user->name} is typing in #{$channel->name}...";
+		 * });
+		 * ```
 		 */
-		private function onMessageTyping(array $raw): void {
+		private function onMessageTyping(mixed $raw): void {
+
+			if (!is_array($raw) || empty($raw)) {
+				$this->logger->warning("Received messages.onTyping event with an unexpected payload type: " . get_debug_type($raw));
+				return;
+			}
 
 			$user    = $this->sharkord->users->get($raw['userId'] ?? 0);
 			$channel = $this->sharkord->channels->get($raw['channelId'] ?? 0);
