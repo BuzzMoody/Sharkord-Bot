@@ -34,15 +34,19 @@
 		 * @return void
 		 */
 		public function hydrate(array $raw): void {
-			
+
 			if (!isset($raw['id'])) {
 				$this->sharkord->logger->warning("Cannot hydrate user: missing 'id' in data.");
 				return;
 			}
-			
-			$user = User::fromArray($raw, $this->sharkord);
-			$this->users[$raw['id']] = $user;
-			
+
+			if (isset($this->users[$raw['id']])) {
+				$this->users[$raw['id']]->updateFromArray($raw);
+				return;
+			}
+
+			$this->users[$raw['id']] = User::fromArray($raw, $this->sharkord);
+
 		}
 
 		/**

@@ -95,6 +95,15 @@
 			return empty($this->servers) ? null : reset($this->servers);
 			
 		}
+		
+		/**
+		 * Clears all cached entries. Called before rehydration on reconnect.
+		 *
+		 * @return void
+		 */
+		public function clear(): void {
+			$this->servers = [];
+		}
 
 		/**
 		 * Retrieves a server by ID.

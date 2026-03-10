@@ -73,21 +73,20 @@
 		 * @param array $raw The raw category data.
 		 * @return void
 		 */		
-		public function update(array $raw): void {
-			
+		public function hydrate(array $raw): void {
+
 			if (!isset($raw['id'])) {
-				$this->sharkord->logger->warning("Cannot update category: missing 'id' in data.");
+				$this->sharkord->logger->warning("Cannot hydrate category: missing 'id' in data.");
 				return;
 			}
-			
+
 			if (isset($this->categories[$raw['id']])) {
-				
 				$this->categories[$raw['id']]->updateFromArray($raw);
-				
-				$this->sharkord->emit('categoryupdate', [$this->categories[$raw['id']]]);
-				
+				return;
 			}
-			
+
+			$this->categories[$raw['id']] = Category::fromArray($raw, $this->sharkord);
+
 		}
 
 		/**
