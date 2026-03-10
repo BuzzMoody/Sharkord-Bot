@@ -8,6 +8,8 @@
 	use React\Promise\PromiseInterface;
 	use function React\Promise\resolve;
 	use Sharkord\Models\Message;
+	use Sharkord\Models\User;
+	use Sharkord\Models\Channel;
 	use Sharkord\Sharkord;
 
 	/**
@@ -61,9 +63,9 @@
 
 			$raw = $data['data'];
 
-			foreach ($raw['roles']      ?? [] as $r) { $this->sharkord->roles->hydrate($r);      }
-			foreach ($raw['categories'] ?? [] as $c) { $this->sharkord->categories->hydrate($c); }
-			foreach ($raw['channels']   ?? [] as $c) { $this->sharkord->channels->hydrate($c);   }
+			foreach ($raw['roles']      ?? [] as $r) { $this->sharkord->roles->hydrate($r);       }
+			foreach ($raw['categories'] ?? [] as $c) { $this->sharkord->categories->hydrate($c);  }
+			foreach ($raw['channels']   ?? [] as $c) { $this->sharkord->channels->hydrate($c);    }
 			foreach ($raw['users']      ?? [] as $u) { $this->sharkord->users->hydrate($u);       }
 
 			if (!isset($raw['ownUserId'])) {
@@ -148,7 +150,7 @@
 		/**
 		 * Handles an incoming new message event from the gateway.
 		 *
-		 * @param array $raw The raw message payload.
+		 * @param mixed $raw The raw event payload. Expected to be a non-empty array.
 		 * @return void
 		 *
 		 * @example
@@ -158,7 +160,12 @@
 		 * });
 		 * ```
 		 */
-		private function onNewMessage(array $raw): void {
+		private function onNewMessage(mixed $raw): void {
+
+			if (!is_array($raw) || empty($raw)) {
+				$this->logger->warning("Received messages.onNew event with an unexpected payload type: " . get_debug_type($raw));
+				return;
+			}
 
 			$message = Message::fromArray($raw, $this->sharkord);
 
@@ -178,7 +185,7 @@
 		 *
 		 * Fired when a message is edited, pinned, unpinned, or receives a reaction.
 		 *
-		 * @param array $raw The raw message payload.
+		 * @param mixed $raw The raw event payload. Expected to be a non-empty array.
 		 * @return void
 		 *
 		 * @example
@@ -190,7 +197,12 @@
 		 * });
 		 * ```
 		 */
-		private function onMessageUpdate(array $raw): void {
+		private function onMessageUpdate(mixed $raw): void {
+
+			if (!is_array($raw) || empty($raw)) {
+				$this->logger->warning("Received messages.onUpdate event with an unexpected payload type: " . get_debug_type($raw));
+				return;
+			}
 
 			$message = Message::fromArray($raw, $this->sharkord);
 
@@ -214,8 +226,8 @@
 		 * model cannot be reconstructed. The raw payload array is emitted directly so
 		 * listeners can act on the IDs they receive.
 		 *
-		 * @param array $raw The raw delete payload from the server. Expected to contain
-		 *                   at least 'id' (the deleted message ID) and 'channelId'.
+		 * @param mixed $raw The raw event payload. Expected to be an array containing
+		 *                   at least a scalar 'id' field and typically a 'channelId'.
 		 * @return void
 		 *
 		 * @example
@@ -227,10 +239,15 @@
 		 * });
 		 * ```
 		 */
-		private function onMessageDelete(array $raw): void {
+		private function onMessageDelete(mixed $raw): void {
 
-			if (!isset($raw['id'])) {
-				$this->logger->warning("Received messages.onDelete event with no 'id' in payload.");
+			if (!is_array($raw) || empty($raw)) {
+				$this->logger->warning("Received messages.onDelete event with an unexpected payload type: " . get_debug_type($raw));
+				return;
+			}
+
+			if (!isset($raw['id']) || !is_scalar($raw['id'])) {
+				$this->logger->warning("Received messages.onDelete event with a missing or non-scalar 'id' in payload.");
 				return;
 			}
 
@@ -252,7 +269,8 @@
 		 * models must be resolvable from the cache for the event to be emitted —
 		 * if either is missing the event is silently dropped.
 		 *
-		 * @param array $raw The raw typing payload containing 'userId' and 'channelId'.
+		 * @param mixed $raw The raw event payload. Expected to be an array containing
+		 *                   'userId' and 'channelId' fields.
 		 * @return void
 		 *
 		 * @example
@@ -262,7 +280,12 @@
 		 * });
 		 * ```
 		 */
-		private function onMessageTyping(array $raw): void {
+		private function onMessageTyping(mixed $raw): void {
+
+			if (!is_array($raw) || empty($raw)) {
+				$this->logger->warning("Received messages.onTyping event with an unexpected payload type: " . get_debug_type($raw));
+				return;
+			}
 
 			$user    = $this->sharkord->users->get($raw['userId'] ?? 0);
 			$channel = $this->sharkord->channels->get($raw['channelId'] ?? 0);
