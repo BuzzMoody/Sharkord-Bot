@@ -32,7 +32,7 @@
 
 			try {
 				return $fn();
-			} catch (\RuntimeException $e) {
+			} catch (\Throwable $e) {
 				return reject($e);
 			}
 

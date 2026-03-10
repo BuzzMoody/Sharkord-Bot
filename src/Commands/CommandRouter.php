@@ -107,7 +107,7 @@
 					
 					try {
 						$command->handle($this->sharkord, $message, $args, $cmdMatches);
-					} catch (\Exception $e) {
+					} catch (\Throwable $e) {
 						$this->sharkord->logger->error("Error executing command '{$commandName}': " . $e->getMessage());
 					}
 					

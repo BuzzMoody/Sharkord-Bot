@@ -88,8 +88,8 @@
 						$this->reset();
 						($this->onSuccess)();
 					})
-					->catch(function (\Exception $e) {
-						$this->logger->error("Reconnect attempt failed: " . $e->getMessage());
+					->catch(function (mixed $reason) {
+						$this->logger->error("Reconnect attempt failed: " . PromiseUtils::reasonToString($reason));
 						$this->inProgress = false;
 						$this->attempt();
 					});

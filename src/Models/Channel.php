@@ -5,6 +5,7 @@
 	namespace Sharkord\Models;
 
 	use Sharkord\Sharkord;
+	use Sharkord\Internal\PromiseUtils;
 	use React\Promise\PromiseInterface;
 
 	/**
@@ -147,11 +148,17 @@
 		 */
 		public function sendTypingWhile(PromiseInterface $promise): PromiseInterface {
 
-			$this->sendTyping();
+			$sendTypingSafe = function () {
+				$this->sendTyping()->catch(function (mixed $reason) {
+					$this->sharkord->logger->warning(
+						"Typing indicator failed: " . PromiseUtils::reasonToString($reason)
+					);
+				});
+			};
 
-			$timer = $this->sharkord->loop->addPeriodicTimer(0.7, function () {
-				$this->sendTyping();
-			});
+			$sendTypingSafe();
+
+			$timer = $this->sharkord->loop->addPeriodicTimer(0.7, $sendTypingSafe);
 
 			$stop = function () use ($timer) {
 				$this->sharkord->loop->cancelTimer($timer);
@@ -162,9 +169,11 @@
 					$stop();
 					return $value;
 				},
-				function ($reason) use ($stop) {
+				function (mixed $reason) use ($stop) {
 					$stop();
-					throw $reason;
+					throw $reason instanceof \Throwable
+						? $reason
+						: new \RuntimeException(PromiseUtils::reasonToString($reason));
 				}
 			);
 

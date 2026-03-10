@@ -7,8 +7,8 @@
 	use Sharkord\Sharkord;
 	use Sharkord\Permission;
 	use Sharkord\Models\Message;
-	use Sharkord\Concerns\GuardedAsync;
-	use Sharkord\Concerns\Guard;
+	use Sharkord\Internal\GuardedAsync;
+	use Sharkord\Internal\Guard;
 	
 	use React\Promise\Promise;
 	use React\Promise\PromiseInterface;

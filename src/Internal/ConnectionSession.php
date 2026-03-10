@@ -128,7 +128,7 @@
 					function (mixed $eventData) use ($callback, $path) {
 						try {
 							$callback($eventData);
-						} catch (\Exception $e) {
+						} catch (\Throwable $e) {
 							$this->logger->error(
 								"Error processing event for {$path}: " . $e->getMessage()
 							);

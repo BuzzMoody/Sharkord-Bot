@@ -13,6 +13,8 @@
 	use Sharkord\Internal\ConnectionSession;
 	use Sharkord\Internal\LoggerFactory;
 	use Sharkord\Internal\ReconnectHandler;
+	use Sharkord\Internal\PromiseUtils;
+	use Sharkord\Internal\Guard;
 	use Sharkord\Managers\CategoryManager;
 	use Sharkord\Managers\ChannelManager;
 	use Sharkord\Managers\MessageManager;
@@ -38,6 +40,7 @@
 		public readonly Client  $http;
 		public readonly Gateway $gateway;
 		public readonly Guard $guard;
+		public readonly LoopInterface $loop;
 
 		public ChannelManager  $channels;
 		public UserManager     $users;
@@ -65,7 +68,7 @@
 		 */
 		public function __construct(
 			private readonly array   $config,
-			private ?LoopInterface   $loop                 = null,
+			?LoopInterface           $loop                 = null,
 			?LoggerInterface         $logger               = null,
 			string                   $logLevel             = 'Notice',
 			private bool             $reconnect            = true,
@@ -78,7 +81,7 @@
 				}
 			}
 
-			$this->loop   = $this->loop ?? Loop::get();
+			$this->loop   = $loop ?? Loop::get();
 			$this->logger = $logger ?? LoggerFactory::create($logLevel);
 
 			$this->channels   = new ChannelManager($this);
@@ -135,8 +138,8 @@
 					$this->logger->info("Bot is fully initialized and ready.");
 					$this->emit('ready', [$this->bot]);
 				})
-				->catch(function (\Exception $e) {
-					$this->logger->error("Fatal Startup Error: " . $e->getMessage());
+				->catch(function (mixed $reason) {
+					$this->logger->error("Fatal Startup Error: " . PromiseUtils::reasonToString($reason));
 				});
 
 			$this->loop->run();
