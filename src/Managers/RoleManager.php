@@ -34,15 +34,19 @@
 		 * @return void
 		 */
 		public function hydrate(array $raw): void {
-			
+
 			if (!isset($raw['id'])) {
 				$this->sharkord->logger->warning("Cannot hydrate role: missing 'id' in data.");
 				return;
 			}
-			
-			$role = Role::fromArray($raw, $this->sharkord);
-			$this->roles[$raw['id']] = $role;
-			
+
+			if (isset($this->roles[$raw['id']])) {
+				$this->roles[$raw['id']]->updateFromArray($raw);
+				return;
+			}
+
+			$this->roles[$raw['id']] = Role::fromArray($raw, $this->sharkord);
+
 		}
 
 		/**

@@ -39,11 +39,14 @@
 				$this->sharkord->logger->warning("Cannot hydrate category: missing 'id' in data.");
 				return;
 			}
-			
-			// Instantiating the Category using our new factory method
-			$category = Category::fromArray($raw, $this->sharkord);
-			$this->categories[$raw['id']] = $category;
-			
+
+			if (isset($this->categories[$raw['id']])) {
+				$this->categories[$raw['id']]->updateFromArray($raw);
+				return;
+			}
+
+			$this->categories[$raw['id']] = Category::fromArray($raw, $this->sharkord);
+
 		}
 
 		/**

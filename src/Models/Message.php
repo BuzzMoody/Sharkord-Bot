@@ -6,10 +6,10 @@
 	
 	use Sharkord\Sharkord;
 	use Sharkord\Permission;
-	use Sharkord\Models\Message;
+	use Sharkord\Internal\GuardedAsync;
 	
-	use React\Promise\Promise;
 	use React\Promise\PromiseInterface;
+	use React\Promise\Promise;
 	use function React\Promise\reject;
 	
 	use LitEmoji\LitEmoji;
@@ -23,6 +23,8 @@
 	 */
 	class Message {
 
+		use GuardedAsync;
+		
 		/**
 		 * @var array Stores all dynamic message data from the API
 		 */
@@ -75,13 +77,13 @@
 		 * @return PromiseInterface Resolves when the message is sent.
 		 */
 		public function reply(string $text): PromiseInterface {
-			
+
 			if ($this->channel && $this->author) {
-				
-				$author = htmlspecialchars($this->author->name, ENT_QUOTES, 'UTF-8');
+
+				$author  = htmlspecialchars($this->author->name, ENT_QUOTES, 'UTF-8');
 				$mention = "<span data-type=\"mention\" data-user-id=\"{$this->author->id}\" class=\"mention\">@{$author}</span>";
-				return $this->channel->sendRawMessage("{$mention} ".htmlspecialchars($text));
-				
+				return $this->channel->sendRawMessage("{$mention} " . htmlspecialchars($text));
+
 			}
 
 			return reject(new \RuntimeException("Channel or author not found for this message."));
@@ -95,80 +97,101 @@
 		 * @return PromiseInterface Resolves on success, rejects on failure.
 		 */
 		public function react(string $emoji): PromiseInterface {
-			
-			if (!$this->sharkord->bot) {
-				return reject(new \RuntimeException("Bot entity not set."));
-			}
-			
-			if (!$this->sharkord->bot->hasPermission(Permission::REACT_TO_MESSAGES)) {
-				return reject(new \RuntimeException("Missing REACT_TO_MESSAGES permission."));
-			}
-			
-			if (!$this->isEmoji($emoji)) {
-				return reject(new \InvalidArgumentException("Invalid emoji provided: '{$emoji}'"));
-			}
-			
-			$emojiText = $this->emojiToText($emoji);
-			
-			return $this->sharkord->gateway->sendRpc("mutation", [
-				"input" => ["messageId" => $this->id, "emoji" => $emojiText], 
-				"path" => "messages.toggleReaction"
-			])->then(function($response) {
-				
-				if (isset($response['type']) && $response['type'] === 'data') {
-					return true;
+
+			return $this->guardedAsync(function () use ($emoji) {
+
+				$this->sharkord->guard->requirePermission(Permission::REACT_TO_MESSAGES);
+
+				if (!$this->isEmoji($emoji)) {
+					throw new \InvalidArgumentException("Invalid emoji provided: '{$emoji}'");
 				}
-				
-				throw new \RuntimeException("Failed to react to message. Server responded with: " . json_encode($response));
+
+				$emojiText = $this->emojiToText($emoji);
+
+				return $this->sharkord->gateway->sendRpc("mutation", [
+					"input" => ["messageId" => $this->id, "emoji" => $emojiText],
+					"path"  => "messages.toggleReaction"
+				])->then(function ($response) {
+
+					if (isset($response['type']) && $response['type'] === 'data') {
+						return true;
+					}
+
+					throw new \RuntimeException(
+						"Failed to react to message. Server responded with: " . json_encode($response)
+					);
+
+				});
+
 			});
-			
+
 		}
 		
 		/**
 		 * Edits the content of this message.
 		 *
 		 * @param string $newContent The new message text.
-		 * @return PromiseInterface Resolves when the message is edited.
+		 * @return PromiseInterface Resolves with true when the message is edited.
 		 */
 		public function edit(string $newContent): PromiseInterface {
-			
-			if (!$this->sharkord->bot) {
-				return reject(new \RuntimeException("Bot entity not set."));
-			}
-			
-			$isOwnMessage = ($this->author && $this->author->id === $this->sharkord->bot->id);
-			
-			// If it's not our message, we need MANAGE_MESSAGES permission
-			if (!$isOwnMessage && !$this->sharkord->bot->hasPermission(\Sharkord\Permission::MANAGE_MESSAGES)) {
-				return reject(new \RuntimeException("Missing MANAGE_MESSAGES permission to edit other users' messages."));
-			}
 
-			// Pass the ID and content to our efficient MessageManager
-			return $this->sharkord->messages->editMessage($this->id, $newContent);
-			
+			return $this->guardedAsync(function () use ($newContent) {
+
+				$this->sharkord->guard->requireOwnershipOrPermission(
+					$this->author?->id,
+					Permission::MANAGE_MESSAGES
+				);
+
+				return $this->sharkord->gateway->sendRpc("mutation", [
+					"input" => ["messageId" => $this->id, "content" => $newContent],
+					"path"  => "messages.edit"
+				])->then(function ($response) {
+
+					if (isset($response['type']) && $response['type'] === 'data') {
+						return true;
+					}
+
+					throw new \RuntimeException(
+						"Failed to edit message. Server responded with: " . json_encode($response)
+					);
+
+				});
+
+			});
+
 		}
 
 		/**
 		 * Deletes this message.
 		 *
-		 * @return PromiseInterface Resolves when the message is deleted.
+		 * @return PromiseInterface Resolves with true when the message is deleted.
 		 */
 		public function delete(): PromiseInterface {
-			
-			if (!$this->sharkord->bot) {
-				return reject(new \RuntimeException("Bot entity not set."));
-			}
 
-			$isOwnMessage = ($this->author && $this->author->id === $this->sharkord->bot->id);
-			
-			// If it's not our message, we need MANAGE_MESSAGES permission
-			if (!$isOwnMessage && !$this->sharkord->bot->hasPermission(\Sharkord\Permission::MANAGE_MESSAGES)) {
-				return reject(new \RuntimeException("Missing MANAGE_MESSAGES permission to delete other users' messages."));
-			}
+			return $this->guardedAsync(function () {
 
-			// Pass the ID to our efficient MessageManager
-			return $this->sharkord->messages->deleteMessage($this->id);
-			
+				$this->sharkord->guard->requireOwnershipOrPermission(
+					$this->author?->id,
+					Permission::MANAGE_MESSAGES
+				);
+
+				return $this->sharkord->gateway->sendRpc("mutation", [
+					"input" => ["messageId" => $this->id],
+					"path"  => "messages.delete"
+				])->then(function ($response) {
+
+					if (isset($response['type']) && $response['type'] === 'data') {
+						return true;
+					}
+
+					throw new \RuntimeException(
+						"Failed to delete message. Server responded with: " . json_encode($response)
+					);
+
+				});
+
+			});
+
 		}
 		
 		/**
@@ -203,15 +226,62 @@
 		 * Sends the togglePin mutation and waits for the subsequent messages.onUpdate
 		 * subscription event to confirm and return the new pinned state.
 		 *
+		 * @param int $timeout Seconds to wait for the onUpdate confirmation before rejecting.
 		 * @return PromiseInterface Resolves with a bool indicating the new pinned state (true = pinned, false = unpinned).
 		 */
-		public function togglePin(): PromiseInterface {
+		public function togglePin(int $timeout = 10): PromiseInterface {
 
-			if (!$this->sharkord->bot) {
-				return reject(new \RuntimeException("Bot entity not set."));
-			}
+			return $this->guardedAsync(function () use ($timeout) {
 
-			return $this->sharkord->messages->togglePin($this->id);
+				$this->sharkord->guard->requirePermission(Permission::MANAGE_MESSAGES);
+
+				return new Promise(function ($resolve, $reject) use ($timeout) {
+
+					$this->sharkord->gateway->sendRpc("mutation", [
+						"input" => ["messageId" => $this->id],
+						"path"  => "messages.togglePin"
+					])->then(function ($response) use ($resolve, $reject, $timeout) {
+
+						if (!isset($response['type']) || $response['type'] !== 'data') {
+							$reject(new \RuntimeException(
+								"Failed to toggle pin. Server responded with: " . json_encode($response)
+							));
+							return;
+						}
+
+						$normalizedId = (string) $this->id;
+						$listener     = null;
+						$timer        = null;
+
+						$cleanup = function () use (&$listener, &$timer) {
+							$this->sharkord->removeListener('messageupdate', $listener);
+							if ($timer) {
+								$this->sharkord->loop->cancelTimer($timer);
+								$timer = null;
+							}
+						};
+
+						$listener = function (Message $updated) use ($resolve, $normalizedId, &$cleanup) {
+							if ((string) $updated->id === $normalizedId) {
+								$cleanup();
+								$resolve((bool) $updated->pinned);
+							}
+						};
+
+						$timer = $this->sharkord->loop->addTimer($timeout, function () use ($reject, $normalizedId, &$cleanup) {
+							$cleanup();
+							$reject(new \RuntimeException(
+								"togglePin timed out waiting for onUpdate confirmation for message ID {$normalizedId}."
+							));
+						});
+
+						$this->sharkord->on('messageupdate', $listener);
+
+					})->catch($reject);
+
+				});
+
+			});
 
 		}
 		

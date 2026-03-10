@@ -35,15 +35,19 @@
 		 * @return void
 		 */
 		public function hydrate(array $raw): void {
-			
+
 			if (!isset($raw['id'])) {
 				$this->sharkord->logger->warning("Cannot hydrate channel: missing 'id' in data.");
 				return;
 			}
-			
-			$channel = Channel::fromArray($raw, $this->sharkord);
-			$this->channels[$raw['id']] = $channel;
-			
+
+			if (isset($this->channels[$raw['id']])) {
+				$this->channels[$raw['id']]->updateFromArray($raw);
+				return;
+			}
+
+			$this->channels[$raw['id']] = Channel::fromArray($raw, $this->sharkord);
+
 		}
 		
 		/**
@@ -116,7 +120,7 @@
 		 */
 		public function get(int|string $identifier): ?Channel {
 			
-			if (is_int($identifier)) {
+			if (is_int($identifier) || ctype_digit($identifier)) {
 				
 				return $this->channels[$identifier] ?? null;
 				
