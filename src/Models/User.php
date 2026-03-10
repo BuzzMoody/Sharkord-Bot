@@ -9,7 +9,6 @@
 	use Sharkord\Internal\GuardedAsync;
 	
 	use React\Promise\PromiseInterface;
-	use function React\Promise\reject;
 
 	/**
 	 * Class User

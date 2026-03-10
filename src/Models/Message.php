@@ -6,11 +6,8 @@
 	
 	use Sharkord\Sharkord;
 	use Sharkord\Permission;
-	use Sharkord\Models\Message;
 	use Sharkord\Internal\GuardedAsync;
-	use Sharkord\Internal\Guard;
 	
-	use React\Promise\Promise;
 	use React\Promise\PromiseInterface;
 	use function React\Promise\reject;
 	
@@ -228,15 +225,60 @@
 		 * Sends the togglePin mutation and waits for the subsequent messages.onUpdate
 		 * subscription event to confirm and return the new pinned state.
 		 *
+		 * @param int $timeout Seconds to wait for the onUpdate confirmation before rejecting.
 		 * @return PromiseInterface Resolves with a bool indicating the new pinned state (true = pinned, false = unpinned).
 		 */
-		public function togglePin(): PromiseInterface {
+		public function togglePin(int $timeout = 10): PromiseInterface {
 
-			return $this->guardedAsync(function () {
+			return $this->guardedAsync(function () use ($timeout) {
 
 				$this->sharkord->guard->requirePermission(Permission::MANAGE_MESSAGES);
 
-				return $this->sharkord->messages->togglePin($this->id);
+				return new Promise(function ($resolve, $reject) use ($timeout) {
+
+					$this->sharkord->gateway->sendRpc("mutation", [
+						"input" => ["messageId" => $this->id],
+						"path"  => "messages.togglePin"
+					])->then(function ($response) use ($resolve, $reject, $timeout) {
+
+						if (!isset($response['type']) || $response['type'] !== 'data') {
+							$reject(new \RuntimeException(
+								"Failed to toggle pin. Server responded with: " . json_encode($response)
+							));
+							return;
+						}
+
+						$normalizedId = (string) $this->id;
+						$listener     = null;
+						$timer        = null;
+
+						$cleanup = function () use (&$listener, &$timer) {
+							$this->sharkord->removeListener('messageupdate', $listener);
+							if ($timer) {
+								$this->sharkord->loop->cancelTimer($timer);
+								$timer = null;
+							}
+						};
+
+						$listener = function (Message $updated) use ($resolve, $normalizedId, &$cleanup) {
+							if ((string) $updated->id === $normalizedId) {
+								$cleanup();
+								$resolve((bool) $updated->pinned);
+							}
+						};
+
+						$timer = $this->sharkord->loop->addTimer($timeout, function () use ($reject, $normalizedId, &$cleanup) {
+							$cleanup();
+							$reject(new \RuntimeException(
+								"togglePin timed out waiting for onUpdate confirmation for message ID {$normalizedId}."
+							));
+						});
+
+						$this->sharkord->on('messageupdate', $listener);
+
+					})->catch($reject);
+
+				});
 
 			});
 

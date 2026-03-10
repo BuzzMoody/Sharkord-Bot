@@ -12,7 +12,7 @@
 	/**
 	 * Class MessageManager
 	 *
-	 * Manages message API interactions including editing, deleting, pinning, and fetching.
+	 * Manages message API interactions such as getting messages.
 	 *
 	 * @package Sharkord\Managers
 	 */

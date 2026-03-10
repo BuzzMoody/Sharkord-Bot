@@ -71,6 +71,7 @@
 				$this->logger->error(
 					"Reconnection failed after {$this->maxAttempts} attempts. Exiting."
 				);
+				$this->inProgress = false;
 				($this->onExhausted)();
 				return;
 			}

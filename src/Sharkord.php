@@ -76,7 +76,7 @@
 		) {
 
 			foreach (['host', 'identity', 'password'] as $key) {
-				if (empty($this->config[$key])) {
+				if (!isset($this->config[$key]) || $this->config[$key] === '') {
 					throw new \InvalidArgumentException("Missing required config key: '{$key}'.");
 				}
 			}
