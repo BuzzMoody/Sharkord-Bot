@@ -17,7 +17,8 @@
 		 * Converts any Promise rejection reason to a human-readable string.
 		 *
 		 * Promise rejections may be Throwable instances, plain strings, or arbitrary
-		 * values. This method normalises all cases for safe logging.
+		 * values. This method normalises all cases for safe logging, guaranteeing a
+		 * string return value even when JSON encoding fails.
 		 *
 		 * @param mixed $reason The rejection reason.
 		 * @return string A human-readable representation of the rejection reason.
@@ -27,7 +28,7 @@
 			return match (true) {
 				$reason instanceof \Throwable => $reason->getMessage(),
 				is_string($reason)            => $reason,
-				default                       => json_encode($reason),
+				default                       => json_encode($reason) ?: print_r($reason, true),
 			};
 
 		}

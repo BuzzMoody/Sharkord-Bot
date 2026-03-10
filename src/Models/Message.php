@@ -9,6 +9,7 @@
 	use Sharkord\Internal\GuardedAsync;
 	
 	use React\Promise\PromiseInterface;
+	use React\Promise\Promise;
 	use function React\Promise\reject;
 	
 	use LitEmoji\LitEmoji;
