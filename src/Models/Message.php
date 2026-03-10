@@ -6,7 +6,7 @@
 	
 	use Sharkord\Sharkord;
 	use Sharkord\Permission;
-	use Sharkord\Models\Message
+	use Sharkord\Models\Message;
 	use Sharkord\Concerns\GuardedAsync;
 	use Sharkord\Concerns\Guard;
 	
