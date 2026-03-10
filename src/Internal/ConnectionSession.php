@@ -98,6 +98,7 @@
 			$subscriptions = [
 				'messages.onNew'    => fn($d) => $this->onNewMessage($d),
 				'messages.onUpdate' => fn($d) => $this->onMessageUpdate($d),
+				'messages.onDelete' => fn($d) => $this->onMessageDelete($d),
 				'messages.onTyping' => fn($d) => $this->onMessageTyping($d),
 
 				'channels.onCreate' => fn($d) => $this->sharkord->channels->create($d),
@@ -149,6 +150,13 @@
 		 *
 		 * @param array $raw The raw message payload.
 		 * @return void
+		 *
+		 * @example
+		 * ```php
+		 * $sharkord->on('message', function(Message $message) {
+		 *     echo $message->author->name . ': ' . $message->content;
+		 * });
+		 * ```
 		 */
 		private function onNewMessage(array $raw): void {
 
@@ -168,8 +176,19 @@
 		/**
 		 * Handles an incoming message update event from the gateway.
 		 *
+		 * Fired when a message is edited, pinned, unpinned, or receives a reaction.
+		 *
 		 * @param array $raw The raw message payload.
 		 * @return void
+		 *
+		 * @example
+		 * ```php
+		 * $sharkord->on('messageupdate', function(Message $message) {
+		 *     if ($message->isPinned()) {
+		 *         echo "Message {$message->id} was just pinned.";
+		 *     }
+		 * });
+		 * ```
 		 */
 		private function onMessageUpdate(array $raw): void {
 
@@ -185,12 +204,63 @@
 			}
 
 		}
-		
+
+		/**
+		 * Handles an incoming message delete event from the gateway.
+		 *
+		 * Fired when any message is deleted by any user. Because a deleted message no
+		 * longer exists on the server, only the identifying fields supplied by the API
+		 * (at minimum 'id', typically also 'channelId') are available — a full Message
+		 * model cannot be reconstructed. The raw payload array is emitted directly so
+		 * listeners can act on the IDs they receive.
+		 *
+		 * @param array $raw The raw delete payload from the server. Expected to contain
+		 *                   at least 'id' (the deleted message ID) and 'channelId'.
+		 * @return void
+		 *
+		 * @example
+		 * ```php
+		 * $sharkord->on('messagedelete', function(array $data) {
+		 *     $messageId = $data['id'];
+		 *     $channelId = $data['channelId'] ?? null;
+		 *     echo "Message {$messageId} was deleted" . ($channelId ? " from channel {$channelId}" : '') . ".";
+		 * });
+		 * ```
+		 */
+		private function onMessageDelete(array $raw): void {
+
+			if (!isset($raw['id'])) {
+				$this->logger->warning("Received messages.onDelete event with no 'id' in payload.");
+				return;
+			}
+
+			try {
+				$this->sharkord->emit('messagedelete', [$raw]);
+			} catch (\Throwable $e) {
+				$this->logger->error(sprintf(
+					"Uncaught error in 'messagedelete' handler: %s on line %d in %s",
+					$e->getMessage(), $e->getLine(), $e->getFile()
+				));
+			}
+
+		}
+
 		/**
 		 * Handles an incoming typing indicator event from the gateway.
 		 *
-		 * @param array $raw The raw typing payload containing userId and channelId.
+		 * Fired when a user begins typing in a channel. Both the User and Channel
+		 * models must be resolvable from the cache for the event to be emitted —
+		 * if either is missing the event is silently dropped.
+		 *
+		 * @param array $raw The raw typing payload containing 'userId' and 'channelId'.
 		 * @return void
+		 *
+		 * @example
+		 * ```php
+		 * $sharkord->on('messagetyping', function(User $user, Channel $channel) {
+		 *     echo "{$user->name} is typing in #{$channel->name}...";
+		 * });
+		 * ```
 		 */
 		private function onMessageTyping(array $raw): void {
 
