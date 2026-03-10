@@ -7,11 +7,10 @@
 	use Psr\Log\LoggerInterface;
 	use React\Promise\PromiseInterface;
 	use function React\Promise\resolve;
-	use Sharkord\Models\Message;
-	use Sharkord\Models\User;
-	use Sharkord\Models\Channel;
+	
 	use Sharkord\Sharkord;
-
+	use Sharkord\Models\Message;
+	
 	/**
 	 * Class ConnectionSession
 	 *
@@ -222,12 +221,16 @@
 		 *
 		 * Fired when any message is deleted by any user. Because a deleted message no
 		 * longer exists on the server, only the identifying fields supplied by the API
-		 * (at minimum 'id', typically also 'channelId') are available — a full Message
-		 * model cannot be reconstructed. The raw payload array is emitted directly so
-		 * listeners can act on the IDs they receive.
+		 * are available — a full Message model cannot be reconstructed. The raw payload
+		 * array is emitted directly so listeners can act on the IDs they receive.
+		 *
+		 * The payload is guaranteed to contain a scalar 'id' for the deleted message.
+		 * 'channelId' is included by the server where available but must be treated as
+		 * optional by listeners.
 		 *
 		 * @param mixed $raw The raw event payload. Expected to be an array containing
-		 *                   at least a scalar 'id' field and typically a 'channelId'.
+		 *                   at least a scalar 'id' field. 'channelId' may or may not
+		 *                   be present depending on the server payload.
 		 * @return void
 		 *
 		 * @example
