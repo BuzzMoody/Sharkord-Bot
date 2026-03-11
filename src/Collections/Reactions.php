@@ -5,7 +5,7 @@
 	namespace Sharkord\Collections;
 
 	use Sharkord\Sharkord;
-	use Sharkord\Collections\Groups;
+	use Sharkord\Collections\Groups\ReactionGroup;
 
 	/**
 	 * Class Reactions
