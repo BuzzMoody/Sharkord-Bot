@@ -2,20 +2,20 @@
 
 	declare(strict_types=1);
 
-	namespace Sharkord\Collections\Reactions;
+	namespace Sharkord\Collections\Groups;
 
 	use Sharkord\Sharkord;
 	use Sharkord\Models\User;
 
 	/**
-	 * Class Group
+	 * Class ReactionGroup
 	 *
 	 * Represents all reactions of a single emoji type on a message.
 	 *
 	 * Instances are returned from the Reactions collection when accessing
 	 * reactions by emoji name (e.g. $message->reactions['olive']).
 	 *
-	 * @package Sharkord\Collections\Reactions
+	 * @package Sharkord\Collections\Groups
 	 *
 	 * @example
 	 * ```php
@@ -37,7 +37,7 @@
 	class ReactionGroup {
 
 		/**
-		 * Group constructor.
+		 * ReactionGroup constructor.
 		 *
 		 * @param Sharkord $sharkord  Reference to the main bot instance.
 		 * @param string   $emoji     The emoji shortcode name this group represents (e.g. "olive").
