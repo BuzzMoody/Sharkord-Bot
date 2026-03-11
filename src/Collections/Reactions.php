@@ -128,7 +128,7 @@
 
 		/**
 		 * @param string $offset The emoji shortcode name.
-		 * @return \Sharkord\Collections\Groups\Reactions|null
+		 * @return ReactionGroup|null
 		 */
 		public function offsetGet(mixed $offset): ?ReactionGroup {
 

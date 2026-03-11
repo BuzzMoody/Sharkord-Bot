@@ -383,8 +383,30 @@
 
 		}
 
-		// In Message::__get, add a 'reactions' case before the final fallthrough:
-
+		/**
+		 * Magic getter for dynamic properties.
+		 *
+		 * Resolves virtual relational properties before falling through to the raw
+		 * attributes array, so model consumers never need to know how data is stored
+		 * internally.
+		 *
+		 * Virtual properties:
+		 *
+		 * - $message->server     Returns the first cached Server via ServerManager.
+		 * - $message->channel    Resolves the Channel from ChannelManager using channelId.
+		 * - $message->author     Resolves the User from UserManager using userId.
+		 * - $message->user       Alias for $message->author.
+		 * - $message->mentions   Returns an array of resolved User objects for all
+		 *                        user mentions found in the message content.
+		 * - $message->reactions  Returns a Reactions collection keyed by emoji shortcode,
+		 *                        built from the raw reactions array on this message.
+		 *
+		 * Any other property name is looked up directly in the raw attributes array,
+		 * returning null if not present.
+		 *
+		 * @param string $name Property name.
+		 * @return mixed
+		 */
 		public function __get(string $name): mixed {
 
 			if ($name === 'server') {

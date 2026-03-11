@@ -33,7 +33,7 @@
 	 * $message = $sharkord->messages->getFromCache(609);
 	 *
 	 * // Iterate all cached messages
-	 * foreach ($sharkord->messages->cached() as $id => $message) {
+	 * foreach ($sharkord->messages->collection() as $id => $message) {
 	 *     echo "{$id}: {$message->content}\n";
 	 * }
 	 *
