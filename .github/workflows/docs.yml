@@ -39,11 +39,9 @@ jobs:
 
       - name: Inject dark theme into generated docs
         run: |
-          find docs -name "*.html" | while read f; do
-            depth=$(echo "$f" | tr -cd '/' | wc -c)
-            prefix=$(printf '../%.0s' $(seq 1 $((depth - 1))))
-            sed -i "s|</head>|<link rel=\"stylesheet\" href=\"${prefix}css/dark.css\"><script src=\"${prefix}js/theme.js\" defer></script></head>|" "$f"
-          done
+          REPO_NAME=$(echo "$GITHUB_REPOSITORY" | cut -d'/' -f2)
+          find docs -name "*.html" -exec sed -i \
+            "s|</head>|<link rel=\"stylesheet\" href=\"/${REPO_NAME}/css/dark.css\"><script src=\"/${REPO_NAME}/js/theme.js\" defer></script></head>|" {} \;
 
       - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v3
