@@ -5,19 +5,18 @@
 	namespace Sharkord\Collections;
 
 	use Sharkord\Sharkord;
-	use Sharkord\Collections\Groups\Reactions;
 
 	/**
 	 * Class Reactions
 	 *
-	 * An array-accessible, iterable collection of reaction Group objects
+	 * An array-accessible, iterable collection of reaction group objects
 	 * keyed by emoji shortcode name.
 	 *
 	 * Built from the raw reactions array on a Message, grouping individual
 	 * reactions by their emoji so callers can work with them naturally.
 	 *
-	 * @implements \ArrayAccess<string, Group>
-	 * @implements \IteratorAggregate<string, Group>
+	 * @implements \ArrayAccess<string, \Sharkord\Collections\Groups\Reactions>
+	 * @implements \IteratorAggregate<string, \Sharkord\Collections\Groups\Reactions>
 	 *
 	 * @package Sharkord\Collections
 	 *
@@ -52,7 +51,7 @@
 	class Reactions implements \ArrayAccess, \Countable, \IteratorAggregate {
 
 		/**
-		 * @var array<string, Group> Groups keyed by emoji shortcode name.
+		 * @var array<string, \Sharkord\Collections\Groups\Reactions> Groups keyed by emoji shortcode name.
 		 */
 		private array $groups = [];
 
@@ -88,7 +87,7 @@
 			}
 
 			foreach ($byEmoji as $emoji => $reactions) {
-				$this->groups[$emoji] = new Group($this->sharkord, $emoji, $reactions);
+				$this->groups[$emoji] = new \Sharkord\Collections\Groups\Reactions($this->sharkord, $emoji, $reactions);
 			}
 
 		}
@@ -128,9 +127,9 @@
 
 		/**
 		 * @param string $offset The emoji shortcode name.
-		 * @return Group|null
+		 * @return \Sharkord\Collections\Groups\Reactions|null
 		 */
-		public function offsetGet(mixed $offset): ?Group {
+		public function offsetGet(mixed $offset): ?\Sharkord\Collections\Groups\Reactions {
 
 			return $this->groups[(string) $offset] ?? null;
 
@@ -166,7 +165,7 @@
 		// --- IteratorAggregate ---
 
 		/**
-		 * @return \ArrayIterator<string, Group>
+		 * @return \ArrayIterator<string, \Sharkord\Collections\Groups\Reactions>
 		 */
 		public function getIterator(): \ArrayIterator {
 
