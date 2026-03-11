@@ -1,0 +1,19 @@
+{% extends '@default/base.html.twig' %}
+
+{#
+	Sharkord Dark Theme — base.html.twig override.
+	Extends the default phpDocumentor template and injects the dark stylesheet
+	and theme toggle script immediately after the parent's stylesheet block,
+	so our CSS custom-property overrides take precedence without needing !important
+	on every rule.
+#}
+
+{% block stylesheets %}
+	{{ parent() }}
+	<link rel="stylesheet" href="{{ asset('css/dark.css') }}" />
+{% endblock %}
+
+{% block javascripts %}
+	{{ parent() }}
+	<script src="{{ asset('js/theme.js') }}" defer></script>
+{% endblock %}

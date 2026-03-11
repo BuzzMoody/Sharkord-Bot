@@ -8,7 +8,7 @@
 	<title>SharkordPHP</title>
 
 	<paths>
-		<output>docs</output>
+		<o>docs</o>
 		<cache>.phpdoc/cache</cache>
 	</paths>
 
@@ -29,6 +29,12 @@
 		</api>
 	</version>
 
-	<template name="default"/>
+	<!--
+		Custom dark theme.
+		The template name must match the <n> value inside template.xml,
+		and the path attribute must point to the directory that contains
+		that template.xml file relative to this phpdoc.xml.
+	-->
+	<template name="sharkord-dark" path="templates/sharkord-dark" />
 
 </phpdocumentor>

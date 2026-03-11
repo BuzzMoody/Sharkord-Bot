@@ -6,3 +6,4 @@
 phpunit.xml export-ignore
 /.github/ export-ignore
 /example/ export-ignore
+/templates/ export-ignore
