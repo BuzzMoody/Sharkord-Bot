@@ -38,15 +38,6 @@ jobs:
       - name: Install Composer dependencies
         run: composer install --no-dev --no-scripts --prefer-dist
 
-<<<<<<< Updated upstream
-      - name: Inject dark theme into generated docs
-        run: |
-          REPO_NAME=$(echo "$GITHUB_REPOSITORY" | cut -d'/' -f2)
-          find docs -name "*.html" -exec sed -i \
-            "s|</head>|<link rel=\"stylesheet\" href=\"/${REPO_NAME}/css/dark.css\"><script src=\"/${REPO_NAME}/js/theme.js\" defer></script></head>|" {} \;
-
-      - name: Upload Pages Artifact
-=======
       - name: Install Node dependencies
         run: npm ci
 
@@ -59,7 +50,6 @@ jobs:
           VITEPRESS_BASE: /${{ github.event.repository.name }}/
 
       - name: Upload Pages artifact
->>>>>>> Stashed changes
         uses: actions/upload-pages-artifact@v3
         with:
           path: docs-src/.vitepress/dist
