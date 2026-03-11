@@ -21,6 +21,7 @@
 	use Sharkord\Managers\RoleManager;
 	use Sharkord\Managers\ServerManager;
 	use Sharkord\Managers\UserManager;
+	use Sharkord\Managers\DmManager;
 	use Sharkord\Commands\CommandRouter;
 	use Sharkord\Models\User;
 	use Sharkord\WebSocket\Gateway;
@@ -48,9 +49,10 @@
 		public RoleManager     $roles;
 		public ServerManager   $servers;
 		public MessageManager  $messages;
+		public DmManager       $dms;
 		public CommandRouter   $commands;
 		public LoggerInterface $logger;
-
+		
 		/** @var User|null The framework's own authenticated user object. */
 		public ?User $bot = null;
 
@@ -90,6 +92,7 @@
 			$this->roles      = new RoleManager($this);
 			$this->servers    = new ServerManager($this);
 			$this->messages   = new MessageManager($this);
+			$this->dms        = new DmManager($this);
 			$this->commands   = new CommandRouter($this);
 			$this->guard 	  = new Guard($this);
 

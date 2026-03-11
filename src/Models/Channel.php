@@ -180,6 +180,40 @@
 		}
 		
 		/**
+		 * Marks all messages in this channel (or DM thread) as read.
+		 *
+		 * @return PromiseInterface Resolves on success, rejects on failure.
+		 *
+		 * @example
+		 * ```php
+		 * $user->openDm()->then(function(Channel $channel) {
+		 *     $channel->markAsRead();
+		 * });
+		 *
+		 * // Or after retrieving a channel by name
+		 * $sharkord->channels->get('general')->markAsRead();
+		 * ```
+		 */
+		public function markAsRead(): PromiseInterface {
+
+			return $this->sharkord->gateway->sendRpc("mutation", [
+				"input" => ["channelId" => $this->id],
+				"path"  => "channels.markAsRead",
+			])->then(function ($response) {
+
+				if (isset($response['type']) && $response['type'] === 'data') {
+					return true;
+				}
+
+				throw new \RuntimeException(
+					"Failed to mark channel as read. Server responded with: " . json_encode($response)
+				);
+
+			});
+
+		}
+		
+		/**
 		 * Returns all the attributes as an array. Perfect for debugging!
 		 *
 		 * @return array

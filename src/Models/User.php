@@ -210,6 +210,56 @@
 		}
 		
 		/**
+		 * Opens a direct message channel with this user.
+		 *
+		 * Delegates to DmManager::open() and resolves to a Channel object
+		 * that can be used for sending messages, typing indicators, and more.
+		 *
+		 * @return PromiseInterface Resolves with a Channel object, rejects on failure.
+		 *
+		 * @example
+		 * ```php
+		 * $sharkord->on('message', function(Message $message) use ($sharkord) {
+		 *     $message->author->openDm()->then(function(Channel $channel) {
+		 *         $channel->sendMessage("Hey, I got your message!");
+		 *         $channel->markAsRead();
+		 *     });
+		 * });
+		 * ```
+		 */
+		public function openDm(): PromiseInterface {
+
+			return $this->sharkord->dms->open($this->id);
+
+		}
+		
+		/**
+		 * Opens a DM channel with this user and sends a message in one call.
+		 *
+		 * This is a convenience wrapper around openDm() + Channel::sendMessage().
+		 * Use openDm() directly when you need access to the Channel object itself.
+		 *
+		 * @param string $text The message content.
+		 * @return PromiseInterface Resolves on success, rejects on failure.
+		 *
+		 * @example
+		 * ```php
+		 * $sharkord->on('message', function(Message $message) {
+		 *     if ($message->content === '!hello') {
+		 *         $message->author->sendDm("Hey! This is a private message just for you.");
+		 *     }
+		 * });
+		 * ```
+		 */
+		public function sendDm(string $text): PromiseInterface {
+
+			return $this->openDm()->then(
+				fn(Channel $channel) => $channel->sendMessage($text)
+			);
+
+		}
+		
+		/**
 		 * Returns all the attributes as an array. Perfect for debugging!
 		 *
 		 * @return array
