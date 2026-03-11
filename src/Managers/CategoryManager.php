@@ -5,27 +5,31 @@
 	namespace Sharkord\Managers;
 
 	use Sharkord\Sharkord;
+	use Sharkord\Collections\Categories as CategoriesCollection;
 	use Sharkord\Models\Category;
 
 	/**
 	 * Class CategoryManager
 	 *
-	 * Manages the state, creation, updating, and deletion of categories.
+	 * Manages category lifecycle events, delegating all cache storage to a
+	 * Categories collection instance.
 	 *
 	 * @package Sharkord\Managers
 	 */
 	class CategoryManager {
 
+		private CategoriesCollection $cache;
+
 		/**
 		 * CategoryManager constructor.
 		 *
-		 * @param Sharkord            $sharkord        The main bot instance.
-		 * @param array<int, Category> $categories Cache of Category models.
+		 * @param Sharkord $sharkord The main bot instance.
 		 */
 		public function __construct(
-			private Sharkord $sharkord,
-			private array $categories = []
-		) {}
+			private readonly Sharkord $sharkord
+		) {
+			$this->cache = new CategoriesCollection($this->sharkord);
+		}
 
 		/**
 		 * Handles the hydration of a category.
@@ -34,18 +38,8 @@
 		 * @return void
 		 */
 		public function hydrate(array $raw): void {
-			
-			if (!isset($raw['id'])) {
-				$this->sharkord->logger->warning("Cannot hydrate category: missing 'id' in data.");
-				return;
-			}
 
-			if (isset($this->categories[$raw['id']])) {
-				$this->categories[$raw['id']]->updateFromArray($raw);
-				return;
-			}
-
-			$this->categories[$raw['id']] = Category::fromArray($raw, $this->sharkord);
+			$this->cache->add($raw);
 
 		}
 
@@ -56,18 +50,16 @@
 		 * @return void
 		 */
 		public function create(array $raw): void {
-			
+
 			if (!isset($raw['id'])) {
 				$this->sharkord->logger->warning("Cannot create category: missing 'id' in data.");
 				return;
 			}
-			
-			// Instantiating the Category using our new factory method
-			$category = Category::fromArray($raw, $this->sharkord);
-			$this->categories[$raw['id']] = $category;
-			
-			$this->sharkord->emit('categorycreate', [$category]);
-			
+
+			$this->cache->add($raw);
+
+			$this->sharkord->emit('categorycreate', [$this->cache->get($raw['id'])]);
+
 		}
 
 		/**
@@ -75,22 +67,20 @@
 		 *
 		 * @param array $raw The raw category data.
 		 * @return void
-		 */		
+		 */
 		public function update(array $raw): void {
-			
+
 			if (!isset($raw['id'])) {
 				$this->sharkord->logger->warning("Cannot update category: missing 'id' in data.");
 				return;
 			}
-			
-			if (isset($this->categories[$raw['id']])) {
-				
-				$this->categories[$raw['id']]->updateFromArray($raw);
-				
-				$this->sharkord->emit('categoryupdate', [$this->categories[$raw['id']]]);
-				
+
+			$category = $this->cache->update($raw);
+
+			if ($category) {
+				$this->sharkord->emit('categoryupdate', [$category]);
 			}
-			
+
 		}
 
 		/**
@@ -100,16 +90,17 @@
 		 * @return void
 		 */
 		public function delete(int $id): void {
-			
-			if (!isset($this->categories[$id])) { 
+
+			$category = $this->cache->get($id);
+
+			if (!$category) {
 				$this->sharkord->logger->error("Category ID {$id} doesn't exist, therefore cannot be deleted.");
 				return;
 			}
-			
-			$this->sharkord->emit('categorydelete', [$this->categories[$id]]);
-			
-			unset($this->categories[$id]);
-			
+
+			$this->sharkord->emit('categorydelete', [$category]);
+			$this->cache->remove($id);
+
 		}
 
 		/**
@@ -119,10 +110,22 @@
 		 * @return Category|null
 		 */
 		public function get(int $id): ?Category {
-			
-			return $this->categories[$id] ?? null;
-			
+
+			return $this->cache->get($id);
+
+		}
+
+		/**
+		 * Returns the underlying Categories collection.
+		 *
+		 * @return CategoriesCollection
+		 */
+		public function collection(): CategoriesCollection {
+
+			return $this->cache;
+
 		}
 
 	}
+	
 ?>

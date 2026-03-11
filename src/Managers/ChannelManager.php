@@ -5,28 +5,31 @@
 	namespace Sharkord\Managers;
 
 	use Sharkord\Sharkord;
+	use Sharkord\Collections\Channels as ChannelsCollection;
 	use Sharkord\Models\Channel;
 
 	/**
 	 * Class ChannelManager
 	 *
-	 * Manages the state, creation, updating, and deletion of channels.
+	 * Manages channel lifecycle events, delegating all cache storage to a
+	 * Channels collection instance.
 	 *
 	 * @package Sharkord\Managers
 	 */
 	class ChannelManager {
 
+		private ChannelsCollection $cache;
+
 		/**
 		 * ChannelManager constructor.
 		 *
-		 * @param Sharkord $sharkord The main bot instance (required for Channel actions).
-		 * @param array<int, Channel> $channels Cache of Channel models indexed by ID.
+		 * @param Sharkord $sharkord The main bot instance.
 		 */
 		public function __construct(
-			private Sharkord $sharkord,
-			private array $channels = []
-		) {}
-
+			private readonly Sharkord $sharkord
+		) {
+			$this->cache = new ChannelsCollection($this->sharkord);
+		}
 
 		/**
 		 * Handles the hydration of a channel.
@@ -36,20 +39,10 @@
 		 */
 		public function hydrate(array $raw): void {
 
-			if (!isset($raw['id'])) {
-				$this->sharkord->logger->warning("Cannot hydrate channel: missing 'id' in data.");
-				return;
-			}
-
-			if (isset($this->channels[$raw['id']])) {
-				$this->channels[$raw['id']]->updateFromArray($raw);
-				return;
-			}
-
-			$this->channels[$raw['id']] = Channel::fromArray($raw, $this->sharkord);
+			$this->cache->add($raw);
 
 		}
-		
+
 		/**
 		 * Handles the creation of a channel.
 		 *
@@ -57,40 +50,37 @@
 		 * @return void
 		 */
 		public function create(array $raw): void {
-			
+
 			if (!isset($raw['id'])) {
 				$this->sharkord->logger->warning("Cannot create channel: missing 'id' in data.");
 				return;
 			}
-			
-			$channel = Channel::fromArray($raw, $this->sharkord);
-			$this->channels[$raw['id']] = $channel;
-			
-			$this->sharkord->emit('channelcreate', [$channel]);
-			
+
+			$this->cache->add($raw);
+
+			$this->sharkord->emit('channelcreate', [$this->cache->get($raw['id'])]);
+
 		}
-		
+
 		/**
 		 * Handles updates to a channel.
 		 *
 		 * @param array $raw The raw channel data.
 		 * @return void
-		 */		
+		 */
 		public function update(array $raw): void {
-			
+
 			if (!isset($raw['id'])) {
 				$this->sharkord->logger->warning("Cannot update channel: missing 'id' in data.");
 				return;
 			}
-			
-			if (isset($this->channels[$raw['id']])) {
-				
-				$this->channels[$raw['id']]->updateFromArray($raw);
-				
-				$this->sharkord->emit('channelupdate', [$this->channels[$raw['id']]]);
-				
+
+			$channel = $this->cache->update($raw);
+
+			if ($channel) {
+				$this->sharkord->emit('channelupdate', [$channel]);
 			}
-			
+
 		}
 
 		/**
@@ -100,56 +90,53 @@
 		 * @return void
 		 */
 		public function delete(int $id): void {
-			
-			if (!isset($this->channels[$id])) { 
+
+			$channel = $this->cache->get($id);
+
+			if (!$channel) {
 				$this->sharkord->logger->error("Channel ID {$id} doesn't exist, therefore cannot be deleted.");
 				return;
 			}
-			
-			$this->sharkord->emit('channeldelete', [$this->channels[$id]]);
-			
-			unset($this->channels[$id]);
-			
+
+			$this->sharkord->emit('channeldelete', [$channel]);
+			$this->cache->remove($id);
+
 		}
-		
+
 		/**
 		 * Retrieves a channel by ID or name.
 		 *
 		 * @param int|string $identifier The channel ID or name.
-		 * @return Channel|null Returns the Channel object or null if not found.
+		 * @return Channel|null
 		 */
 		public function get(int|string $identifier): ?Channel {
-			
-			if (is_int($identifier) || ctype_digit($identifier)) {
-				
-				return $this->channels[$identifier] ?? null;
-				
-			}
-			
-			foreach ($this->channels as $channel) {
-				
-				if ($channel->name === $identifier) {
-					
-					return $channel;
-					
-				}
-				
-			}
-			
-			return null;
-			
+
+			return $this->cache->get($identifier);
+
+		}
+
+		/**
+		 * Returns the underlying Channels collection.
+		 *
+		 * @return ChannelsCollection
+		 */
+		public function collection(): ChannelsCollection {
+
+			return $this->cache;
+
 		}
 
 		/**
 		 * Returns the count of cached channels.
-		 * * @return int
+		 *
+		 * @return int
 		 */
 		public function count(): int {
-			
-			return count($this->channels);
-			
+
+			return count($this->cache);
+
 		}
 
 	}
-	
+
 ?>

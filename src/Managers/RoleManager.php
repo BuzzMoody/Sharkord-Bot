@@ -5,28 +5,32 @@
 	namespace Sharkord\Managers;
 
 	use Sharkord\Sharkord;
+	use Sharkord\Collections\Roles as RolesCollection;
 	use Sharkord\Models\Role;
 
 	/**
 	 * Class RoleManager
 	 *
-	 * Manages the state, creation, and updating of roles.
+	 * Manages role lifecycle events, delegating all cache storage to a
+	 * Roles collection instance.
 	 *
 	 * @package Sharkord\Managers
 	 */
 	class RoleManager {
 
+		private RolesCollection $cache;
+
 		/**
 		 * RoleManager constructor.
 		 *
-		 * @param Sharkord         $sharkord   The main bot instance.
-		 * @param array<int, Role> $roles Cache of Role models.
+		 * @param Sharkord $sharkord The main bot instance.
 		 */
 		public function __construct(
-			private Sharkord $sharkord,
-			private array $roles = []
-		) {}
-		
+			private readonly Sharkord $sharkord
+		) {
+			$this->cache = new RolesCollection($this->sharkord);
+		}
+
 		/**
 		 * Handles the hydration of a role.
 		 *
@@ -35,38 +39,27 @@
 		 */
 		public function hydrate(array $raw): void {
 
-			if (!isset($raw['id'])) {
-				$this->sharkord->logger->warning("Cannot hydrate role: missing 'id' in data.");
-				return;
-			}
-
-			if (isset($this->roles[$raw['id']])) {
-				$this->roles[$raw['id']]->updateFromArray($raw);
-				return;
-			}
-
-			$this->roles[$raw['id']] = Role::fromArray($raw, $this->sharkord);
+			$this->cache->add($raw);
 
 		}
 
 		/**
-		 * Handles the creation of a roles.
+		 * Handles the creation of a role.
 		 *
 		 * @param array $raw The raw role data.
 		 * @return void
 		 */
 		public function create(array $raw): void {
-			
+
 			if (!isset($raw['id'])) {
 				$this->sharkord->logger->warning("Cannot create role: missing 'id' in data.");
 				return;
 			}
-			
-			$role = Role::fromArray($raw, $this->sharkord);
-			$this->roles[$raw['id']] = $role;
-			
-			$this->sharkord->emit('rolecreate', [$role]);
-			
+
+			$this->cache->add($raw);
+
+			$this->sharkord->emit('rolecreate', [$this->cache->get($raw['id'])]);
+
 		}
 
 		/**
@@ -76,20 +69,18 @@
 		 * @return void
 		 */
 		public function update(array $raw): void {
-			
+
 			if (!isset($raw['id'])) {
 				$this->sharkord->logger->warning("Cannot update role: missing 'id' in data.");
 				return;
 			}
-			
-			if (isset($this->roles[$raw['id']])) {
-				
-				$this->roles[$raw['id']]->updateFromArray($raw);
-				
-				$this->sharkord->emit('roleupdate', [$this->roles[$raw['id']]]);
-				
+
+			$role = $this->cache->update($raw);
+
+			if ($role) {
+				$this->sharkord->emit('roleupdate', [$role]);
 			}
-			
+
 		}
 
 		/**
@@ -99,16 +90,17 @@
 		 * @return void
 		 */
 		public function delete(int $id): void {
-			
-			if (!isset($this->roles[$id])) { 
+
+			$role = $this->cache->get($id);
+
+			if (!$role) {
 				$this->sharkord->logger->error("Role ID {$id} doesn't exist, therefore cannot be deleted.");
 				return;
 			}
-			
-			$this->sharkord->emit('roledelete', [$this->roles[$id]]);
-			
-			unset($this->roles[$id]);
-			
+
+			$this->sharkord->emit('roledelete', [$role]);
+			$this->cache->remove($id);
+
 		}
 
 		/**
@@ -118,10 +110,22 @@
 		 * @return Role|null
 		 */
 		public function get(int $id): ?Role {
-			
-			return $this->roles[$id] ?? null;
-			
+
+			return $this->cache->get($id);
+
+		}
+
+		/**
+		 * Returns the underlying Roles collection.
+		 *
+		 * @return RolesCollection
+		 */
+		public function collection(): RolesCollection {
+
+			return $this->cache;
+
 		}
 
 	}
+	
 ?>

@@ -5,28 +5,31 @@
 	namespace Sharkord\Managers;
 
 	use Sharkord\Sharkord;
+	use Sharkord\Collections\Servers as ServersCollection;
 	use Sharkord\Models\Server;
 
 	/**
 	 * Class ServerManager
 	 *
-	 * Manages the state, creation, updating, and deletion of servers.
+	 * Manages server lifecycle events, delegating all cache storage to a
+	 * Servers collection instance.
 	 *
 	 * @package Sharkord\Managers
 	 */
 	class ServerManager {
 
+		private ServersCollection $cache;
+
 		/**
 		 * ServerManager constructor.
 		 *
-		 * @param Sharkord            $sharkord The main bot instance.
-		 * @param array<string, Server> $servers  Cache of Server models, keyed by serverId.
+		 * @param Sharkord $sharkord The main bot instance.
 		 */
 		public function __construct(
-			private Sharkord $sharkord,
-			private array $servers = []
-		) {}
-
+			private readonly Sharkord $sharkord
+		) {
+			$this->cache = new ServersCollection($this->sharkord);
+		}
 
 		/**
 		 * Handles creating or updating a server in the cache.
@@ -35,26 +38,9 @@
 		 * @return void
 		 */
 		public function hydrate(array $raw): void {
-			
-			if (!isset($raw['serverId'])) {
-				$this->sharkord->logger->warning("Cannot hydrate server: missing 'serverId' in data.");
-				return;
-			}
-			
-			$serverId = $raw['serverId'];
-			
-			// If a server with this ID is already cached, update it in place
-			if (isset($this->servers[$serverId])) {
-				
-				$this->servers[$serverId]->updateFromArray($raw);
-				return;
-				
-			}
-			
-			// Otherwise, create a new Server instance and cache it
-			$server = Server::fromArray($raw, $this->sharkord);
-			$this->servers[$serverId] = $server;
-			
+
+			$this->cache->add($raw);
+
 		}
 
 		/**
@@ -64,12 +50,9 @@
 		 * @return void
 		 */
 		public function update(array $raw): void {
-			
-			if (isset($raw['serverId']) && isset($this->servers[$raw['serverId']])) {
-				$server = $this->servers[$raw['serverId']];
-				$server->updateFromArray($raw);
-			}
-			
+
+			$this->cache->update($raw);
+
 		}
 
 		/**
@@ -79,11 +62,11 @@
 		 * @return void
 		 */
 		public function delete(string $serverId): void {
-			
-			unset($this->servers[$serverId]);
-			
+
+			$this->cache->remove($serverId);
+
 		}
-		
+
 		/**
 		 * Retrieves the first (or only) server in the cache.
 		 * Perfect for single-server bots.
@@ -91,9 +74,9 @@
 		 * @return Server|null
 		 */
 		public function getFirst(): ?Server {
-			
-			return empty($this->servers) ? null : reset($this->servers);
-			
+
+			return $this->cache->getFirst();
+
 		}
 
 		/**
@@ -103,10 +86,22 @@
 		 * @return Server|null
 		 */
 		public function get(string $serverId): ?Server {
-			
-			return $this->servers[$serverId] ?? null;
-			
+
+			return $this->cache->get($serverId);
+
+		}
+
+		/**
+		 * Returns the underlying Servers collection.
+		 *
+		 * @return ServersCollection
+		 */
+		public function collection(): ServersCollection {
+
+			return $this->cache;
+
 		}
 
 	}
+	
 ?>
