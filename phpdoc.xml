@@ -35,6 +35,6 @@
 		and the path attribute must point to the directory that contains
 		that template.xml file relative to this phpdoc.xml.
 	-->
-	<template name="sharkord-dark" location="templates/sharkord-dark" />
+	<template name="sharkord-dark" location="templates" />
 
 </phpdocumentor>
