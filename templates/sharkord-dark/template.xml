@@ -7,7 +7,7 @@
 	<extends>default</extends>
 
 	<transformations>
-		<transformation writer="FileIo" source="css/dark.css" artifact="css/dark.css" />
-		<transformation writer="FileIo" source="js/theme.js" artifact="js/theme.js" />
+		<transformation writer="FileIo" query="copy" source="css/dark.css" artifact="css/dark.css" />
+		<transformation writer="FileIo" query="copy" source="js/theme.js" artifact="js/theme.js" />
 	</transformations>
 </template>
