@@ -7,3 +7,8 @@ phpunit.xml export-ignore
 /.github/ export-ignore
 /example/ export-ignore
 /templates/ export-ignore
+
+# Node
+node_modules/
+docs-src/.vitepress/cache
+docs-src/.vitepress/dist
