@@ -39,7 +39,7 @@ jobs:
         run: composer install --no-dev --no-scripts --prefer-dist
 
       - name: Install Node dependencies
-        run: npm ci
+        run: npm install
 
       - name: Generate API documentation
         run: php scripts/generate-api-docs.php
