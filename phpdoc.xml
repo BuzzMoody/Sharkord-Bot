@@ -8,7 +8,7 @@
 	<title>SharkordPHP</title>
 
 	<paths>
-		<o>docs</o>
+		<output>docs</output>
 		<cache>.phpdoc/cache</cache>
 	</paths>
 
