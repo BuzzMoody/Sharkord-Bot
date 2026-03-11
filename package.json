@@ -1,0 +1,12 @@
+{
+	"name": "sharkordphp-docs",
+	"private": true,
+	"scripts": {
+		"docs:dev":     "vitepress dev docs-src",
+		"docs:build":   "vitepress build docs-src",
+		"docs:preview": "vitepress preview docs-src"
+	},
+	"devDependencies": {
+		"vitepress": "^1.6.0"
+	}
+}
