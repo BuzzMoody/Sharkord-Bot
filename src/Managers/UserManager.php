@@ -5,27 +5,31 @@
 	namespace Sharkord\Managers;
 
 	use Sharkord\Sharkord;
+	use Sharkord\Collections\Users as UsersCollection;
 	use Sharkord\Models\User;
 
 	/**
 	 * Class UserManager
 	 *
-	 * Manages the state, creation, updating, and status of users.
+	 * Manages user lifecycle events, delegating all cache storage to a
+	 * Users collection instance.
 	 *
 	 * @package Sharkord\Managers
 	 */
 	class UserManager {
-		
+
+		private UsersCollection $cache;
+
 		/**
-		 * ChannelManager constructor.
+		 * UserManager constructor.
 		 *
-		 * @param Sharkord         $sharkord   The main bot instance.
-		 * @param array<int, User> $users Cache of User models indexed by ID.
+		 * @param Sharkord $sharkord The main bot instance.
 		 */
 		public function __construct(
-			private Sharkord $sharkord,
-			private array $users = []
-		) {}
+			private readonly Sharkord $sharkord
+		) {
+			$this->cache = new UsersCollection($this->sharkord);
+		}
 
 		/**
 		 * Handles the hydration of a user.
@@ -35,17 +39,7 @@
 		 */
 		public function hydrate(array $raw): void {
 
-			if (!isset($raw['id'])) {
-				$this->sharkord->logger->warning("Cannot hydrate user: missing 'id' in data.");
-				return;
-			}
-
-			if (isset($this->users[$raw['id']])) {
-				$this->users[$raw['id']]->updateFromArray($raw);
-				return;
-			}
-
-			$this->users[$raw['id']] = User::fromArray($raw, $this->sharkord);
+			$this->cache->add($raw);
 
 		}
 
@@ -56,40 +50,38 @@
 		 * @return void
 		 */
 		public function create(array $raw): void {
-			
+
 			if (!isset($raw['id'])) {
 				$this->sharkord->logger->warning("Cannot create user: missing 'id' in data.");
 				return;
 			}
-			
-			$user = User::fromArray($raw, $this->sharkord);
-			$this->users[$raw['id']] = $user;
-			
-			$this->sharkord->emit('usercreate', [$user]);
-			
+
+			$this->cache->add($raw);
+
+			$this->sharkord->emit('usercreate', [$this->cache->get($raw['id'])]);
+
 		}
 
 		/**
 		 * Handles a user joining the server (sets status to online).
 		 *
-		 * @param array $raw The raw user data (usually just ID here).
+		 * @param array $raw The raw user data.
 		 * @return void
 		 */
 		public function join(array $raw): void {
-			
+
 			if (!isset($raw['id'])) {
 				$this->sharkord->logger->warning("Cannot process user join: missing 'id' in data.");
 				return;
 			}
-			
-			if (isset($this->users[$raw['id']])) {
-				
-				$this->users[$raw['id']]->updateStatus('online');
-				
-				$this->sharkord->emit('userjoin', [$this->users[$raw['id']]]);
-				
+
+			$user = $this->cache->get($raw['id']);
+
+			if ($user) {
+				$user->updateStatus('online');
+				$this->sharkord->emit('userjoin', [$user]);
 			}
-			
+
 		}
 
 		/**
@@ -99,15 +91,14 @@
 		 * @return void
 		 */
 		public function leave(int $id): void {
-			
-			if (isset($this->users[$id])) {
-				
-				$this->users[$id]->updateStatus('offline');
-				
-				$this->sharkord->emit('userleave', [$this->users[$id]]);
-				
+
+			$user = $this->cache->get($id);
+
+			if ($user) {
+				$user->updateStatus('offline');
+				$this->sharkord->emit('userleave', [$user]);
 			}
-			
+
 		}
 
 		/**
@@ -117,87 +108,89 @@
 		 * @return void
 		 */
 		public function update(array $raw): void {
-			
+
 			if (!isset($raw['id'])) {
 				$this->sharkord->logger->warning("Cannot update user: missing 'id' in data.");
 				return;
 			}
-			
-			if (!isset($this->users[$raw['id']])) {
+
+			$user = $this->cache->get($raw['id']);
+
+			if (!$user) {
 				return;
 			}
 
-			$user = $this->users[$raw['id']];
-
 			$nameChanged = $user->name !== $raw['name'];
 			$banChanged  = array_key_exists('banned', $raw) && $user->banned !== $raw['banned'];
-			$gotBanned   = $banChanged && (bool)$raw['banned'];
-			$gotUnbanned = $banChanged && !(bool)$raw['banned'];
+			$gotBanned   = $banChanged && (bool) $raw['banned'];
+			$gotUnbanned = $banChanged && !(bool) $raw['banned'];
 
-			$user->updateFromArray($raw);
+			$this->cache->update($raw);
 
 			if ($nameChanged) {
 				$this->sharkord->emit('namechange', [$user]);
 			}
 			if ($gotBanned) {
 				$this->sharkord->emit('ban', [$user]);
-			} 
+			}
 			if ($gotUnbanned) {
 				$this->sharkord->emit('unban', [$user]);
 			}
-			
+
 		}
-		
+
 		/**
 		 * Handles user deletion.
 		 *
 		 * @param int $id The ID of the deleted user.
 		 * @return void
 		 */
-		 public function delete(int $id): void {
-			
-			if (!isset($this->users[$id])) { 
+		public function delete(int $id): void {
+
+			$user = $this->cache->get($id);
+
+			if (!$user) {
 				$this->sharkord->logger->error("User ID {$id} doesn't exist, therefore cannot be deleted.");
 				return;
 			}
-			
-			$this->sharkord->emit('userdelete', [$this->users[$id]]);
-			
-			unset($this->users[$id]);
-			
+
+			$this->sharkord->emit('userdelete', [$user]);
+			$this->cache->remove($id);
+
 		}
-		
+
 		/**
 		 * Retrieves a user by ID or name.
 		 *
 		 * @param int|string $identifier The user ID or name.
-		 * @return User|null Returns the User object or null if not found.
+		 * @return User|null
 		 */
 		public function get(int|string $identifier): ?User {
-			
-			if (is_int($identifier) || ctype_digit($identifier)) {
-				$id = (int)$identifier;
-				return $this->users[$id] ?? null;
-			}
-			
-			foreach ($this->users as $user) {
-				if ($user->name === $identifier) {
-					return $user;
-				}
-			}
-			
-			return null;
-			
+
+			return $this->cache->get($identifier);
+
 		}
-		
+
+		/**
+		 * Returns the underlying Users collection.
+		 *
+		 * @return UsersCollection
+		 */
+		public function collection(): UsersCollection {
+
+			return $this->cache;
+
+		}
+
 		/**
 		 * Returns the count of cached users.
-		 * * @return int
+		 *
+		 * @return int
 		 */
 		public function count(): int {
-			
-			return count($this->users);
-			
+
+			return count($this->cache);
+
 		}
 
 	}

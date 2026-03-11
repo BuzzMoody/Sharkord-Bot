@@ -7,6 +7,7 @@
 	use Sharkord\Sharkord;
 	use Sharkord\Permission;
 	use Sharkord\Internal\GuardedAsync;
+	use Sharkord\Collections\Reactions;
 	
 	use React\Promise\PromiseInterface;
 	use React\Promise\Promise;
@@ -371,41 +372,55 @@
 		public function __isset(string $name): bool {
 
 			return match($name) {
-				'server'   => $this->sharkord->servers->getFirst() !== null,
-				'channel'  => !empty($this->attributes['channelId']) && $this->sharkord->channels->get($this->attributes['channelId']) !== null,
+				'server'    => $this->sharkord->servers->getFirst() !== null,
+				'channel'   => !empty($this->attributes['channelId']) && $this->sharkord->channels->get($this->attributes['channelId']) !== null,
 				'author',
-				'user'     => !empty($this->attributes['userId']) && $this->sharkord->users->get($this->attributes['userId']) !== null,
-				'mentions' => !empty($this->attributes['mentionedUserIds']),
-				default    => isset($this->attributes[$name]),
+				'user'      => !empty($this->attributes['userId']) && $this->sharkord->users->get($this->attributes['userId']) !== null,
+				'mentions'  => !empty($this->attributes['mentionedUserIds']),
+				'reactions' => !empty($this->attributes['reactions']),
+				default     => isset($this->attributes[$name]),
 			};
 
 		}
-		
+
 		/**
 		 * Magic getter for dynamic properties.
+		 *
+		 * Resolves virtual relational properties before falling through to the raw
+		 * attributes array, so model consumers never need to know how data is stored
+		 * internally.
+		 *
+		 * Virtual properties:
+		 *
+		 * - $message->server     Returns the first cached Server via ServerManager.
+		 * - $message->channel    Resolves the Channel from ChannelManager using channelId.
+		 * - $message->author     Resolves the User from UserManager using userId.
+		 * - $message->user       Alias for $message->author.
+		 * - $message->mentions   Returns an array of resolved User objects for all
+		 *                        user mentions found in the message content.
+		 * - $message->reactions  Returns a Reactions collection keyed by emoji shortcode,
+		 *                        built from the raw reactions array on this message.
+		 *
+		 * Any other property name is looked up directly in the raw attributes array,
+		 * returning null if not present.
 		 *
 		 * @param string $name Property name.
 		 * @return mixed
 		 */
 		public function __get(string $name): mixed {
-			
-			// 1. Handle the request for the server!
+
 			if ($name === 'server') {
-				// We use the bot instance to ask the ServerManager for the server object
 				return $this->sharkord->servers->getFirst();
 			}
-			
-			// 2. Handle a request for the channel (if you want $message->channel to work!)
+
 			if ($name === 'channel' && !empty($this->attributes['channelId'])) {
 				return $this->sharkord->channels->get($this->attributes['channelId']);
 			}
 
-			// 3. Handle a request for the user who sent it
 			if (($name === 'author' || $name === 'user') && !empty($this->attributes['userId'])) {
 				return $this->sharkord->users->get($this->attributes['userId']);
 			}
-			
-			// Handle a request for resolved User objects for all mentions
+
 			if ($name === 'mentions') {
 				$users = [];
 				foreach ($this->attributes['mentionedUserIds'] ?? [] as $userId) {
@@ -416,9 +431,12 @@
 				return $users;
 			}
 
-			// Otherwise, look inside our magic backpack!
+			if ($name === 'reactions') {
+				return new Reactions($this->sharkord, $this->attributes['reactions'] ?? []);
+			}
+
 			return $this->attributes[$name] ?? null;
-			
+
 		}
 
 	}
