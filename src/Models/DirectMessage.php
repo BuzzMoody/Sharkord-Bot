@@ -5,7 +5,6 @@
 	namespace Sharkord\Models;
 
 	use Sharkord\Sharkord;
-	use Sharkord\Internal\GuardedAsync;
 	use React\Promise\PromiseInterface;
 
 	/**
@@ -30,8 +29,6 @@
 	 * ```
 	 */
 	class DirectMessage {
-
-		use GuardedAsync;
 
 		/**
 		 * DirectMessage constructor.
@@ -97,7 +94,17 @@
 					"files"     => [],
 				],
 				"path" => "messages.send",
-			]);
+			])->then(function ($response) {
+
+				if (isset($response['type']) && $response['type'] === 'data') {
+					return true;
+				}
+
+				throw new \RuntimeException(
+					"Failed to send DM. Server responded with: " . json_encode($response)
+				);
+
+			});
 
 		}
 
@@ -119,10 +126,26 @@
 		 */
 		public function markRead(): PromiseInterface {
 
+			$channel = $this->sharkord->channels->get($this->channelId);
+
+			if ($channel) {
+				return $channel->markAsRead();
+			}
+
 			return $this->sharkord->gateway->sendRpc("mutation", [
 				"input" => ["channelId" => $this->channelId],
 				"path"  => "channels.markAsRead",
-			]);
+			])->then(function ($response) {
+
+				if (isset($response['type']) && $response['type'] === 'data') {
+					return true;
+				}
+
+				throw new \RuntimeException(
+					"Failed to mark DM as read. Server responded with: " . json_encode($response)
+				);
+
+			});
 
 		}
 
