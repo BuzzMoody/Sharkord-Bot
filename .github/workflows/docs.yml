@@ -37,6 +37,14 @@ jobs:
       - name: Generate Documentation
         run: php phpDocumentor.phar run -c phpdoc.xml
 
+      - name: Inject dark theme into generated docs
+        run: |
+          find docs -name "*.html" | while read f; do
+            depth=$(echo "$f" | tr -cd '/' | wc -c)
+            prefix=$(printf '../%.0s' $(seq 1 $((depth - 1))))
+            sed -i "s|</head>|<link rel=\"stylesheet\" href=\"${prefix}css/dark.css\"><script src=\"${prefix}js/theme.js\" defer></script></head>|" "$f"
+          done
+
       - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v3
         with:
