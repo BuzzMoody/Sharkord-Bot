@@ -5,6 +5,7 @@
 	namespace Sharkord\Collections;
 
 	use Sharkord\Sharkord;
+	use Sharkord\Collections\Groups;
 
 	/**
 	 * Class Reactions
@@ -87,7 +88,7 @@
 			}
 
 			foreach ($byEmoji as $emoji => $reactions) {
-				$this->groups[$emoji] = new \Sharkord\Collections\Groups\Reactions($this->sharkord, $emoji, $reactions);
+				$this->groups[$emoji] = new ReactionGroup($this->sharkord, $emoji, $reactions);
 			}
 
 		}
@@ -129,7 +130,7 @@
 		 * @param string $offset The emoji shortcode name.
 		 * @return \Sharkord\Collections\Groups\Reactions|null
 		 */
-		public function offsetGet(mixed $offset): ?\Sharkord\Collections\Groups\Reactions {
+		public function offsetGet(mixed $offset): ?ReactionGroup {
 
 			return $this->groups[(string) $offset] ?? null;
 

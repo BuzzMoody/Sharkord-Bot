@@ -34,7 +34,7 @@
 	 * }
 	 * ```
 	 */
-	class Group {
+	class ReactionGroup {
 
 		/**
 		 * Group constructor.
