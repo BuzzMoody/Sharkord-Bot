@@ -195,7 +195,7 @@
 		 * - 'messageupdate' is always emitted with the full Message model.
 		 * - 'messagereaction' is emitted only when the reactions collection has changed
 		 *   since the last known cached state for that message. It receives the Message
-		 *   model and the current array of MessageReaction objects.
+		 *   model and a Reactions collection instance keyed by emoji shortcode.
 		 *
 		 * Reaction diffing is performed by reading the reactions stored on the previously
 		 * cached Message before the update is applied, then comparing against the incoming
@@ -218,11 +218,13 @@
 		 *     }
 		 * });
 		 *
-		 * $sharkord->on('messagereaction', function(Message $message, array $reactions) {
-		 *     $total = count($reactions);
-		 *     echo "Message {$message->id} now has {$total} reaction(s):";
-		 *     foreach ($reactions as $reaction) {
-		 *         echo " :{$reaction->emoji}: by {$reaction->user?->name}";
+		 * $sharkord->on('messagereaction', function(Message $message, Reactions $reactions) {
+		 *     echo "Message {$message->id} now has " . count($reactions) . " emoji type(s):";
+		 *     foreach ($reactions as $emoji => $group) {
+		 *         echo " :{$emoji}: x{$group->count}";
+		 *         foreach ($group->users as $user) {
+		 *             echo " ({$user->name})";
+		 *         }
 		 *     }
 		 * });
 		 * ```
@@ -242,7 +244,7 @@
 
 			if ($checkReactions) {
 				$cached            = $this->sharkord->messages->getFromCache($raw['id'] ?? '');
-				$previousReactions = $cached?->reactions ?? [];
+				$previousReactions = $cached?->toArray()['reactions'] ?? [];
 			}
 
 			$this->sharkord->messages->update($raw);
@@ -271,8 +273,13 @@
 				return;
 			}
 
+			$reactionObjects = array_map(
+				fn(array $r) => MessageReaction::fromArray($r, $this->sharkord),
+				$newReactions
+			);
+
 			try {
-				$this->sharkord->emit('messagereaction', [$message, new Reactions($this->sharkord, $newReactions)]);
+				$this->sharkord->emit('messagereaction', [$message, $reactionObjects]);
 			} catch (\Throwable $e) {
 				$this->logger->error(sprintf(
 					"Uncaught error in 'messagereaction' handler: %s on line %d in %s",
@@ -416,3 +423,5 @@
 		}
 
 	}
+	
+?>

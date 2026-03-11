@@ -16,8 +16,8 @@
 	 * Built from the raw reactions array on a Message, grouping individual
 	 * reactions by their emoji so callers can work with them naturally.
 	 *
-	 * @implements \ArrayAccess<string, \Sharkord\Collections\Groups\Reactions>
-	 * @implements \IteratorAggregate<string, \Sharkord\Collections\Groups\Reactions>
+	 * @implements \ArrayAccess<string, ReactionGroup>
+	 * @implements \IteratorAggregate<string, ReactionGroup>
 	 *
 	 * @package Sharkord\Collections
 	 *
