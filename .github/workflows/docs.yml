@@ -23,23 +23,16 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.5'
-          extensions: curl, json
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: 'npm'
 
       - name: Install Composer dependencies
-        run: composer install --no-dev --no-scripts --prefer-dist
+        run: composer install --no-dev --no-scripts --prefer-dist --ignore-platform-req=php
 
       - name: Install Node dependencies
-        run: npm ci
+        run: npm install
 
       - name: Generate API documentation
         run: php scripts/generate-api-docs.php
