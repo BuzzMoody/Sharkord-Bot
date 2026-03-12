@@ -1,5 +1,13 @@
 <?php
 
+	/**
+	 * @package    SharkordPHP
+	 * @author     Buzz Moody
+	 * @copyright  Copyright (c) 2026 Buzz Moody
+	 * @license    https://opensource.org/licenses/MIT  MIT License
+	 * @link       https://github.com/BuzzMoody/SharkordPHP
+	*/ 
+
 	declare(strict_types=1);
 
 	namespace Sharkord;
