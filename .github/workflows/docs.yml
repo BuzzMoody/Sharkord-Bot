@@ -29,7 +29,7 @@ jobs:
           node-version: '22'
 
       - name: Install Composer dependencies
-        run: composer install --no-dev --no-scripts --prefer-dist
+        run: composer install --no-dev --no-scripts --prefer-dist --ignore-platform-req=php
 
       - name: Install Node dependencies
         run: npm install
