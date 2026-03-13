@@ -170,6 +170,43 @@
 			return $this->cache->get($identifier);
 
 		}
+		
+		/**
+		 * Re-fetches all users from the server and updates the local cache in place.
+		 *
+		 * Existing User models held by the caller remain valid — each is updated via
+		 * updateFromArray() rather than replaced. New users not previously in cache
+		 * are added automatically.
+		 *
+		 * @return PromiseInterface Resolves with an array of all cached User models, rejects on failure.
+		 *
+		 * @example
+		 * ```php
+		 * $sharkord->users->fetch()->then(function(array $users) {
+		 *     foreach ($users as $user) {
+		 *         echo "{$user->name}\n";
+		 *     }
+		 * });
+		 * ```
+		 */
+		public function fetch(): PromiseInterface {
+
+			return $this->sharkord->gateway->sendRpc("query", [
+				"path" => "users.getAll",
+			])->then(function (array $response) {
+
+				$raw = $response['data']
+					?? throw new \RuntimeException("users.getAll response missing 'data'.");
+
+				foreach ($raw as $rawUser) {
+					$this->hydrate($rawUser);
+				}
+
+				return iterator_to_array($this->cache);
+
+			});
+
+		}
 
 		/**
 		 * Returns the underlying Users collection.
