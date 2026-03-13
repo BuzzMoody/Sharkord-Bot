@@ -62,11 +62,13 @@
 		 *
 		 * @internal This method is for internal framework use only. Do not call this directly.
 		 * @param array $raw The raw message data from the server.
-		 * @return void
+		 * @return Message|null The cached Message model, or null if caching failed.
 		 */
-		public function onCreate(array $raw): void {
+		public function onCreate(array $raw): ?Message {
 
 			$this->cache->add($raw);
+
+			return isset($raw['id']) ? $this->cache->get($raw['id']) : null;
 
 		}
 

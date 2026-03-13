@@ -233,7 +233,7 @@
 
 						return $this->cache->get((int) $channelId)
 							?? throw new \RuntimeException(
-								"Channel ID {$channelId} was not found in cache after hydration."
+								"Channel ID {$channelId} was not found in cache after add()."
 							);
 
 					});

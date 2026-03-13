@@ -233,23 +233,24 @@
 		}
 
 		/**
-		 * Retrieves a cached user by ID.
+		 * Retrieves a cached user by ID or display name.
 		 *
-		 * @param int|string $id The user ID.
+		 * @param int|string $idOrName The user ID (int) or display name (string).
 		 * @return User|null The cached User model, or null if not found.
 		 *
 		 * @example
 		 * ```php
 		 * $user = $sharkord->users->get(42);
+		 * $user = $sharkord->users->get('Buzz');
 		 *
 		 * if ($user) {
 		 *     echo "{$user->name} is {$user->status}.\n";
 		 * }
 		 * ```
 		 */
-		public function get(int|string $id): ?User {
+		public function get(int|string $idOrName): ?User {
 
-			return $this->cache->get($id);
+			return $this->cache->get($idOrName);
 
 		}
 

@@ -170,9 +170,12 @@
 				return;
 			}
 
-			$this->sharkord->messages->onCreate($raw);
+			$message = $this->sharkord->messages->onCreate($raw);
 
-			$message = Message::fromArray($raw, $this->sharkord);
+			if (!$message) {
+				$this->logger->warning("Failed to cache incoming message.");
+				return;
+			}
 
 			$this->sharkord->emit('message', [$message]);
 
@@ -181,16 +184,25 @@
 		/**
 		 * Handles an incoming message update event from the gateway.
 		 *
-		 * If the update contains a changed reaction set and the message is cached,
-		 * a separate `messagereaction` event is emitted alongside `messageupdate`.
+		 * Only emits `messageupdate` and `messagereaction` if the message is already
+		 * present in the local cache. Updates for uncached messages (e.g. those that
+		 * arrived before the current session or were evicted) are silently dropped to
+		 * avoid emitting partially-populated Message objects built from diff-only payloads.
 		 *
-		 * @param mixed $raw The raw event payload. Expected to be a non-empty array.
+		 * @param mixed $raw The raw event payload. Expected to be a non-empty array with an `id` key.
 		 * @return void
 		 *
 		 * @example
 		 * ```php
-		 * $sharkord->on(\Sharkord\Events::MESSAGE_UPDATE, function(Message $message): void {
+		 * $sharkord->on(\Sharkord\Events::MESSAGE_UPDATE, function(\Sharkord\Models\Message $message): void {
 		 *     echo "Message {$message->id} was updated.\n";
+		 * });
+		 *
+		 * $sharkord->on(\Sharkord\Events::MESSAGE_REACTION, function(
+		 *     \Sharkord\Models\Message        $message,
+		 *     \Sharkord\Collections\Reactions $reactions,
+		 * ): void {
+		 *     echo "Message {$message->id} now has " . count($reactions) . " emoji type(s).\n";
 		 * });
 		 * ```
 		 */
@@ -201,27 +213,33 @@
 				return;
 			}
 
-			$cached = $this->sharkord->messages->getFromCache($raw['id']);
+			$checkReactions    = array_key_exists('reactions', $raw);
+			$previousReactions = [];
 
-			$previousReactions = $cached
-				? (new Reactions($this->sharkord, $cached->reactions ?? []))->toArray()
-				: null;
+			if ($checkReactions) {
+				$cached            = $this->sharkord->messages->getFromCache($raw['id']);
+				$previousReactions = $cached?->toArray()['reactions'] ?? [];
+			}
 
 			$message = $this->sharkord->messages->onUpdate($raw);
 
-			if ($message) {
-
-				$this->sharkord->emit('messageupdate', [$message]);
-
-				if (
-					isset($raw['reactions'])
-					&& $previousReactions !== null
-					&& $previousReactions !== $raw['reactions']
-				) {
-					$this->sharkord->emit('messagereaction', [$message, $raw['reactions']]);
-				}
-
+			if (!$message) {
+				return;
 			}
+
+			$this->sharkord->emit('messageupdate', [$message]);
+
+			if (!$checkReactions) {
+				return;
+			}
+
+			$newReactions = $raw['reactions'] ?? [];
+
+			if ($previousReactions === $newReactions) {
+				return;
+			}
+
+			$this->sharkord->emit('messagereaction', [$message, new Reactions($this->sharkord, $newReactions)]);
 
 		}
 
