@@ -14,7 +14,24 @@
 	 * Manages category lifecycle events, delegating all cache storage to a
 	 * Categories collection instance.
 	 *
+	 * Accessible via `$sharkord->categories`.
+	 *
 	 * @package Sharkord\Managers
+	 *
+	 * @example
+	 * ```php
+	 * $sharkord->on(\Sharkord\Events::CATEGORY_CREATE, function(\Sharkord\Models\Category $category): void {
+	 *     echo "New category created: {$category->name}\n";
+	 * });
+	 *
+	 * $sharkord->on(\Sharkord\Events::CATEGORY_UPDATE, function(\Sharkord\Models\Category $category): void {
+	 *     echo "Category updated: {$category->name}\n";
+	 * });
+	 *
+	 * $sharkord->on(\Sharkord\Events::CATEGORY_DELETE, function(\Sharkord\Models\Category $category): void {
+	 *     echo "Category deleted: {$category->name}\n";
+	 * });
+	 * ```
 	 */
 	class CategoryManager {
 
@@ -32,8 +49,9 @@
 		}
 
 		/**
-		 * Handles the hydration of a category.
+		 * Handles the hydration of a category from the initial join payload.
 		 *
+		 * @internal
 		 * @param array $raw The raw category data.
 		 * @return void
 		 */
@@ -44,12 +62,22 @@
 		}
 
 		/**
-		 * Handles the creation of a category.
+		 * Handles the server-initiated creation of a category.
 		 *
+		 * Adds the category to the local cache and emits a `categorycreate` event.
+		 *
+		 * @internal
 		 * @param array $raw The raw category data.
 		 * @return void
+		 *
+		 * @example
+		 * ```php
+		 * $sharkord->on(\Sharkord\Events::CATEGORY_CREATE, function(\Sharkord\Models\Category $category): void {
+		 *     echo "Category '{$category->name}' was created.\n";
+		 * });
+		 * ```
 		 */
-		public function create(array $raw): void {
+		public function onCreate(array $raw): void {
 
 			if (!isset($raw['id'])) {
 				$this->sharkord->logger->warning("Cannot create category: missing 'id' in data.");
@@ -63,12 +91,22 @@
 		}
 
 		/**
-		 * Handles updates to a category.
+		 * Handles a server-pushed update to a category.
 		 *
+		 * Updates the cached model in place and emits a `categoryupdate` event.
+		 *
+		 * @internal
 		 * @param array $raw The raw category data.
 		 * @return void
+		 *
+		 * @example
+		 * ```php
+		 * $sharkord->on(\Sharkord\Events::CATEGORY_UPDATE, function(\Sharkord\Models\Category $category): void {
+		 *     echo "Category '{$category->name}' was updated.\n";
+		 * });
+		 * ```
 		 */
-		public function update(array $raw): void {
+		public function onUpdate(array $raw): void {
 
 			if (!isset($raw['id'])) {
 				$this->sharkord->logger->warning("Cannot update category: missing 'id' in data.");
@@ -84,12 +122,22 @@
 		}
 
 		/**
-		 * Handles category deletion.
+		 * Handles the server-initiated deletion of a category.
 		 *
+		 * Emits a `categorydelete` event with the cached model before removing it.
+		 *
+		 * @internal
 		 * @param int $id The ID of the deleted category.
 		 * @return void
+		 *
+		 * @example
+		 * ```php
+		 * $sharkord->on(\Sharkord\Events::CATEGORY_DELETE, function(\Sharkord\Models\Category $category): void {
+		 *     echo "Category '{$category->name}' was deleted.\n";
+		 * });
+		 * ```
 		 */
-		public function delete(int $id): void {
+		public function onDelete(int $id): void {
 
 			$category = $this->cache->get($id);
 
@@ -107,7 +155,16 @@
 		 * Retrieves a category by ID.
 		 *
 		 * @param int $id The category ID.
-		 * @return Category|null
+		 * @return Category|null The cached Category model, or null if not found.
+		 *
+		 * @example
+		 * ```php
+		 * $category = $sharkord->categories->get(3);
+		 *
+		 * if ($category) {
+		 *     echo "Found category: {$category->name}\n";
+		 * }
+		 * ```
 		 */
 		public function get(int $id): ?Category {
 
@@ -119,6 +176,13 @@
 		 * Returns the underlying Categories collection.
 		 *
 		 * @return CategoriesCollection
+		 *
+		 * @example
+		 * ```php
+		 * foreach ($sharkord->categories->collection() as $id => $category) {
+		 *     echo "{$id}: {$category->name}\n";
+		 * }
+		 * ```
 		 */
 		public function collection(): CategoriesCollection {
 
@@ -127,5 +191,5 @@
 		}
 
 	}
-	
+
 ?>

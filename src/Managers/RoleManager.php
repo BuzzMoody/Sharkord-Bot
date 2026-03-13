@@ -7,6 +7,7 @@
 	use Sharkord\Sharkord;
 	use Sharkord\Collections\Roles as RolesCollection;
 	use Sharkord\Models\Role;
+	use React\Promise\PromiseInterface;
 
 	/**
 	 * Class RoleManager
@@ -14,7 +15,22 @@
 	 * Manages role lifecycle events, delegating all cache storage to a
 	 * Roles collection instance.
 	 *
+	 * Accessible via `$sharkord->roles`.
+	 *
 	 * @package Sharkord\Managers
+	 *
+	 * @example
+	 * ```php
+	 * $sharkord->on(\Sharkord\Events::ROLE_CREATE, function(\Sharkord\Models\Role $role): void {
+	 *     echo "New role created: {$role->name}\n";
+	 * });
+	 *
+	 * $role = $sharkord->roles->get(7);
+	 *
+	 * if ($role) {
+	 *     echo "Role name: {$role->name}\n";
+	 * }
+	 * ```
 	 */
 	class RoleManager {
 
@@ -32,8 +48,9 @@
 		}
 
 		/**
-		 * Handles the hydration of a role.
+		 * Handles the hydration of a role from the initial join payload.
 		 *
+		 * @internal
 		 * @param array $raw The raw role data.
 		 * @return void
 		 */
@@ -44,12 +61,22 @@
 		}
 
 		/**
-		 * Handles the creation of a role.
+		 * Handles the server-initiated creation of a role.
 		 *
+		 * Adds the role to the local cache and emits a `rolecreate` event.
+		 *
+		 * @internal
 		 * @param array $raw The raw role data.
 		 * @return void
+		 *
+		 * @example
+		 * ```php
+		 * $sharkord->on(\Sharkord\Events::ROLE_CREATE, function(\Sharkord\Models\Role $role): void {
+		 *     echo "Role '{$role->name}' was created.\n";
+		 * });
+		 * ```
 		 */
-		public function create(array $raw): void {
+		public function onCreate(array $raw): void {
 
 			if (!isset($raw['id'])) {
 				$this->sharkord->logger->warning("Cannot create role: missing 'id' in data.");
@@ -63,12 +90,22 @@
 		}
 
 		/**
-		 * Handles updates to a role.
+		 * Handles a server-pushed update to a role.
 		 *
+		 * Updates the cached model in place and emits a `roleupdate` event.
+		 *
+		 * @internal
 		 * @param array $raw The raw role data.
 		 * @return void
+		 *
+		 * @example
+		 * ```php
+		 * $sharkord->on(\Sharkord\Events::ROLE_UPDATE, function(\Sharkord\Models\Role $role): void {
+		 *     echo "Role '{$role->name}' was updated.\n";
+		 * });
+		 * ```
 		 */
-		public function update(array $raw): void {
+		public function onUpdate(array $raw): void {
 
 			if (!isset($raw['id'])) {
 				$this->sharkord->logger->warning("Cannot update role: missing 'id' in data.");
@@ -84,12 +121,22 @@
 		}
 
 		/**
-		 * Handles role deletion.
+		 * Handles the server-initiated deletion of a role.
 		 *
+		 * Emits a `roledelete` event with the cached model before removing it.
+		 *
+		 * @internal
 		 * @param int $id The ID of the deleted role.
 		 * @return void
+		 *
+		 * @example
+		 * ```php
+		 * $sharkord->on(\Sharkord\Events::ROLE_DELETE, function(\Sharkord\Models\Role $role): void {
+		 *     echo "Role '{$role->name}' was deleted.\n";
+		 * });
+		 * ```
 		 */
-		public function delete(int $id): void {
+		public function onDelete(int $id): void {
 
 			$role = $this->cache->get($id);
 
@@ -107,14 +154,23 @@
 		 * Retrieves a role by ID.
 		 *
 		 * @param int $id The role ID.
-		 * @return Role|null
+		 * @return Role|null The cached Role model, or null if not found.
+		 *
+		 * @example
+		 * ```php
+		 * $role = $sharkord->roles->get(7);
+		 *
+		 * if ($role) {
+		 *     echo "Role: {$role->name}\n";
+		 * }
+		 * ```
 		 */
 		public function get(int $id): ?Role {
 
 			return $this->cache->get($id);
 
 		}
-		
+
 		/**
 		 * Re-fetches all roles from the server and updates the local cache in place.
 		 *
@@ -136,14 +192,14 @@
 		public function fetch(): PromiseInterface {
 
 			return $this->sharkord->gateway->sendRpc("query", [
-				"path" => "roles.getAll",
+				"path" => "roles.get",
 			])->then(function (array $response) {
 
-				$raw = $response['data']
-					?? throw new \RuntimeException("roles.getAll response missing 'data'.");
+				$rawRoles = $response['data']
+					?? throw new \RuntimeException("roles.get response missing 'data'.");
 
-				foreach ($raw as $rawRole) {
-					$this->hydrate($rawRole);
+				foreach ($rawRoles as $raw) {
+					$this->cache->add($raw);
 				}
 
 				return iterator_to_array($this->cache);
@@ -156,6 +212,13 @@
 		 * Returns the underlying Roles collection.
 		 *
 		 * @return RolesCollection
+		 *
+		 * @example
+		 * ```php
+		 * foreach ($sharkord->roles->collection() as $id => $role) {
+		 *     echo "{$id}: {$role->name}\n";
+		 * }
+		 * ```
 		 */
 		public function collection(): RolesCollection {
 
@@ -164,5 +227,5 @@
 		}
 
 	}
-	
+
 ?>

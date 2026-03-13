@@ -296,10 +296,24 @@
 		}
 		
 		/**
-		 * Returns a complete array of the message data, including 
+		 * Returns a complete array of the message data, including
 		 * fully expanded User, Channel, and Server objects for debugging.
 		 *
+		 * The base attributes array (including raw scalar fields such as `reactions`)
+		 * is always present in the return value — expanded keys are layered on top.
+		 * This makes `toArray()['reactions'] ?? []` a safe way to read the raw
+		 * reactions array before it is wrapped into a Reactions collection.
+		 *
 		 * @return array
+		 *
+		 * @example
+		 * ```php
+		 * // Full debug dump
+		 * var_dump($message->toArray());
+		 *
+		 * // Read the raw reactions array directly
+		 * $raw = $message->toArray()['reactions'] ?? [];
+		 * ```
 		 */
 		public function toArray(): array {
 			
