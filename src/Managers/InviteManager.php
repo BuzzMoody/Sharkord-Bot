@@ -104,7 +104,7 @@
 					$this->cache->add($raw);
 				}
 
-				return $this->cache->all();
+				return array_values($this->cache->all());
 
 			});
 

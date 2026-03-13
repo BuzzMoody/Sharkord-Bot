@@ -10,6 +10,8 @@
 	use React\Promise\PromiseInterface;
 	use Sharkord\Models\ServerSettings;
 	use Sharkord\Events;
+	use Sharkord\Permission;
+	use Sharkord\Internal\GuardedAsync;
 
 	/**
 	 * Class ServerManager
@@ -33,6 +35,8 @@
 	 * ```
 	 */
 	class ServerManager {
+		
+		use GuardedAsync;
 
 		private ServersCollection $cache;
 
@@ -93,6 +97,10 @@
 		 * `secretToken` and `allowNewUsers` that are not included in the public
 		 * settings payload available on the {@see \Sharkord\Models\Server} model.
 		 *
+		 * Requires the MANAGE_SETTINGS permission. The guard check runs locally before
+		 * any network request is made, so callers receive a rejected Promise immediately
+		 * rather than waiting for a round-trip API error.
+		 *
 		 * Always performs a live API request — settings are not cached between calls.
 		 *
 		 * @return PromiseInterface Resolves with a {@see ServerSettings} instance, rejects on failure.
@@ -105,26 +113,30 @@
 		 *     echo "DMs enabled:  " . ($settings->directMessagesEnabled ? 'Yes' : 'No') . "\n";
 		 *
 		 *     if ($settings->logo) {
-		 *         echo "Logo file:    {$settings->logo->originalName}\n";
+		 *         echo "Logo file: {$settings->logo->originalName}\n";
 		 *     }
+		 * })->catch(function (\Throwable $e) {
+		 *     // Fires immediately (no round-trip) if the bot lacks MANAGE_SETTINGS.
+		 *     echo "Access denied: {$e->getMessage()}\n";
 		 * });
-		 *
-		 * // Fetch then immediately update a field
-		 * $sharkord->servers->getSettings()
-		 *     ->then(fn ($s) => $s->update(allowNewUsers: false))
-		 *     ->then(fn ()   => $sharkord->logger->info("Registrations closed."));
 		 * ```
 		 */
 		public function getSettings(): PromiseInterface {
 
-			return $this->sharkord->gateway->sendRpc("query", [
-				"path" => "others.getSettings",
-			])->then(function (array $response): ServerSettings {
+			return $this->guardedAsync(function (): PromiseInterface {
 
-				$raw = $response['data']
-					?? throw new \RuntimeException("others.getSettings response missing 'data'.");
+				$this->sharkord->guard->requirePermission(Permission::MANAGE_SETTINGS);
 
-				return ServerSettings::fromArray($raw, $this->sharkord);
+				return $this->sharkord->gateway->sendRpc("query", [
+					"path" => "others.getSettings",
+				])->then(function (array $response): ServerSettings {
+
+					$raw = $response['data']
+						?? throw new \RuntimeException("others.getSettings response missing 'data'.");
+
+					return ServerSettings::fromArray($raw, $this->sharkord);
+
+				});
 
 			});
 

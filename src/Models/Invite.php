@@ -120,17 +120,21 @@
 
 			return $this->guardedAsync(function (): PromiseInterface {
 
+				$inviteId = $this->id
+					?? throw new \RuntimeException("Cannot delete invite: missing 'id' attribute.");
+
 				$this->sharkord->guard->requireOwnershipOrPermission(
 					$this->attributes['creatorId'] ?? null,
 					Permission::MANAGE_INVITES
 				);
 
 				return $this->sharkord->gateway->sendRpc("mutation", [
-					"input" => ["inviteId" => $this->attributes['id']],
+					"input" => ["inviteId" => $inviteId],
 					"path"  => "invites.delete",
-				])->then(function (array $response): bool {
+				])->then(function (array $response) use ($inviteId): bool {
 
 					if (isset($response['type']) && $response['type'] === 'data') {
+						$this->sharkord->invites->collection()->remove($inviteId);
 						return true;
 					}
 

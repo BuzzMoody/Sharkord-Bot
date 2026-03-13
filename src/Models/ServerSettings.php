@@ -177,7 +177,7 @@
 				])->then(function (array $response) use ($input): bool {
 
 					if (isset($response['type']) && $response['type'] === 'data') {
-						$this->updateFromArray($input);
+						$this->updateFromArray($response['data'] ?? $input);
 						return true;
 					}
 
