@@ -5,6 +5,8 @@
 	namespace Sharkord\Managers;
 
 	use Sharkord\Sharkord;
+	use Sharkord\Permission;
+	use Sharkord\Internal\GuardedAsync;
 	use Sharkord\Collections\Roles as RolesCollection;
 	use Sharkord\Models\Role;
 	use React\Promise\PromiseInterface;
@@ -12,8 +14,8 @@
 	/**
 	 * Class RoleManager
 	 *
-	 * Manages role lifecycle events, delegating all cache storage to a
-	 * Roles collection instance.
+	 * Manages role lifecycle events and exposes actions for creating roles.
+	 * Delegates all cache storage to a Roles collection instance.
 	 *
 	 * Accessible via `$sharkord->roles`.
 	 *
@@ -21,18 +23,30 @@
 	 *
 	 * @example
 	 * ```php
+	 * // Create a new role and then edit it
+	 * $sharkord->roles->add()->then(function(\Sharkord\Models\Role $role) {
+	 *     return $role->edit(
+	 *         'Moderators',
+	 *         '#00aaff',
+	 *         \Sharkord\Permission::MANAGE_MESSAGES,
+	 *         \Sharkord\Permission::PIN_MESSAGES,
+	 *     );
+	 * });
+	 *
+	 * // Set a role as the server default
+	 * $sharkord->roles->get(3)?->setAsDefault();
+	 *
+	 * // Delete a role
+	 * $sharkord->roles->get(5)?->delete();
+	 *
 	 * $sharkord->on(\Sharkord\Events::ROLE_CREATE, function(\Sharkord\Models\Role $role): void {
 	 *     echo "New role created: {$role->name}\n";
 	 * });
-	 *
-	 * $role = $sharkord->roles->get(7);
-	 *
-	 * if ($role) {
-	 *     echo "Role name: {$role->name}\n";
-	 * }
 	 * ```
 	 */
 	class RoleManager {
+
+		use GuardedAsync;
 
 		private RolesCollection $cache;
 
@@ -46,6 +60,10 @@
 		) {
 			$this->cache = new RolesCollection($this->sharkord);
 		}
+
+		// -------------------------------------------------------------------------
+		// Internal event handlers
+		// -------------------------------------------------------------------------
 
 		/**
 		 * Handles the hydration of a role from the initial join payload.
@@ -150,15 +168,86 @@
 
 		}
 
+		// -------------------------------------------------------------------------
+		// Public API
+		// -------------------------------------------------------------------------
+
 		/**
-		 * Retrieves a role by ID.
+		 * Creates a new role on the server with default settings.
+		 *
+		 * Sends the roles.add mutation, then fetches all roles via roles.getAll to
+		 * hydrate the new role into the local cache. The returned Role model is ready
+		 * for use and can be immediately chained with edit() to set the name, colour,
+		 * and permissions.
+		 *
+		 * Requires the MANAGE_ROLES permission.
+		 *
+		 * @return PromiseInterface Resolves with the new Role model, rejects on failure.
+		 *
+		 * @example
+		 * ```php
+		 * $sharkord->roles->add()->then(function(\Sharkord\Models\Role $role) {
+		 *     return $role->edit(
+		 *         'Support',
+		 *         '#9b59b6',
+		 *         \Sharkord\Permission::SEND_MESSAGES,
+		 *         \Sharkord\Permission::REACT_TO_MESSAGES,
+		 *     );
+		 * })->then(function() {
+		 *     echo "Role created and configured.\n";
+		 * });
+		 * ```
+		 */
+		public function add(): PromiseInterface {
+
+			return $this->guardedAsync(function () {
+
+				$this->sharkord->guard->requirePermission(Permission::MANAGE_ROLES);
+
+				return $this->sharkord->gateway->sendRpc("mutation", [
+					"path" => "roles.add",
+				])->then(function (array $response) {
+
+					$roleId = $response['data']
+						?? throw new \RuntimeException(
+							"roles.add response missing 'data' (expected new role ID)."
+						);
+
+					return $this->sharkord->gateway->sendRpc("query", [
+						"path" => "roles.getAll",
+					])->then(function (array $response) use ($roleId) {
+
+						$rawRoles = $response['data']
+							?? throw new \RuntimeException(
+								"roles.getAll response missing 'data'."
+							);
+
+						foreach ($rawRoles as $raw) {
+							$this->cache->add($raw);
+						}
+
+						return $this->cache->get((int) $roleId)
+							?? throw new \RuntimeException(
+								"Role ID {$roleId} was not found in cache after add()."
+							);
+
+					});
+
+				});
+
+			});
+
+		}
+
+		/**
+		 * Retrieves a cached role by ID.
 		 *
 		 * @param int $id The role ID.
 		 * @return Role|null The cached Role model, or null if not found.
 		 *
 		 * @example
 		 * ```php
-		 * $role = $sharkord->roles->get(7);
+		 * $role = $sharkord->roles->get(3);
 		 *
 		 * if ($role) {
 		 *     echo "Role: {$role->name}\n";
@@ -192,11 +281,11 @@
 		public function fetch(): PromiseInterface {
 
 			return $this->sharkord->gateway->sendRpc("query", [
-				"path" => "roles.get",
+				"path" => "roles.getAll",
 			])->then(function (array $response) {
 
 				$rawRoles = $response['data']
-					?? throw new \RuntimeException("roles.get response missing 'data'.");
+					?? throw new \RuntimeException("roles.getAll response missing 'data'.");
 
 				foreach ($rawRoles as $raw) {
 					$this->cache->add($raw);
