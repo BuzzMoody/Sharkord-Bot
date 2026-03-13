@@ -92,7 +92,6 @@
 		 * Useful when you need guaranteed up-to-date data outside of a subscription
 		 * event (e.g. after a reorder).
 		 *
-		 * Requires the MANAGE_CATEGORIES permission.
 		 *
 		 * @return PromiseInterface Resolves with this Category model (updated in place), rejects on failure.
 		 *

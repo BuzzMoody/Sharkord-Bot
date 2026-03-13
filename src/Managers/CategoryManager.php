@@ -230,6 +230,32 @@
 			});
 
 		}
+		
+		/**
+		 * Returns the cached category IDs sorted by their current position.
+		 *
+		 * Useful as a starting point before calling reorder() — retrieve the current
+		 * order, move items around, then pass the result straight in.
+		 *
+		 * @return int[] Category IDs in ascending position order.
+		 *
+		 * @example
+		 * ```php
+		 * // Get current order, move the last category to the front
+		 * $ids = $sharkord->categories->getOrder();
+		 * array_unshift($ids, array_pop($ids));
+		 * $sharkord->categories->reorder(...$ids);
+		 * ```
+		 */
+		public function getOrder(): array {
+
+			$categories = iterator_to_array($this->cache);
+
+			usort($categories, fn(Category $a, Category $b) => $a->position <=> $b->position);
+
+			return array_map(fn(Category $c) => (int) $c->id, $categories);
+
+		}
 
 		/**
 		 * Reorders all categories on the server by providing a full ordered list of IDs.
@@ -245,6 +271,9 @@
 		 * @param int ...$categoryIds The category IDs in the desired display order.
 		 * @return PromiseInterface Resolves with true on success, rejects on failure.
 		 *
+		 * @throws \InvalidArgumentException If no category IDs are provided, if duplicate IDs are present,
+		 *                                   or if the number of IDs does not match the number of cached categories.
+		 *
 		 * @example
 		 * ```php
 		 * // Move category 7 to the second position
@@ -256,6 +285,25 @@
 		public function reorder(int ...$categoryIds): PromiseInterface {
 
 			return $this->guardedAsync(function () use ($categoryIds) {
+
+				if (empty($categoryIds)) {
+					throw new \InvalidArgumentException(
+						"reorder() requires at least one category ID."
+					);
+				}
+
+				if (count($categoryIds) !== count(array_unique($categoryIds))) {
+					throw new \InvalidArgumentException(
+						"reorder() received duplicate category IDs."
+					);
+				}
+				
+				if (count($categoryIds) !== count($this->cache)) {
+					throw new \InvalidArgumentException(
+						"reorder() received " . count($categoryIds) . " category ID(s), but "
+							. count($this->cache) . " categories are cached. All categories must be included in the ordering."
+					);
+				}
 
 				$this->sharkord->guard->requirePermission(Permission::MANAGE_CATEGORIES);
 
