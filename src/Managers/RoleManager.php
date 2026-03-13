@@ -114,6 +114,43 @@
 			return $this->cache->get($id);
 
 		}
+		
+		/**
+		 * Re-fetches all roles from the server and updates the local cache in place.
+		 *
+		 * Existing Role models held by the caller remain valid — each is updated via
+		 * updateFromArray() rather than replaced. New roles not previously in cache
+		 * are added automatically.
+		 *
+		 * @return PromiseInterface Resolves with an array of all cached Role models, rejects on failure.
+		 *
+		 * @example
+		 * ```php
+		 * $sharkord->roles->fetch()->then(function(array $roles) {
+		 *     foreach ($roles as $role) {
+		 *         echo "{$role->name}\n";
+		 *     }
+		 * });
+		 * ```
+		 */
+		public function fetch(): PromiseInterface {
+
+			return $this->sharkord->gateway->sendRpc("query", [
+				"path" => "roles.getAll",
+			])->then(function (array $response) {
+
+				$raw = $response['data']
+					?? throw new \RuntimeException("roles.getAll response missing 'data'.");
+
+				foreach ($raw as $rawRole) {
+					$this->hydrate($rawRole);
+				}
+
+				return iterator_to_array($this->cache);
+
+			});
+
+		}
 
 		/**
 		 * Returns the underlying Roles collection.

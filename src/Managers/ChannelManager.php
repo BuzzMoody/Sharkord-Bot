@@ -201,6 +201,12 @@
 							?? throw new \RuntimeException(
 								"channels.get response missing 'data' after channel creation."
 							);
+							
+						if (!isset($raw['id'])) {
+							throw new \RuntimeException(
+								"channels.get response returned a channel object missing 'id'."
+							);
+						}
 
 						$this->hydrate($raw);
 
