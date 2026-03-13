@@ -31,8 +31,10 @@
 	use Sharkord\Managers\UserManager;
 	use Sharkord\Managers\DmManager;
 	use Sharkord\Commands\CommandRouter;
+	use Sharkord\Managers\InviteManager;
 	use Sharkord\Models\User;
 	use Sharkord\WebSocket\Gateway;
+	
 
 	/**
 	 * Class Sharkord
@@ -57,6 +59,7 @@
 		public RoleManager     $roles;
 		public ServerManager   $servers;
 		public MessageManager  $messages;
+		public InviteManager   $invites;
 		public DmManager       $dms;
 		public CommandRouter   $commands;
 		public LoggerInterface $logger;
@@ -101,6 +104,7 @@
 			$this->servers    = new ServerManager($this);
 			$this->messages   = new MessageManager($this);
 			$this->dms        = new DmManager($this);
+			$this->invites    = new InviteManager($this);
 			$this->commands   = new CommandRouter($this);
 			$this->guard 	  = new Guard($this);
 
