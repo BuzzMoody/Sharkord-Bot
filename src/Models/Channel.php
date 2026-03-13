@@ -278,22 +278,30 @@
 		}
 
 		/**
-		 * Edits this channel's name and/or topic.
+		 * Edits this channel's name, topic, and/or visibility.
 		 *
 		 * Requires the MANAGE_CHANNELS permission.
 		 *
-		 * @param string      $name  The new channel name.
-		 * @param string|null $topic The new channel topic, or null to leave it unchanged.
+		 * @param string      $name    The new channel name.
+		 * @param string|null $topic   The new channel topic, or null to leave it unchanged.
+		 * @param bool|null   $private Whether the channel should be private, or null to leave it unchanged.
 		 * @return PromiseInterface Resolves with true on success, rejects on failure.
 		 *
 		 * @example
 		 * ```php
+		 * // Rename and set a topic
 		 * $sharkord->channels->get('general')->edit('general', 'Welcome to general chat!');
+		 *
+		 * // Make a channel private
+		 * $sharkord->channels->get('staff')->edit('staff', null, true);
+		 *
+		 * // Rename, set a topic, and make private in one call
+		 * $sharkord->channels->get('announcements')->edit('news', 'Official news feed.', true);
 		 * ```
 		 */
-		public function edit(string $name, ?string $topic = null): PromiseInterface {
+		public function edit(string $name, ?string $topic = null, ?bool $private = null): PromiseInterface {
 
-			return $this->guardedAsync(function () use ($name, $topic) {
+			return $this->guardedAsync(function () use ($name, $topic, $private) {
 
 				$this->sharkord->guard->requirePermission(Permission::MANAGE_CHANNELS);
 
@@ -304,6 +312,10 @@
 
 				if ($topic !== null) {
 					$input['topic'] = $topic;
+				}
+
+				if ($private !== null) {
+					$input['private'] = $private;
 				}
 
 				return $this->sharkord->gateway->sendRpc("mutation", [
