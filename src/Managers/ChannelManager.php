@@ -59,7 +59,7 @@
 		// -------------------------------------------------------------------------
 
 		/**
-		 * Handles the hydration of a channel.
+		 * Handles the hydration of a channel from the initial join payload.
 		 *
 		 * @internal
 		 * @param array $raw The raw channel data.
@@ -74,11 +74,20 @@
 		/**
 		 * Handles the server-initiated creation of a channel.
 		 *
+		 * Adds the channel to the local cache and emits a `channelcreate` event.
+		 *
 		 * @internal
 		 * @param array $raw The raw channel data.
 		 * @return void
+		 *
+		 * @example
+		 * ```php
+		 * $sharkord->on(\Sharkord\Events::CHANNEL_CREATE, function(\Sharkord\Models\Channel $channel): void {
+		 *     echo "Channel #{$channel->name} was created.\n";
+		 * });
+		 * ```
 		 */
-		public function create(array $raw): void {
+		public function onCreate(array $raw): void {
 
 			if (!isset($raw['id'])) {
 				$this->sharkord->logger->warning("Cannot create channel: missing 'id' in data.");
@@ -92,13 +101,22 @@
 		}
 
 		/**
-		 * Handles updates to a channel.
+		 * Handles a server-pushed update to a channel.
+		 *
+		 * Updates the cached model in place and emits a `channelupdate` event.
 		 *
 		 * @internal
 		 * @param array $raw The raw channel data.
 		 * @return void
+		 *
+		 * @example
+		 * ```php
+		 * $sharkord->on(\Sharkord\Events::CHANNEL_UPDATE, function(\Sharkord\Models\Channel $channel): void {
+		 *     echo "Channel #{$channel->name} was updated.\n";
+		 * });
+		 * ```
 		 */
-		public function update(array $raw): void {
+		public function onUpdate(array $raw): void {
 
 			if (!isset($raw['id'])) {
 				$this->sharkord->logger->warning("Cannot update channel: missing 'id' in data.");
@@ -114,13 +132,22 @@
 		}
 
 		/**
-		 * Handles channel deletion.
+		 * Handles the server-initiated deletion of a channel.
+		 *
+		 * Emits a `channeldelete` event with the cached model before removing it.
 		 *
 		 * @internal
 		 * @param int $id The ID of the deleted channel.
 		 * @return void
+		 *
+		 * @example
+		 * ```php
+		 * $sharkord->on(\Sharkord\Events::CHANNEL_DELETE, function(\Sharkord\Models\Channel $channel): void {
+		 *     echo "Channel #{$channel->name} was deleted.\n";
+		 * });
+		 * ```
 		 */
-		public function delete(int $id): void {
+		public function onDelete(int $id): void {
 
 			$channel = $this->cache->get($id);
 
@@ -195,24 +222,18 @@
 					return $this->sharkord->gateway->sendRpc("query", [
 						"input" => ["channelId" => (int) $channelId],
 						"path"  => "channels.get",
-					])->then(function (array $response) {
+					])->then(function (array $response) use ($channelId) {
 
 						$raw = $response['data']
 							?? throw new \RuntimeException(
-								"channels.get response missing 'data' after channel creation."
+								"channels.get response missing 'data' for channel ID {$channelId}."
 							);
-							
-						if (!isset($raw['id'])) {
-							throw new \RuntimeException(
-								"channels.get response returned a channel object missing 'id'."
-							);
-						}
 
-						$this->hydrate($raw);
+						$this->cache->add($raw);
 
-						return $this->cache->get((int) $raw['id'])
+						return $this->cache->get((int) $channelId)
 							?? throw new \RuntimeException(
-								"Newly created channel (ID: {$raw['id']}) is missing from cache after hydration."
+								"Channel ID {$channelId} was not found in cache after hydration."
 							);
 
 					});
@@ -224,14 +245,39 @@
 		}
 
 		/**
-		 * Retrieves a channel by ID or name from the local cache.
+		 * Retrieves a cached channel by ID or name.
 		 *
-		 * @param int|string $identifier The channel ID or name.
+		 * @param int|string $idOrName The channel ID (int) or name (string).
 		 * @return Channel|null The cached Channel model, or null if not found.
+		 *
+		 * @example
+		 * ```php
+		 * $channel = $sharkord->channels->get('general');
+		 * $channel?->sendMessage("Hello!");
+		 *
+		 * $channel = $sharkord->channels->get(42);
+		 * $channel?->sendMessage("Hello by ID!");
+		 * ```
 		 */
-		public function get(int|string $identifier): ?Channel {
+		public function get(int|string $idOrName): ?Channel {
 
-			return $this->cache->get($identifier);
+			return $this->cache->get($idOrName);
+
+		}
+
+		/**
+		 * Returns the number of channels currently held in the cache.
+		 *
+		 * @return int
+		 *
+		 * @example
+		 * ```php
+		 * echo "Cached channels: " . $sharkord->channels->count() . "\n";
+		 * ```
+		 */
+		public function count(): int {
+
+			return count($this->cache);
 
 		}
 
@@ -239,21 +285,17 @@
 		 * Returns the underlying Channels collection.
 		 *
 		 * @return ChannelsCollection
+		 *
+		 * @example
+		 * ```php
+		 * foreach ($sharkord->channels->collection() as $id => $channel) {
+		 *     echo "#{$channel->name}\n";
+		 * }
+		 * ```
 		 */
 		public function collection(): ChannelsCollection {
 
 			return $this->cache;
-
-		}
-
-		/**
-		 * Returns the count of cached channels.
-		 *
-		 * @return int
-		 */
-		public function count(): int {
-
-			return count($this->cache);
 
 		}
 

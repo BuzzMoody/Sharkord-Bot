@@ -14,7 +14,22 @@
 	 * Manages user lifecycle events, delegating all cache storage to a
 	 * Users collection instance.
 	 *
+	 * Accessible via `$sharkord->users`.
+	 *
 	 * @package Sharkord\Managers
+	 *
+	 * @example
+	 * ```php
+	 * $user = $sharkord->users->get(42);
+	 *
+	 * if ($user) {
+	 *     echo "{$user->name} is currently {$user->status}.\n";
+	 * }
+	 *
+	 * $sharkord->on(\Sharkord\Events::USER_JOIN, function(\Sharkord\Models\User $user): void {
+	 *     echo "{$user->name} just came online.\n";
+	 * });
+	 * ```
 	 */
 	class UserManager {
 
@@ -32,8 +47,9 @@
 		}
 
 		/**
-		 * Handles the hydration of a user.
+		 * Handles the hydration of a user from the initial join payload.
 		 *
+		 * @internal
 		 * @param array $raw The raw user data.
 		 * @return void
 		 */
@@ -44,12 +60,22 @@
 		}
 
 		/**
-		 * Handles the creation of a user.
+		 * Handles the server-initiated creation of a user account.
 		 *
+		 * Adds the user to the local cache and emits a `usercreate` event.
+		 *
+		 * @internal
 		 * @param array $raw The raw user data.
 		 * @return void
+		 *
+		 * @example
+		 * ```php
+		 * $sharkord->on(\Sharkord\Events::USER_CREATE, function(\Sharkord\Models\User $user): void {
+		 *     echo "New user account created: {$user->name}\n";
+		 * });
+		 * ```
 		 */
-		public function create(array $raw): void {
+		public function onCreate(array $raw): void {
 
 			if (!isset($raw['id'])) {
 				$this->sharkord->logger->warning("Cannot create user: missing 'id' in data.");
@@ -63,12 +89,22 @@
 		}
 
 		/**
-		 * Handles a user joining the server (sets status to online).
+		 * Handles a user joining the server (sets their status to online).
 		 *
+		 * Emits a `userjoin` event with the updated User model.
+		 *
+		 * @internal
 		 * @param array $raw The raw user data.
 		 * @return void
+		 *
+		 * @example
+		 * ```php
+		 * $sharkord->on(\Sharkord\Events::USER_JOIN, function(\Sharkord\Models\User $user): void {
+		 *     echo "{$user->name} has come online.\n";
+		 * });
+		 * ```
 		 */
-		public function join(array $raw): void {
+		public function onJoin(array $raw): void {
 
 			if (!isset($raw['id'])) {
 				$this->sharkord->logger->warning("Cannot process user join: missing 'id' in data.");
@@ -85,12 +121,22 @@
 		}
 
 		/**
-		 * Handles a user leaving the server (sets status to offline).
+		 * Handles a user leaving the server (sets their status to offline).
 		 *
+		 * Emits a `userleave` event with the updated User model.
+		 *
+		 * @internal
 		 * @param int $id The ID of the user leaving.
 		 * @return void
+		 *
+		 * @example
+		 * ```php
+		 * $sharkord->on(\Sharkord\Events::USER_LEAVE, function(\Sharkord\Models\User $user): void {
+		 *     echo "{$user->name} has gone offline.\n";
+		 * });
+		 * ```
 		 */
-		public function leave(int $id): void {
+		public function onLeave(int $id): void {
 
 			$user = $this->cache->get($id);
 
@@ -102,12 +148,27 @@
 		}
 
 		/**
-		 * Handles updates to user details (e.g., name change, ban, roles).
+		 * Handles a server-pushed update to user details (e.g. name change, ban, roles).
 		 *
+		 * Updates the cached model in place. Depending on what changed, one or more
+		 * of the `namechange`, `ban`, or `unban` events are emitted.
+		 *
+		 * @internal
 		 * @param array $raw The raw user data.
 		 * @return void
+		 *
+		 * @example
+		 * ```php
+		 * $sharkord->on(\Sharkord\Events::USER_BAN, function(\Sharkord\Models\User $user): void {
+		 *     echo "{$user->name} was banned.\n";
+		 * });
+		 *
+		 * $sharkord->on(\Sharkord\Events::USER_NAME_CHANGE, function(\Sharkord\Models\User $user): void {
+		 *     echo "A user changed their name to: {$user->name}\n";
+		 * });
+		 * ```
 		 */
-		public function update(array $raw): void {
+		public function onUpdate(array $raw): void {
 
 			if (!isset($raw['id'])) {
 				$this->sharkord->logger->warning("Cannot update user: missing 'id' in data.");
@@ -130,9 +191,11 @@
 			if ($nameChanged) {
 				$this->sharkord->emit('namechange', [$user]);
 			}
+
 			if ($gotBanned) {
 				$this->sharkord->emit('ban', [$user]);
 			}
+
 			if ($gotUnbanned) {
 				$this->sharkord->emit('unban', [$user]);
 			}
@@ -140,12 +203,22 @@
 		}
 
 		/**
-		 * Handles user deletion.
+		 * Handles the server-initiated deletion of a user account.
 		 *
+		 * Emits a `userdelete` event with the cached model before removing it.
+		 *
+		 * @internal
 		 * @param int $id The ID of the deleted user.
 		 * @return void
+		 *
+		 * @example
+		 * ```php
+		 * $sharkord->on(\Sharkord\Events::USER_DELETE, function(\Sharkord\Models\User $user): void {
+		 *     echo "User '{$user->name}' account was deleted.\n";
+		 * });
+		 * ```
 		 */
-		public function delete(int $id): void {
+		public function onDelete(int $id): void {
 
 			$user = $this->cache->get($id);
 
@@ -160,69 +233,35 @@
 		}
 
 		/**
-		 * Retrieves a user by ID or name.
+		 * Retrieves a cached user by ID.
 		 *
-		 * @param int|string $identifier The user ID or name.
-		 * @return User|null
-		 */
-		public function get(int|string $identifier): ?User {
-
-			return $this->cache->get($identifier);
-
-		}
-		
-		/**
-		 * Re-fetches all users from the server and updates the local cache in place.
-		 *
-		 * Existing User models held by the caller remain valid — each is updated via
-		 * updateFromArray() rather than replaced. New users not previously in cache
-		 * are added automatically.
-		 *
-		 * @return PromiseInterface Resolves with an array of all cached User models, rejects on failure.
+		 * @param int|string $id The user ID.
+		 * @return User|null The cached User model, or null if not found.
 		 *
 		 * @example
 		 * ```php
-		 * $sharkord->users->fetch()->then(function(array $users) {
-		 *     foreach ($users as $user) {
-		 *         echo "{$user->name}\n";
-		 *     }
-		 * });
+		 * $user = $sharkord->users->get(42);
+		 *
+		 * if ($user) {
+		 *     echo "{$user->name} is {$user->status}.\n";
+		 * }
 		 * ```
 		 */
-		public function fetch(): PromiseInterface {
+		public function get(int|string $id): ?User {
 
-			return $this->sharkord->gateway->sendRpc("query", [
-				"path" => "users.getAll",
-			])->then(function (array $response) {
-
-				$raw = $response['data']
-					?? throw new \RuntimeException("users.getAll response missing 'data'.");
-
-				foreach ($raw as $rawUser) {
-					$this->hydrate($rawUser);
-				}
-
-				return iterator_to_array($this->cache);
-
-			});
+			return $this->cache->get($id);
 
 		}
 
 		/**
-		 * Returns the underlying Users collection.
-		 *
-		 * @return UsersCollection
-		 */
-		public function collection(): UsersCollection {
-
-			return $this->cache;
-
-		}
-
-		/**
-		 * Returns the count of cached users.
+		 * Returns the number of users currently held in the cache.
 		 *
 		 * @return int
+		 *
+		 * @example
+		 * ```php
+		 * echo "Online users cached: " . $sharkord->users->count() . "\n";
+		 * ```
 		 */
 		public function count(): int {
 
@@ -230,6 +269,24 @@
 
 		}
 
+		/**
+		 * Returns the underlying Users collection.
+		 *
+		 * @return UsersCollection
+		 *
+		 * @example
+		 * ```php
+		 * foreach ($sharkord->users->collection() as $id => $user) {
+		 *     echo "{$id}: {$user->name}\n";
+		 * }
+		 * ```
+		 */
+		public function collection(): UsersCollection {
+
+			return $this->cache;
+
+		}
+
 	}
-	
+
 ?>
