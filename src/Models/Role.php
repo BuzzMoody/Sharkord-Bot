@@ -23,7 +23,7 @@
 	 * echo $role->name;        // "Admins"
 	 * echo $role->color;       // "#0085de"
 	 * echo $role->isDefault;   // false
-	 * echo $role->isPersistent // false
+	 * echo $role->isPersistent; // false
 	 * ```
 	 */
 	class Role {
@@ -82,8 +82,9 @@
 		 *
 		 * @param string     $name        The new role name.
 		 * @param string     $color       The new role colour as a CSS hex string (e.g. "#ff0000").
-		 * @param Permission ...$permissions One or more permissions to grant to the role.
-		 *                                   Any permission not listed will be revoked.
+		 * @param Permission ...$permissions Zero or more permissions to grant to the role.
+		 *                                   Any permission not listed will be revoked. Passing no
+		 *                                   permissions will revoke all permissions from the role.
 		 * @return PromiseInterface Resolves with true on success, rejects on failure.
 		 *
 		 * @example

@@ -242,7 +242,7 @@
 		/**
 		 * Retrieves a cached role by ID.
 		 *
-		 * @param int $id The role ID.
+		 * @param int|string $id The role ID.
 		 * @return Role|null The cached Role model, or null if not found.
 		 *
 		 * @example
@@ -254,7 +254,7 @@
 		 * }
 		 * ```
 		 */
-		public function get(int $id): ?Role {
+		public function get(int|string $id): ?Role {
 
 			return $this->cache->get($id);
 
@@ -267,13 +267,13 @@
 		 * updateFromArray() rather than replaced. New roles not previously in cache
 		 * are added automatically.
 		 *
-		 * @return PromiseInterface Resolves with an array of all cached Role models, rejects on failure.
+		 * @return PromiseInterface Resolves with an array<string, Role> keyed by role ID, rejects on failure.
 		 *
 		 * @example
 		 * ```php
 		 * $sharkord->roles->fetch()->then(function(array $roles) {
-		 *     foreach ($roles as $role) {
-		 *         echo "{$role->name}\n";
+		 *     foreach ($roles as $id => $role) {
+		 *         echo "{$id}: {$role->name}\n";
 		 *     }
 		 * });
 		 * ```
