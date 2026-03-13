@@ -91,6 +91,14 @@
 
 			unset($raw['creator'], $raw['role']);
 
+			if (($raw['expiresAt'] ?? null) === 0) {
+				$raw['expiresAt'] = null;
+			}
+
+			if (($raw['maxUses'] ?? null) === 0) {
+				$raw['maxUses'] = null;
+			}
+
 			$this->attributes = array_merge($this->attributes, $raw);
 
 		}
