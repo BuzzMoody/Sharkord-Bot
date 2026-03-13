@@ -7,6 +7,9 @@
 	use Sharkord\Sharkord;
 	use Sharkord\Collections\Servers as ServersCollection;
 	use Sharkord\Models\Server;
+	use React\Promise\PromiseInterface;
+	use Sharkord\Models\ServerSettings;
+	use Sharkord\Events;
 
 	/**
 	 * Class ServerManager
@@ -68,14 +71,62 @@
 		 *
 		 * @example
 		 * ```php
-		 * $sharkord->on(\Sharkord\Events::SERVER_UPDATE, function(\Sharkord\Models\Server $server): void {
+		 * $sharkord->on(\Sharkord\Events::SERVER_UPDATE, function (\Sharkord\Models\Server $server): void {
 		 *     echo "Server name is now: {$server->name}\n";
 		 * });
 		 * ```
 		 */
 		public function onUpdate(array $raw): void {
 
-			$this->cache->update($raw);
+			$server = $this->cache->update($raw);
+
+			if ($server !== null) {
+				$this->sharkord->emit(Events::SERVER_UPDATE, [$server]);
+			}
+
+		}
+
+		/**
+		 * Fetches the full administrative settings for the server via `others.getSettings`.
+		 *
+		 * Returns a {@see ServerSettings} model containing privileged fields such as
+		 * `secretToken` and `allowNewUsers` that are not included in the public
+		 * settings payload available on the {@see \Sharkord\Models\Server} model.
+		 *
+		 * Always performs a live API request — settings are not cached between calls.
+		 *
+		 * @return PromiseInterface Resolves with a {@see ServerSettings} instance, rejects on failure.
+		 *
+		 * @example
+		 * ```php
+		 * $sharkord->servers->getSettings()->then(function (\Sharkord\Models\ServerSettings $settings) {
+		 *     echo "Name:         {$settings->name}\n";
+		 *     echo "Allow signup: " . ($settings->allowNewUsers ? 'Yes' : 'No') . "\n";
+		 *     echo "DMs enabled:  " . ($settings->directMessagesEnabled ? 'Yes' : 'No') . "\n";
+		 *
+		 *     if ($settings->logo) {
+		 *         echo "Logo file:    {$settings->logo->originalName}\n";
+		 *     }
+		 * });
+		 *
+		 * // Fetch then immediately update a field
+		 * $sharkord->servers->getSettings()
+		 *     ->then(fn ($s) => $s->update(allowNewUsers: false))
+		 *     ->then(fn ()   => $sharkord->logger->info("Registrations closed."));
+		 * ```
+		 */
+		public function getSettings(): PromiseInterface {
+
+			return $this->sharkord->gateway->sendRpc("query", [
+				"path" => "others.getSettings",
+			])->then(function (array $response): ServerSettings {
+
+				$raw = $response['data']
+					?? throw new \RuntimeException("others.getSettings response missing 'data'.");
+
+				return ServerSettings::fromArray($raw, $this->sharkord);
+
+			});
 
 		}
 
