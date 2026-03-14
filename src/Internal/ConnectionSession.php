@@ -249,22 +249,29 @@
 		 * Because the message no longer exists on the server the full model cannot
 		 * be reconstructed. The raw payload array is passed to the event directly.
 		 *
-		 * @param mixed $raw The raw event payload. Expected to contain at minimum an `id` key.
+		 * The server sends `messageId` as the identifier key; this is normalised to
+		 * `id` for consistency with the rest of the framework before the event is
+		 * emitted.
+		 *
+		 * @param mixed $raw The raw event payload. Expected to contain at minimum a `messageId` key.
 		 * @return void
 		 *
 		 * @example
 		 * ```php
 		 * $sharkord->on(\Sharkord\Events::MESSAGE_DELETE, function(array $data): void {
-		 *     echo "Message {$data['id']} was deleted.\n";
+		 *     echo "Message {$data['id']} was deleted from channel {$data['channelId']}.\n";
 		 * });
 		 * ```
 		 */
 		private function onMessageDelete(mixed $raw): void {
 
-			if (!is_array($raw) || !isset($raw['id'])) {
+			if (!is_array($raw) || !isset($raw['messageId'])) {
 				$this->logger->warning("Received malformed message-delete payload.");
 				return;
 			}
+
+			$raw['id'] = $raw['messageId'];
+			unset($raw['messageId']);
 
 			$this->sharkord->messages->onDelete($raw['id']);
 
