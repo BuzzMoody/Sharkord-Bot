@@ -44,6 +44,7 @@
 	 * @property-read int              $storageSpaceQuotaByUser         Per-user storage quota in bytes, or 0 for unlimited.
 	 * @property-read string           $storageOverflowAction           Action taken when storage is full (e.g. 'prevent').
 	 * @property-read bool             $enablePlugins                   Whether server plugins are enabled.
+	 * @property-read bool             $enableSearch                    Whether server search is enabled.
 	 * @property-read int|null         $webRtcMaxBitrate                Maximum WebRTC bitrate in bits per second.
 	 * @property-read Attachment|null  $logo                            The server logo as an Attachment, or null.
 	 *
@@ -127,6 +128,7 @@
 		 * @param bool|null   $allowNewUsers          Whether to permit new user registrations.
 		 * @param bool|null   $directMessagesEnabled  Whether to enable direct messaging server-wide.
 		 * @param bool|null   $enablePlugins          Whether to enable server plugins.
+		 * @param bool|null   $enableSearch          Whether to enable server-wide search.
 		 * @return PromiseInterface Resolves with true on success, rejects on failure.
 		 *
 		 * @example
@@ -136,6 +138,7 @@
 		 *         name: 'The Boyz',
 		 *         allowNewUsers: false,
 		 *         directMessagesEnabled: true,
+		 *         nableSearch: true,
 		 *     );
 		 * })->then(function () {
 		 *     echo "Settings updated!\n";
@@ -149,11 +152,13 @@
 			?bool   $allowNewUsers = null,
 			?bool   $directMessagesEnabled = null,
 			?bool   $enablePlugins = null,
+			?bool   $enableSearch = null,
 		): PromiseInterface {
 
 			return $this->guardedAsync(function () use (
 				$name, $description, $password,
-				$allowNewUsers, $directMessagesEnabled, $enablePlugins
+				$allowNewUsers, $directMessagesEnabled,
+				$enablePlugins, $enableSearch
 			) {
 
 				$this->sharkord->guard->requirePermission(Permission::MANAGE_SETTINGS);
@@ -165,6 +170,7 @@
 					'allowNewUsers'         => $allowNewUsers,
 					'directMessagesEnabled' => $directMessagesEnabled,
 					'enablePlugins'         => $enablePlugins,
+					'enableSearch'          => $enableSearch,
 				], fn(mixed $v): bool => $v !== null);
 
 				if (empty($input)) {
