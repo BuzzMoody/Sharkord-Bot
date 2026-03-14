@@ -4,6 +4,10 @@
 
 SharkordPHP is a lightweight, asynchronous, vibe-coded [Sharkord](https://github.com/Sharkord/sharkord) framework built on top of [ReactPHP](https://reactphp.org/). It handles the heavy lifting of WebSocket connections and event management, allowing you to focus on writing commands and logic.
 
+## Documentation
+
+For details documentation, please visit: http://sharkordphp.xyz/
+
 ## Features
 
 * **Asynchronous:** Built on ReactPHP's event loop for non-blocking I/O.
@@ -55,6 +59,7 @@ Create a file named `bot.php` (or `index.php`) and add the following code. This 
 	use Sharkord\Sharkord;
 	use Sharkord\Models\Message;
 	use Sharkord\Models\User;
+	use Sharkord\Events;
 
 	/*
 	* Supports pulling environment variables from .env file as well as Docker container.
@@ -62,14 +67,13 @@ Create a file named `bot.php` (or `index.php`) and add the following code. This 
 	*/
 	$sharkord = new Sharkord(
 		config: [
-			'identity' 	=> $_ENV['CHAT_USERNAME'],
-			'password'	=> $_ENV['CHAT_PASSWORD'],
-			'host'		=> $_ENV['CHAT_HOST'],
+			'identity' 	=> 'username',
+			'password'	=> 'password',
+			'host'		=> 'host.au',
 		],
 		logLevel: 'Notice',
 		reconnect: true,
-		maxReconnectAttempts: 5
-		
+		maxReconnectAttempts: 5	
 	);
 	
 	/*
@@ -78,11 +82,11 @@ Create a file named `bot.php` (or `index.php`) and add the following code. This 
 	*/
 	# $sharkord->commands->loadFromDirectory(__DIR__ . '/Commands');
 
-	$sharkord->on('ready', function() use ($sharkord) {
+	$sharkord->on(Events::READY, function() use ($sharkord) {
 		$sharkord->logger->notice("Logged in as {$sharkord->bot->name} and ready to chat!");
 	});
 
-	$sharkord->on('message', function(Message $message) use ($sharkord) {
+	$sharkord->on(Events::MESSAGE_CREATE, function(Message $message) use ($sharkord) {
 		
 		$sharkord->logger->notice(sprintf(
 			"[#%s] %s: %s",
@@ -182,40 +186,6 @@ Open your terminal and run:
 
 ```bash
 php bot.php
-```
-
-## Advanced Usage
-
-### Using Namespaces
-If you prefer to organize your commands with namespaces (PSR-4 style), you can pass the namespace as a second argument to `loadCommands`.
-
-```php
-$sharkord->commands->loadFromDirectory(__DIR__ . '/src/Commands', 'MyBot\\Commands\\');
-```
-
-### Event Listeners
-You can hook into events directly from your `bot.php` file:
-
-```php
-$sharkord->on('ready', function() {
-    //returns when the bot is connected to the server and all users, roles, channels and permissions are cached.
-});
-
-$sharkord->on('message', function(Message $message) {
-    //returns the message sent to the server by any user
-});
-
-$sharkord->on('namechange', function(User $user) {
-   //returns a user who has changed their name
-});
-
-$sharkord->on('ban', function(User $user) {
-   //returns a user who has been banned
-});
-
-$sharkord->on('unban', function(User $user) {
-   //returns a user who has been unbanned
-});
 ```
 
 ## License

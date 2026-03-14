@@ -38,3 +38,11 @@ jobs:
           done
           
           echo "PHP syntax check passed successfully."
+
+      - name: Trigger docs rebuild (main only)
+        if: github.ref == 'refs/heads/main'
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.DOCS_DISPATCH_TOKEN }}
+          repository: BuzzMoody/SharkordPHP-Docs
+          event-type: sharkordphp-updated
