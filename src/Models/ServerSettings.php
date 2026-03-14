@@ -122,13 +122,13 @@
 		 *
 		 * Requires the MANAGE_SETTINGS permission.
 		 *
-		 * @param string|null $name                  New server display name.
+		 * @param string|null $name                   New server display name.
 		 * @param string|null $description            New server description.
 		 * @param string|null $password               New server password. Pass an empty string to remove an existing password.
 		 * @param bool|null   $allowNewUsers          Whether to permit new user registrations.
 		 * @param bool|null   $directMessagesEnabled  Whether to enable direct messaging server-wide.
 		 * @param bool|null   $enablePlugins          Whether to enable server plugins.
-		 * @param bool|null   $enableSearch          Whether to enable server-wide search.
+		 * @param bool|null   $enableSearch           Whether to enable server-wide search.
 		 * @return PromiseInterface Resolves with true on success, rejects on failure.
 		 *
 		 * @example
