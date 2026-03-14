@@ -6,7 +6,7 @@ SharkordPHP is a lightweight, asynchronous, vibe-coded [Sharkord](https://github
 
 ## Documentation
 
-For details documentation, please visit: http://sharkordphp.xyz/
+For details documentation, please visit: https://sharkordphp.xyz/
 
 ## Features
 
@@ -45,8 +45,8 @@ my-bot/
 
 ### 2. Create the Entry File (`bot.php`)
 
-Create a file named `bot.php` (or `index.php`) and add the following code. This initializes the bot and tells it where to find your commands. See `examples/Main.php` for latest example.
-
+ Create a file named `bot.php` (or `index.php`) and add the following code. This initializes the bot and tells it where to find your commands. For the latest example, see the Getting Started guide in the documentation: https://sharkordphp.xyz/
+ 
 ```php
 <?php
 
@@ -64,12 +64,13 @@ Create a file named `bot.php` (or `index.php`) and add the following code. This 
 	/*
 	* Supports pulling environment variables from .env file as well as Docker container.
 	* Hardcode your values at your own peril
+	* Example uses SHARKORD_IDENTITY, SHARKORD_PASSWORD and SHARKORD_HOST env vars.
 	*/
 	$sharkord = new Sharkord(
 		config: [
-			'identity' 	=> 'username',
-			'password'	=> 'password',
-			'host'		=> 'host.au',
+			'identity' 	=> $_ENV['SHARKORD_IDENTITY'] ?? 'your-username',
+ 			'password'	=> $_ENV['SHARKORD_PASSWORD'] ?? 'your-password',
+ 			'host'		=> $_ENV['SHARKORD_HOST'] ?? 'server.example.com',
 		],
 		logLevel: 'Notice',
 		reconnect: true,
@@ -82,8 +83,8 @@ Create a file named `bot.php` (or `index.php`) and add the following code. This 
 	*/
 	# $sharkord->commands->loadFromDirectory(__DIR__ . '/Commands');
 
-	$sharkord->on(Events::READY, function() use ($sharkord) {
-		$sharkord->logger->notice("Logged in as {$sharkord->bot->name} and ready to chat!");
+	$sharkord->on(Events::READY, function(User $bot) use ($sharkord) {
+ 		$sharkord->logger->notice("Logged in as {$bot->name} and ready to chat!");
 	});
 
 	$sharkord->on(Events::MESSAGE_CREATE, function(Message $message) use ($sharkord) {
@@ -117,7 +118,7 @@ Create a file named `bot.php` (or `index.php`) and add the following code. This 
 
 Create a `Commands` folder. Inside, create a file named `Ping.php`.
 
-Sharkord commands do **not** require namespaces, making them easy to write. Just implement the `CommandInterface`. See `examples/Commands/Ping.php` for latest example.
+Sharkord commands do **not** require namespaces, making them easy to write. Just implement the `CommandInterface`. 
 
 ```php
 <?php
