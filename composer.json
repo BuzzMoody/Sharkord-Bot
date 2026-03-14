@@ -5,7 +5,7 @@
   },
   "description": "A ReactPHP Chatbot Framework for Sharkord",
   "type": "library",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "license": "MIT",
   "require": {
     "php": "^8.5",
