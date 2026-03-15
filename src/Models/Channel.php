@@ -104,10 +104,11 @@
 
 			if ($message instanceof MessageBuilder) {
 
+				$html         = $message->buildHtml();
 				$pendingFiles = $message->getPendingFiles();
 
 				if (empty($pendingFiles)) {
-					return $this->dispatchMessage($message->buildHtml(), []);
+					return $this->dispatchMessage($html, []);
 				}
 
 				$uploads = array_map(
@@ -116,7 +117,7 @@
 				);
 
 				return all($uploads)->then(
-					fn(array $fileIds) => $this->dispatchMessage($message->buildHtml(), $fileIds)
+					fn(array $fileIds) => $this->dispatchMessage($html, $fileIds)
 				);
 
 			}
