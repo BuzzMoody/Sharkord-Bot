@@ -12,6 +12,8 @@
 	 *
 	 * An array-accessible, iterable cache of Category objects keyed by category ID (string).
 	 *
+	 * Supports lookup by both integer ID and category name via get().
+	 *
 	 * @implements \ArrayAccess<string, Category>
 	 * @implements \IteratorAggregate<string, Category>
 	 *
@@ -19,7 +21,9 @@
 	 *
 	 * @example
 	 * ```php
+	 * // Look up by ID or name
 	 * $category = $sharkord->categories->collection()->get(1);
+	 * $category = $sharkord->categories->collection()->get('🎮 Gaming');
 	 *
 	 * foreach ($sharkord->categories->collection() as $id => $category) {
 	 *     echo "{$category->name}\n";
@@ -109,14 +113,24 @@
 		}
 
 		/**
-		 * Retrieves a category by ID.
+		 * Retrieves a category by ID or name.
 		 *
-		 * @param int|string $id The category ID.
+		 * @param int|string $identifier The category ID or display name.
 		 * @return Category|null
 		 */
-		public function get(int|string $id): ?Category {
+		public function get(int|string $identifier): ?Category {
 
-			return $this->categories[(string) $id] ?? null;
+			if (is_int($identifier) || ctype_digit((string) $identifier)) {
+				return $this->categories[(string)(int) $identifier] ?? null;
+			}
+
+			foreach ($this->categories as $category) {
+				if ($category->name === $identifier) {
+					return $category;
+				}
+			}
+
+			return null;
 
 		}
 
@@ -168,5 +182,5 @@
 		}
 
 	}
-	
+
 ?>
