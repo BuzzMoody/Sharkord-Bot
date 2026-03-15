@@ -240,24 +240,21 @@
 		}
 
 		/**
-		 * Retrieves a cached role by ID.
+		 * Retrieves a cached role by ID or name.
 		 *
-		 * @param int|string $id The role ID.
+		 * @param int|string $idOrName The role ID or display name.
 		 * @return Role|null The cached Role model, or null if not found.
 		 *
 		 * @example
 		 * ```php
 		 * $role = $sharkord->roles->get(3);
-		 *
-		 * if ($role) {
-		 *     echo "Role: {$role->name}\n";
-		 * }
+		 * $role = $sharkord->roles->get('Moderators');
 		 * ```
 		 */
-		public function get(int|string $id): ?Role {
-
-			return $this->cache->get($id);
-
+		public function get(int|string $idOrName): ?Role {
+ 
+			return $this->cache->get($idOrName);
+ 
 		}
 
 		/**

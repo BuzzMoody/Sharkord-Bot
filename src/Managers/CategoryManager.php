@@ -371,24 +371,21 @@
 		}
 
 		/**
-		 * Retrieves a category by ID from the local cache.
+		 * Retrieves a cached category by ID or name.
 		 *
-		 * @param int $id The category ID.
+		 * @param int|string $idOrName The category ID or display name.
 		 * @return Category|null The cached Category model, or null if not found.
 		 *
 		 * @example
 		 * ```php
 		 * $category = $sharkord->categories->get(3);
-		 *
-		 * if ($category) {
-		 *     echo "Found category: {$category->name}\n";
-		 * }
+		 * $category = $sharkord->categories->get('🎮 Gaming');
 		 * ```
 		 */
-		public function get(int $id): ?Category {
-
-			return $this->cache->get($id);
-
+		public function get(int|string $idOrName): ?Category {
+ 
+			return $this->cache->get($idOrName);
+ 
 		}
 
 		/**

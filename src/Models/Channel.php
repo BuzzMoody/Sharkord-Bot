@@ -5,11 +5,14 @@
 	namespace Sharkord\Models;
 
 	use Sharkord\Sharkord;
+	use Sharkord\Builders\MessageBuilder;
 	use Sharkord\Permission;
 	use Sharkord\ChannelPermissionFlag;
 	use Sharkord\Internal\GuardedAsync;
 	use Sharkord\Internal\PromiseUtils;
 	use React\Promise\PromiseInterface;
+	use function React\Promise\all;
+	use function React\Promise\reject;
 
 	/**
 	 * Class Channel
@@ -72,68 +75,54 @@
 		/**
 		 * Sends a message to this channel.
 		 *
-		 * @param string $text The message content.
+		 * Accepts either a plain text string or a {@see MessageBuilder} instance.
+		 * When a builder is provided, each queued file is read synchronously and
+		 * then all HTTP uploads are dispatched concurrently. If the builder has no
+		 * queued files, the upload step is skipped entirely.
+		 *
+		 * @param string|MessageBuilder $message The message text or a configured MessageBuilder.
 		 * @return PromiseInterface Resolves with true on success, rejects on failure.
 		 *
 		 * @example
 		 * ```php
+		 * // Plain text
 		 * $sharkord->channels->get('general')->sendMessage('Hello, world!');
 		 * ```
+		 *
+		 * @example
+		 * ```php
+		 * // With attachments via MessageBuilder
+		 * $builder = \Sharkord\Builders\MessageBuilder::create()
+		 *     ->setContent('Here are your files!')
+		 *     ->addFile('/tmp/photo.jpg')
+		 *     ->addFile('/tmp/report.pdf');
+		 *
+		 * $sharkord->channels->get('media')->sendMessage($builder);
+		 * ```
 		 */
-		public function sendMessage(string $text): PromiseInterface {
+		public function sendMessage(string|MessageBuilder $message): PromiseInterface {
 
-			return $this->sharkord->gateway->sendRpc("mutation", [
-				"input" => [
-					"content"   => "<p>" . htmlspecialchars($text) . "</p>",
-					"channelId" => $this->id,
-					"files"     => [],
-				],
-				"path" => "messages.send",
-			])->then(function ($response) {
+			if ($message instanceof MessageBuilder) {
 
-				if (isset($response['type']) && $response['type'] === 'data') {
-					return true;
+				$html         = $message->buildHtml();
+				$pendingFiles = $message->getPendingFiles();
+
+				if (empty($pendingFiles)) {
+					return $this->dispatchMessage($html, []);
 				}
 
-				throw new \RuntimeException(
-					"Failed to send message. Server responded with: " . json_encode($response)
+				$uploads = array_map(
+					fn(array $file) => $this->uploadFile($file['path'], $file['mime']),
+					$pendingFiles
 				);
 
-			});
-
-		}
-
-		/**
-		 * Sends a pre-built HTML string to the channel without escaping.
-		 *
-		 * Intended for internal framework use where the content has already been
-		 * constructed as safe HTML (e.g., mention spans). For plain text, use
-		 * sendMessage() instead.
-		 *
-		 * @internal
-		 * @param string $html The raw HTML content string.
-		 * @return PromiseInterface Resolves with true on success, rejects on failure.
-		 */
-		public function sendRawMessage(string $html): PromiseInterface {
-
-			return $this->sharkord->gateway->sendRpc("mutation", [
-				"input" => [
-					"content"   => "<p>{$html}</p>",
-					"channelId" => $this->id,
-					"files"     => [],
-				],
-				"path" => "messages.send",
-			])->then(function ($response) {
-
-				if (isset($response['type']) && $response['type'] === 'data') {
-					return true;
-				}
-
-				throw new \RuntimeException(
-					"Failed to send message. Server responded with: " . json_encode($response)
+				return all($uploads)->then(
+					fn(array $fileIds) => $this->dispatchMessage($html, $fileIds)
 				);
 
-			});
+			}
+
+			return $this->dispatchMessage("<p>" . htmlspecialchars($message, ENT_QUOTES, 'UTF-8') . "</p>", []);
 
 		}
 
@@ -230,6 +219,89 @@
 
 				throw new \RuntimeException(
 					"Failed to mark channel as read. Server responded with: " . json_encode($response)
+				);
+
+			});
+
+		}
+
+		/**
+		 * Uploads a local file to the Sharkord storage endpoint.
+		 *
+		 * Reads the file at $filePath synchronously and posts it as a raw binary
+		 * stream to `/upload`. Resolves with the server-assigned file UUID, which
+		 * is then queued internally by {@see \Sharkord\Builders\MessageBuilder} when
+		 * building a message with attachments.
+		 *
+		 * The MIME type is detected automatically via mime_content_type() when
+		 * omitted. If detection fails, `application/octet-stream` is used as a safe
+		 * fallback.
+		 *
+		 * Note: file_get_contents() is synchronous and will block the event loop
+		 * for the duration of the read. Avoid uploading very large files without
+		 * considering the impact on other pending operations.
+		 *
+		 * @param string      $filePath The absolute or relative path to the file to upload.
+		 * @param string|null $mimeType MIME type override. Detected automatically when null.
+		 * @return PromiseInterface Resolves with the file UUID string, rejects on failure.
+		 *
+		 * @example
+		 * ```php
+		 * // Upload a file and retrieve its UUID for use elsewhere.
+		 * $sharkord->channels->get('media')
+		 *     ->uploadFile('/tmp/screenshot.png')
+		 *     ->then(function(string $fileId) {
+		 *         echo "File ID: {$fileId}\n";
+		 *     });
+		 * ```
+		 */
+		public function uploadFile(string $filePath, ?string $mimeType = null): PromiseInterface {
+
+			if (!is_file($filePath) || !is_readable($filePath)) {
+				return reject(new \RuntimeException("File is not readable: {$filePath}"));
+			}
+
+			$contents = file_get_contents($filePath);
+
+			if ($contents === false) {
+				return reject(new \RuntimeException("Failed to read file contents: {$filePath}"));
+			}
+
+			$fileName  = basename($filePath);
+			$mimeType ??= mime_content_type($filePath) ?: 'application/octet-stream';
+
+			return $this->sharkord->http->upload($contents, $fileName, $mimeType);
+
+		}
+
+		/**
+		 * Dispatches a `messages.send` mutation with a pre-built HTML body and an already-resolved file UUID list.
+		 *
+		 * The single authoritative send path. All public send methods funnel through here.
+		 * Callers are responsible for constructing the HTML string — this method performs
+		 * no escaping. Use {@see MessageBuilder::buildHtml()} or wrap plain text manually.
+		 *
+		 * @param string   $html    The fully constructed HTML body (e.g. '<p>Hello!</p>').
+		 * @param string[] $fileIds Pre-resolved file UUIDs from the upload endpoint.
+		 * @return PromiseInterface Resolves with true on success, rejects on failure.
+		 */
+		private function dispatchMessage(string $html, array $fileIds): PromiseInterface {
+
+			return $this->sharkord->gateway->sendRpc("mutation", [
+				"input" => [
+					"content"   => $html,
+					"channelId" => $this->id,
+					"files"     => $fileIds,
+				],
+				"path" => "messages.send",
+			])->then(function ($response): bool {
+
+				if (isset($response['type']) && $response['type'] === 'data') {
+					return true;
+				}
+
+				throw new \RuntimeException(
+					"Failed to send message. Server responded with: " . json_encode($response)
 				);
 
 			});
@@ -408,6 +480,8 @@
 
 				$this->sharkord->guard->requirePermission(Permission::MANAGE_CHANNEL_PERMISSIONS);
 
+				// Note: channels.getPermissions uses "mutation" wire type — this is intentional
+				// and matches observed server behaviour, despite being a read operation.
 				return $this->sharkord->gateway->sendRpc("mutation", [
 					"input" => ["channelId" => $this->id],
 					"path"  => "channels.getPermissions",
@@ -495,7 +569,7 @@
 		 *
 		 * Requires the MANAGE_CHANNEL_PERMISSIONS permission.
 		 *
-		 * @param int                   $roleId      The ID of the role to update.
+		 * @param int                   $roleId       The ID of the role to update.
 		 * @param ChannelPermissionFlag ...$permissions One or more permission flags to allow.
 		 * @return PromiseInterface Resolves with true on success, rejects on failure.
 		 *

@@ -12,6 +12,8 @@
 	 *
 	 * An array-accessible, iterable cache of Role objects keyed by role ID (string).
 	 *
+	 * Supports lookup by both integer ID and role name via get().
+	 *
 	 * @implements \ArrayAccess<string, Role>
 	 * @implements \IteratorAggregate<string, Role>
 	 *
@@ -19,7 +21,9 @@
 	 *
 	 * @example
 	 * ```php
+	 * // Look up by ID or name
 	 * $role = $sharkord->roles->collection()->get(1);
+	 * $role = $sharkord->roles->collection()->get('Moderators');
 	 *
 	 * foreach ($sharkord->roles->collection() as $id => $role) {
 	 *     echo "{$role->name}\n";
@@ -109,14 +113,24 @@
 		}
 
 		/**
-		 * Retrieves a role by ID.
+		 * Retrieves a role by ID or name.
 		 *
-		 * @param int|string $id The role ID.
+		 * @param int|string $identifier The role ID or display name.
 		 * @return Role|null
 		 */
-		public function get(int|string $id): ?Role {
+		public function get(int|string $identifier): ?Role {
 
-			return $this->roles[(string) $id] ?? null;
+			if (is_int($identifier) || ctype_digit((string) $identifier)) {
+				return $this->roles[(string)(int) $identifier] ?? null;
+			}
+
+			foreach ($this->roles as $role) {
+				if ($role->name === $identifier) {
+					return $role;
+				}
+			}
+
+			return null;
 
 		}
 
@@ -168,5 +182,5 @@
 		}
 
 	}
-	
+
 ?>
