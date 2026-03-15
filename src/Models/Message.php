@@ -8,7 +8,8 @@
 	use Sharkord\Permission;
 	use Sharkord\Internal\GuardedAsync;
 	use Sharkord\Collections\Reactions;
-	
+	use Sharkord\Builders\MessageBuilder;
+
 	use React\Promise\PromiseInterface;
 	use React\Promise\Promise;
 	use function React\Promise\reject;
@@ -74,16 +75,31 @@
 		/**
 		 * Replies to this message in the same channel.
 		 *
+		 * Builds a {@see MessageBuilder} with the message author set as the reply
+		 * target, so the mention span is prepended automatically. Delegates to
+		 * {@see Channel::sendMessage()} for dispatch.
+		 *
 		 * @param string $text The reply content.
 		 * @return PromiseInterface Resolves when the message is sent.
+		 *
+		 * @example
+		 * ```php
+		 * $sharkord->on(\Sharkord\Events::MESSAGE_CREATE, function(\Sharkord\Models\Message $message) {
+		 *     if ($message->content === '!ping') {
+		 *         $message->reply('Pong!');
+		 *     }
+		 * });
+		 * ```
 		 */
 		public function reply(string $text): PromiseInterface {
 
 			if ($this->channel && $this->author) {
 
-				$author  = htmlspecialchars($this->author->name, ENT_QUOTES, 'UTF-8');
-				$mention = "<span data-type=\"mention\" data-user-id=\"{$this->author->id}\" class=\"mention\">@{$author}</span>";
-				return $this->channel->sendRawMessage("{$mention} " . htmlspecialchars($text));
+				$builder = MessageBuilder::create()
+					->setReply($this->author)
+					->setContent($text);
+
+				return $this->channel->sendMessage($builder);
 
 			}
 
@@ -194,33 +210,7 @@
 			});
 
 		}
-		
-		/**
-		 * Validates whether a given string is exactly one single emoji.
-		 *
-		 * @param string $emoji The string to validate.
-		 * @return bool Returns true if the string is exactly one valid emoji sequence, false otherwise.
-		 */
-		private function isEmoji(string $emoji): bool {
-			
-			$pattern = '/^\p{Extended_Pictographic}[\x{FE0F}\p{M}\x{1F3FB}-\x{1F3FF}]*(?:\x{200D}\p{Extended_Pictographic}[\x{FE0F}\p{M}\x{1F3FB}-\x{1F3FF}]*)*$/u';
-			return preg_match($pattern, $emoji) === 1;
-			
-		}
-		
-		/**
-		 * Turns the visual emoji into the text name
-		 *
-		 * @param string $emoji The emoji to convert.
-		 * @return string Returns the text string value of the emoji
-		 */
-		private function emojiToText(string $emoji): string {
-			
-			$unicodeName = LitEmoji::encodeShortcode($emoji);
-			return str_replace(array(' ', ':'), array('_', ''), strtolower($unicodeName));
-			
-		}
-		
+
 		/**
 		 * Toggles the pinned state of this message.
 		 *
@@ -350,6 +340,32 @@
 			
 		}
 		
+		/**
+		 * Validates whether a given string is exactly one single emoji.
+		 *
+		 * @param string $emoji The string to validate.
+		 * @return bool Returns true if the string is exactly one valid emoji sequence, false otherwise.
+		 */
+		private function isEmoji(string $emoji): bool {
+			
+			$pattern = '/^\p{Extended_Pictographic}[\x{FE0F}\p{M}\x{1F3FB}-\x{1F3FF}]*(?:\x{200D}\p{Extended_Pictographic}[\x{FE0F}\p{M}\x{1F3FB}-\x{1F3FF}]*)*$/u';
+			return preg_match($pattern, $emoji) === 1;
+			
+		}
+		
+		/**
+		 * Turns the visual emoji into the text name.
+		 *
+		 * @param string $emoji The emoji to convert.
+		 * @return string Returns the text string value of the emoji.
+		 */
+		private function emojiToText(string $emoji): string {
+			
+			$unicodeName = LitEmoji::encodeShortcode($emoji);
+			return str_replace(array(' ', ':'), array('_', ''), strtolower($unicodeName));
+			
+		}
+
 		/**
 		 * Parses all user mention spans from a raw HTML content string.
 		 *
