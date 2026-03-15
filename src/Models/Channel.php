@@ -76,9 +76,9 @@
 		 * Sends a message to this channel.
 		 *
 		 * Accepts either a plain text string or a {@see MessageBuilder} instance.
-		 * When a builder is provided, all queued files are uploaded concurrently
-		 * before the message is dispatched. If the builder has no queued files,
-		 * the upload step is skipped entirely.
+		 * When a builder is provided, each queued file is read synchronously and
+		 * then all HTTP uploads are dispatched concurrently. If the builder has no
+		 * queued files, the upload step is skipped entirely.
 		 *
 		 * @param string|MessageBuilder $message The message text or a configured MessageBuilder.
 		 * @return PromiseInterface Resolves with true on success, rejects on failure.

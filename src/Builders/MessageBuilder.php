@@ -14,9 +14,10 @@
 	 *
 	 * Build a message with {@see MessageBuilder::create()}, configure it with
 	 * the fluent setters, then pass the instance directly to
-	 * {@see \Sharkord\Models\Channel::sendMessage()}. The builder is
-	 * channel-agnostic until that point and can be prepared ahead of time or
-	 * reused across multiple sends.
+	 * {@see \Sharkord\Models\Channel::sendMessage()}. Each queued file is read
+	 * synchronously when the message is sent; the HTTP uploads are then dispatched
+	 * concurrently. The builder is channel-agnostic until that point and can be
+	 * prepared ahead of time or reused across multiple sends.
 	 *
 	 * @package Sharkord\Builders
 	 *
@@ -108,8 +109,10 @@
 		 * Queues a local file to be uploaded and attached to the message.
 		 *
 		 * Files are not uploaded until the builder is passed to
-		 * {@see \Sharkord\Models\Channel::sendMessage()}. Multiple calls append
-		 * files in the order they are added. The MIME type is detected
+		 * {@see \Sharkord\Models\Channel::sendMessage()}. Each file is read
+		 * synchronously at that point; the resulting HTTP uploads are then
+		 * dispatched concurrently. Multiple calls append files in the order they
+		 * are added. The MIME type is detected
 		 * automatically via mime_content_type() when omitted; if detection fails,
 		 * `application/octet-stream` is used as a safe fallback.
 		 *

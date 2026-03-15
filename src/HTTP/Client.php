@@ -145,33 +145,47 @@
 				return reject(new \RuntimeException("Cannot upload: client has not authenticated yet."));
 			}
 
+			$safeFileName = $this->sanitizeHeaderValue($fileName);
+			$safeMimeType = $this->sanitizeHeaderValue($mimeType);
+
 			$uploadUrl = "https://{$this->config['host']}/upload";
-			$this->logger->debug("Uploading '{$fileName}' ({$mimeType}, " . strlen($contents) . " bytes)...");
+			$this->logger->debug("Uploading '{$safeFileName}' ({$safeMimeType}, " . strlen($contents) . " bytes)...");
 
 			return $this->browser->post(
 				$uploadUrl,
 				[
 					'Content-Type' => 'application/octet-stream',
-					'x-file-name'  => $fileName,
-					'x-file-type'  => $mimeType,
+					'x-file-name'  => $safeFileName,
+					'x-file-type'  => $safeMimeType,
 					'x-token'      => $this->token,
 				],
 				$contents
 			)->then(
 				function (ResponseInterface $response): string {
 
-					$body = (string) $response->getBody();
-					$data = json_decode($body, true);
+					$status = $response->getStatusCode();
+					$body   = (string) $response->getBody();
+
+					if ($status < 200 || $status >= 300) {
+						throw new \RuntimeException(
+							"Upload failed with HTTP {$status}. Body: {$body}"
+						);
+					}
 
 					// Primary: JSON response with an 'id' field
-					if (is_array($data) && isset($data['id']) && is_string($data['id'])) {
-						$this->logger->debug("Upload successful. File ID: {$data['id']}");
-						return $data['id'];
+					try {
+						$data = json_decode($body, true, 512, JSON_THROW_ON_ERROR);
+						if (is_array($data) && isset($data['id']) && is_string($data['id'])) {
+							$this->logger->debug("Upload successful. File ID: {$data['id']}");
+							return $data['id'];
+						}
+					} catch (\JsonException) {
+						// Body is not JSON — fall through to plain-string check
 					}
 
 					// Fallback: server returned the UUID as a plain string body
 					$uuid = trim($body);
-					if ($uuid !== '') {
+					if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $uuid)) {
 						$this->logger->debug("Upload successful (plain body). File ID: {$uuid}");
 						return $uuid;
 					}
@@ -188,6 +202,22 @@
 
 				}
 			);
+
+		}
+
+		/**
+		 * Strips control characters from a header value to prevent header injection.
+		 *
+		 * Removes all ASCII control characters (0x00–0x1F and 0x7F), which includes
+		 * CR (\r), LF (\n), and NUL. This prevents header injection via crafted
+		 * filenames or MIME types while preserving valid UTF-8 characters.
+		 *
+		 * @param string $value The raw header value.
+		 * @return string The sanitized header value.
+		 */
+		private function sanitizeHeaderValue(string $value): string {
+
+			return preg_replace('/[\x00-\x1F\x7F]/', '', $value);
 
 		}
 
