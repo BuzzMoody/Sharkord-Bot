@@ -63,6 +63,7 @@
 		public DmManager       $dms;
 		public CommandRouter   $commands;
 		public LoggerInterface $logger;
+		public Scheduler       $scheduler;
 		
 		/** @var User|null The framework's own authenticated user object. */
 		public ?User $bot = null;
@@ -107,6 +108,7 @@
 			$this->invites    = new InviteManager($this);
 			$this->commands   = new CommandRouter($this);
 			$this->guard 	  = new Guard($this);
+			$this->scheduler  = new Scheduler($this->loop);
 
 			$this->http    = new Client($this->config, $this->loop, $this->logger);
 			$this->gateway = new Gateway($this->config, $this->loop, $this->logger);
