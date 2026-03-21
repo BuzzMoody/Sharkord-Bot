@@ -67,6 +67,22 @@
 		
 		/** @var User|null The framework's own authenticated user object. */
 		public ?User $bot = null;
+		
+		/**
+		 * @var array<string, mixed> Arbitrary bot state storage. Use this to share data across
+		 *                            event listeners and commands without passing variables manually.
+		 *
+		 * @example
+		 * ```php
+		 * // Set in a READY listener
+		 * $sharkord->state['uptime']    = new \DateTimeImmutable();
+		 * $sharkord->state['mediaPath'] = $_ENV['MEDIA_PATH'] ?? '/media';
+		 *
+		 * // Read in a command handler
+		 * $uptime = $sharkord->state['uptime'];
+		 * ```
+		 */
+		public array $state = [];
 
 		private readonly ReconnectHandler $reconnectHandler;
 
