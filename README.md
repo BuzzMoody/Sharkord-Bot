@@ -2,6 +2,10 @@
 
 **A ReactPHP Chatbot Framework for Sharkord**
 
+<div align="center">
+    <img src="https://sharkordphp.xyz/logo.png" alt="Description" width="500" />
+</div>
+
 SharkordPHP is a lightweight, asynchronous, vibe-coded [Sharkord](https://github.com/Sharkord/sharkord) framework built on top of [ReactPHP](https://reactphp.org/). It handles the heavy lifting of WebSocket connections and event management, allowing you to focus on writing commands and logic.
 
 ## Documentation
